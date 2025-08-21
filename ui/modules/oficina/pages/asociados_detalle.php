@@ -1,0 +1,229 @@
+<?php
+require_once '../../../controllers/AuthController.php';
+require_once '../../../config/paths.php';
+require_once '../models/DetalleAsociado.php';
+require_once '../../../models/Logger.php';
+require_once '../../../utils/dictionary.php';
+
+$auth = new AuthController();
+$auth->requireAnyRole(['admin','oficina']);
+$currentUser = $auth->getCurrentUser();
+$detalleModel = new DetalleAsociado();
+$logger = new Logger();
+
+$cedula = $_GET['cedula'] ?? '';
+if (!$cedula) { header('Location: asociados.php'); exit; }
+
+$info = $detalleModel->getAsociadoInfo($cedula) ?: [];
+$creditos = $detalleModel->getCreditos($cedula);
+$asignaciones = $detalleModel->getAsignaciones($cedula);
+$productosActivos = $detalleModel->getActiveProducts();
+
+$message = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $action = $_POST['action'] ?? '';
+  if ($action === 'asignar_producto') {
+    $productoId = (int)($_POST['producto_id'] ?? 0);
+    $diaPago = (int)($_POST['dia_pago'] ?? 1);
+    $montoPago = (float)($_POST['monto_pago'] ?? 0);
+    $res = $detalleModel->assignProduct($cedula, $productoId, $diaPago, $montoPago);
+    if ($res['success']) { $message = $res['message']; $asignaciones = $detalleModel->getAsignaciones($cedula); $logger->logCrear('asociados','Asignación de producto',['cedula'=>$cedula,'producto_id'=>$productoId,'dia_pago'=>$diaPago,'monto_pago'=>$montoPago]); }
+    else { $error = $res['message']; }
+  } elseif ($action === 'actualizar_asignacion') {
+    $id = (int)($_POST['id'] ?? 0);
+    $diaPago = (int)($_POST['dia_pago'] ?? 1);
+    $montoPago = (float)($_POST['monto_pago'] ?? 0);
+    $estado = isset($_POST['estado']) ? (bool)$_POST['estado'] : true;
+    $res = $detalleModel->updateAssignment($id, $diaPago, $montoPago, $estado);
+    if ($res['success']) { $message = $res['message']; $asignaciones = $detalleModel->getAsignaciones($cedula); $logger->logEditar('asociados','Actualización de asignación',['id'=>$id],['id'=>$id,'dia_pago'=>$diaPago,'monto_pago'=>$montoPago,'estado'=>$estado]); }
+    else { $error = $res['message']; }
+  } elseif ($action === 'eliminar_asignacion') {
+    $id = (int)($_POST['id'] ?? 0);
+    $res = $detalleModel->deleteAssignment($id);
+    if ($res['success']) { $message = $res['message']; $asignaciones = $detalleModel->getAsignaciones($cedula); $logger->logEliminar('asociados','Eliminación de asignación',['id'=>$id]); }
+    else { $error = $res['message']; }
+  }
+}
+
+$pageTitle = 'Detalle de Asociado';
+$currentPage = 'asociados';
+include '../../../views/layouts/header.php';
+?>
+
+<div class="container-fluid">
+  <div class="row">
+    <?php include '../../../views/layouts/sidebar.php'; ?>
+    <main class="col-12 main-content">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-id-card me-2"></i>Detalle de Asociado</h1>
+        <a class="btn btn-sm btn-secondary" href="asociados.php"><i class="fas fa-arrow-left me-1"></i>Volver</a>
+      </div>
+
+      <?php if ($message): ?><div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check me-2"></i><?php echo htmlspecialchars($message); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+      <?php if ($error): ?><div class="alert alert-danger alert-dismissible fade show"><i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card"><div class="card-header"><strong>Información del asociado</strong></div><div class="card-body">
+            <div><strong><?php echo dict_label('sifone_asociados','nombre','Nombre'); ?>:</strong> <?php echo htmlspecialchars($info['nombre'] ?? ''); ?></div>
+            <div><strong><?php echo dict_label('sifone_asociados','cedula','Cédula'); ?>:</strong> <?php echo htmlspecialchars($info['cedula'] ?? $cedula); ?></div>
+            <div><strong><?php echo dict_label('sifone_asociados','celula','Teléfono'); ?>:</strong> <?php echo htmlspecialchars($info['celula'] ?? ''); ?></div>
+            <div><strong><?php echo dict_label('sifone_asociados','mail','Email'); ?>:</strong> <?php echo htmlspecialchars($info['mail'] ?? ''); ?></div>
+            <div><strong><?php echo dict_label('sifone_asociados','ciudad','Ciudad'); ?>:</strong> <?php echo htmlspecialchars($info['ciudad'] ?? ''); ?></div>
+            <div><strong><?php echo dict_label('sifone_asociados','direcc','Dirección'); ?>:</strong> <?php echo htmlspecialchars($info['direcc'] ?? ''); ?></div>
+          </div></div>
+        </div>
+        <div class="col-md-6">
+          <div class="card"><div class="card-header"><strong>Información monetaria</strong></div><div class="card-body">
+            <div><strong><?php echo dict_label('sifone_asociados','aporte','Aportes'); ?>:</strong> <?php echo '$' . number_format((float)($info['aporte'] ?? 0), 0); ?></div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-12">
+          <div class="card"><div class="card-header"><strong>Información crédito</strong></div><div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light"><tr>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','numero','Crédito'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo Préstamo'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','plazo','Plazo'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','tasa','Tasa Interés'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','carter','Deuda Capital'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_mora','sdomor','Saldo Mora'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_mora','diav','Días Mora'); ?></th>
+                </tr></thead>
+                <tbody>
+                  <?php foreach ($creditos as $c): ?>
+                  <tr>
+                    <td><?php echo htmlspecialchars($c['numero_credito']); ?></td>
+                    <td><?php echo htmlspecialchars($c['tipo_prestamo']); ?></td>
+                    <td><?php echo (int)$c['plazo']; ?></td>
+                    <td><?php echo number_format((float)$c['tasa'] * 100, 2) . '%'; ?></td>
+                    <td><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
+                    <td><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></td>
+                    <td><?php echo (int)$c['dias_mora']; ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-12">
+          <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><strong>Información de productos</strong>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#asignarProductoModal"><i class="fas fa-plus me-1"></i>Asignar producto</button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light"><tr>
+                  <th>ID</th><th>Producto</th><th>Día Pago</th><th>Monto Pago</th><th>Rango</th><th>Estado</th><th>Acciones</th>
+                </tr></thead>
+                <tbody>
+                  <?php foreach ($asignaciones as $ap): ?>
+                  <tr>
+                    <td><?php echo (int)$ap['id']; ?></td>
+                    <td><?php echo htmlspecialchars($ap['producto_nombre']); ?></td>
+                    <td><?php echo (int)$ap['dia_pago']; ?></td>
+                    <td><?php echo '$' . number_format((float)$ap['monto_pago'], 0); ?></td>
+                    <td><?php echo '$' . number_format((float)$ap['valor_minimo'],0) . ' - $' . number_format((float)$ap['valor_maximo'],0); ?></td>
+                    <td><span class="badge <?php echo $ap['estado_activo'] ? 'bg-success':'bg-secondary'; ?>"><?php echo $ap['estado_activo'] ? 'Activo':'Inactivo'; ?></span></td>
+                    <td>
+                      <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarAsignacionModal<?php echo $ap['id']; ?>"><i class="fas fa-edit"></i></button>
+                        <form method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar asignación?');">
+                          <input type="hidden" name="action" value="eliminar_asignacion">
+                          <input type="hidden" name="id" value="<?php echo $ap['id']; ?>">
+                          <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  <!-- Modal Editar Asignación -->
+                  <div class="modal fade" id="editarAsignacionModal<?php echo $ap['id']; ?>" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+                    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar Asignación</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <form method="POST" onsubmit="return validarEdicionAsignacion(this)" data-min="<?php echo (float)$ap['valor_minimo']; ?>" data-max="<?php echo (float)$ap['valor_maximo']; ?>">
+                    <div class="modal-body">
+                      <input type="hidden" name="action" value="actualizar_asignacion">
+                      <input type="hidden" name="id" value="<?php echo $ap['id']; ?>">
+                      <div class="row g-2">
+                        <div class="col-md-4"><label class="form-label">Día Pago</label><input type="number" min="1" max="31" name="dia_pago" class="form-control" value="<?php echo (int)$ap['dia_pago']; ?>" required></div>
+                        <div class="col-md-4"><label class="form-label">Monto Pago <small class="text-muted">(rango: $<?php echo number_format((float)$ap['valor_minimo'],0); ?> - $<?php echo number_format((float)$ap['valor_maximo'],0); ?>)</small></label><input type="number" min="0" step="0.01" name="monto_pago" class="form-control" value="<?php echo (float)$ap['monto_pago']; ?>" required></div>
+                        <div class="col-md-4 d-flex align-items-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="estado" id="estado_asig_<?php echo $ap['id']; ?>" <?php echo $ap['estado_activo']?'checked':''; ?>><label class="form-check-label" for="estado_asig_<?php echo $ap['id']; ?>">Activo</label></div></div>
+                      </div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit">Guardar</button></div>
+                    </form>
+                  </div></div></div>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal Asignar Producto -->
+<div class="modal fade" id="asignarProductoModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fas fa-plus me-2"></i>Asignar Producto</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <form method="POST" onsubmit="return validarAsignacionMonto()"><div class="modal-body">
+    <input type="hidden" name="action" value="asignar_producto">
+    <div class="mb-2"><label class="form-label">Producto</label>
+      <select class="form-select" name="producto_id" id="producto_id_select" required onchange="actualizarRango()">
+        <option value="">Seleccione</option>
+        <?php foreach ($productosActivos as $p): ?><option value="<?php echo $p['id']; ?>" data-min="<?php echo (float)$p['valor_minimo']; ?>" data-max="<?php echo (float)$p['valor_maximo']; ?>"><?php echo htmlspecialchars($p['nombre']); ?></option><?php endforeach; ?>
+      </select>
+    </div>
+    <div class="row g-2">
+      <div class="col-md-6"><label class="form-label">Día de Pago</label><input type="number" min="1" max="31" name="dia_pago" class="form-control" required></div>
+      <div class="col-md-6"><label class="form-label">Monto de Pago <small class="text-muted" id="rango_monto_help"></small></label><input type="number" min="0" step="0.01" name="monto_pago" id="monto_pago_input" class="form-control" required></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" type="submit">Asignar</button></div>
+  </form>
+</div></div></div>
+
+<script>
+function actualizarRango() {
+  const sel = document.getElementById('producto_id_select');
+  const opt = sel.options[sel.selectedIndex];
+  const min = opt ? Number(opt.getAttribute('data-min')) : null;
+  const max = opt ? Number(opt.getAttribute('data-max')) : null;
+  const help = document.getElementById('rango_monto_help');
+  if (min!=null && max!=null) help.textContent = `(rango: $${min.toLocaleString()} - $${max.toLocaleString()})`;
+  else help.textContent = '';
+}
+function validarAsignacionMonto() {
+  const sel = document.getElementById('producto_id_select');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt) return false;
+  const min = Number(opt.getAttribute('data-min'));
+  const max = Number(opt.getAttribute('data-max'));
+  const monto = Number(document.getElementById('monto_pago_input').value);
+  if (isNaN(monto) || monto < min || monto > max) {
+    alert(`El monto debe estar entre $${min.toLocaleString()} y $${max.toLocaleString()}`);
+    return false; // no cerrar modal, no enviar
+  }
+  return true;
+}
+// Inicializa ayuda al abrir modal (por si queda seleccionado)
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('asignarProductoModal');
+  if (modal) modal.addEventListener('shown.bs.modal', actualizarRango);
+});
+</script>
+
+<?php include '../../../views/layouts/footer.php'; ?>
+
+

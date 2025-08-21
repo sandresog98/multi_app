@@ -1,0 +1,266 @@
+<?php
+require_once '../../../controllers/AuthController.php';
+require_once '../../../config/paths.php';
+require_once '../models/PagoCashQr.php';
+require_once '../../../models/Logger.php';
+
+$auth = new AuthController();
+$auth->requireAnyRole(['admin','oficina']);
+$currentUser = $auth->getCurrentUser();
+$model = new PagoCashQr();
+$logger = new Logger();
+
+$message = '';
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $action = $_POST['action'] ?? '';
+  try {
+    if ($action === 'asignar') {
+      $confiar_id = trim($_POST['confiar_id'] ?? '');
+      $cedula = trim($_POST['cedula'] ?? '');
+      $link = trim($_POST['link'] ?? '');
+      // Manejo de carga de imagen (opcional). Si hay imagen válida, sobrescribe $link con la URL pública del archivo subido
+      if (isset($_FILES['comprobante']) && is_array($_FILES['comprobante']) && (($_FILES['comprobante']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK)) {
+      	$tmpPath = $_FILES['comprobante']['tmp_name'];
+      	$origName = $_FILES['comprobante']['name'] ?? '';
+      	$size = (int)($_FILES['comprobante']['size'] ?? 0);
+      	if ($size > 0) {
+      		if ($size > 5 * 1024 * 1024) { throw new Exception('La imagen excede el tamaño máximo (5 MB)'); }
+      		$finfo = new finfo(FILEINFO_MIME_TYPE);
+      		$mime = $finfo->file($tmpPath);
+      		$allowed = [
+      			'image/jpeg' => 'jpg',
+      			'image/png' => 'png',
+      			'image/webp' => 'webp',
+      			'image/gif' => 'gif'
+      		];
+      		if (!isset($allowed[$mime])) { throw new Exception('Formato de imagen no permitido (solo jpg, png, webp, gif)'); }
+      		$ext = $allowed[$mime];
+      		$subdir = 'uploads/recibos/' . date('Y') . '/' . date('m');
+      		$absDir = getAbsolutePath($subdir);
+      		if (!is_dir($absDir)) { if (!mkdir($absDir, 0775, true)) { throw new Exception('No se pudo crear el directorio de uploads'); } }
+      		if (!is_writable($absDir)) { throw new Exception('Directorio de uploads no escribible'); }
+      		$base = pathinfo($origName, PATHINFO_FILENAME);
+      		$safeBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $base) ?: 'recibo';
+      		$filename = $safeBase . '-' . uniqid() . '.' . $ext;
+      		$destPath = rtrim($absDir, '/') . '/' . $filename;
+      		if (!move_uploaded_file($tmpPath, $destPath)) { throw new Exception('No se pudo guardar la imagen subida'); }
+      		$link = getBaseUrl() . $subdir . '/' . $filename;
+      	}
+      }
+      $comentario = trim($_POST['comentario'] ?? '');
+      $res = $model->assign($confiar_id, $cedula, $link, $comentario);
+      if ($res['success']) { $message = 'Asignación registrada'; $logger->logEditar('pagos_cashqr','Asignar comprobante y usuario', null, compact('confiar_id','cedula','link')); }
+      else { $error = $res['message'] ?? 'No se pudo asignar'; }
+    } elseif ($action === 'eliminar') {
+      $confiar_id = trim($_POST['confiar_id'] ?? '');
+      $res = $model->removeAssignment($confiar_id);
+      if ($res['success']) { $message = 'Asignación eliminada'; $logger->logEliminar('pagos_cashqr','Eliminar asignación', ['confiar_id'=>$confiar_id]); }
+      else { $error = $res['message'] ?? 'No se pudo eliminar'; }
+    }
+  } catch (Exception $e) { $error = $e->getMessage(); }
+}
+
+$page = (int)($_GET['page'] ?? 1);
+$search = trim($_GET['search'] ?? '');
+$tipo = trim($_GET['tipo'] ?? 'all'); // all | efectivo | qr
+$asignacion = trim($_GET['asignacion'] ?? ''); // '' | asignados | no_asignados
+$data = $model->listConfiar($page, 20, $search, $tipo, $asignacion);
+
+$pageTitle = 'Pagos Cash/QR - Oficina';
+$currentPage = 'pagos_cash_qr';
+include '../../../views/layouts/header.php';
+?>
+
+<div class="container-fluid">
+  <div class="row">
+    <?php include '../../../views/layouts/sidebar.php'; ?>
+    <main class="col-12 main-content">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-receipt me-2"></i>Pagos Cash/QR</h1>
+      </div>
+
+      <?php if ($message): ?><div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check me-2"></i><?php echo htmlspecialchars($message); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+      <?php if ($error): ?><div class="alert alert-danger alert-dismissible fade show"><i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
+
+      <form class="row g-2 mb-3" method="GET">
+        <div class="col-md-4"><input class="form-control" name="search" placeholder="Buscar id/descripcion/documento" value="<?php echo htmlspecialchars($search); ?>"></div>
+        <div class="col-md-2">
+          <select name="tipo" class="form-select">
+            <option value="all" <?php echo $tipo==='all'?'selected':''; ?>>Efectivo y QR</option>
+            <option value="efectivo" <?php echo $tipo==='efectivo'?'selected':''; ?>>Solo Efectivo</option>
+            <option value="qr" <?php echo $tipo==='qr'?'selected':''; ?>>Solo QR</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="asignacion" class="form-select">
+            <option value="">Asignados y no asignados</option>
+            <option value="asignados" <?php echo $asignacion==='asignados'?'selected':''; ?>>Solo asignados</option>
+            <option value="no_asignados" <?php echo $asignacion==='no_asignados'?'selected':''; ?>>Solo no asignados</option>
+          </select>
+        </div>
+        <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>Filtrar</button></div>
+      </form>
+
+      <div class="card"><div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-dark"><tr>
+              <th>Confiar ID</th>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+              <th>Asignación</th>
+              <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+            <?php foreach ($data['items'] as $row): ?>
+              <tr>
+                <td>
+                  <div class="fw-semibold"><?php echo htmlspecialchars($row['confiar_id']); ?></div>
+                  <div class="small text-muted"><?php echo htmlspecialchars($row['descripcion']); ?></div>
+                </td>
+                <td><?php echo htmlspecialchars($row['fecha']); ?></td>
+                <td><span class="badge <?php echo ($row['tipo_transaccion']==='Pago Efectivo')?'bg-success':'bg-info'; ?>"><?php echo htmlspecialchars($row['tipo_transaccion']); ?></span></td>
+                <td><?php echo '$' . number_format((float)$row['valor_consignacion'], 0); ?></td>
+                <td>
+                  <?php if (!empty($row['asignado_cedula'])): ?>
+                    <div class="small"><?php echo htmlspecialchars($row['asignado_cedula']); ?></div>
+                    <div class="small"><?php echo htmlspecialchars($row['asignado_nombre'] ?? ''); ?></div>
+                    <?php 
+                      $linkPrev = $row['asignado_link'] ?? '';
+                      $isImgPrev = false;
+                      if (!empty($linkPrev)) {
+                        $lowerPrev = strtolower(parse_url($linkPrev, PHP_URL_PATH) ?? '');
+                        $isImgPrev = (bool)preg_match('/\.(jpg|jpeg|png|webp|gif)$/', $lowerPrev);
+                      }
+                    ?>
+                    <?php if (!empty($linkPrev) && $isImgPrev): ?>
+                      <div class="small">
+                        <a href="<?php echo htmlspecialchars($linkPrev); ?>" target="_blank">
+                          <img src="<?php echo htmlspecialchars($linkPrev); ?>" alt="comprobante" class="img-thumbnail" style="max-width: 120px; max-height: 80px;">
+                        </a>
+                      </div>
+                    <?php elseif (!empty($linkPrev)): ?>
+                      <div class="small"><a href="<?php echo htmlspecialchars($linkPrev); ?>" target="_blank">LINK</a></div>
+                    <?php endif; ?>
+                    <?php if (!empty($row['asignado_comentario'])): ?><div class="small text-muted"><?php echo htmlspecialchars($row['asignado_comentario']); ?></div><?php endif; ?>
+                  <?php else: ?>
+                    <span class="badge bg-secondary">Sin asignar</span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <div class="btn-group">
+                    <?php if (empty($row['asignado_cedula'])): ?>
+                      <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#asignarModal<?php echo $row['confiar_id']; ?>" title="Asignar"><i class="fas fa-link"></i></button>
+                    <?php else: ?>
+                      <form method="POST" class="d-inline">
+                        <input type="hidden" name="action" value="eliminar">
+                        <input type="hidden" name="confiar_id" value="<?php echo htmlspecialchars($row['confiar_id']); ?>">
+                        <button class="btn btn-sm btn-outline-danger" title="Eliminar asignación"><i class="fas fa-unlink"></i></button>
+                      </form>
+                    <?php endif; ?>
+                  </div>
+                </td>
+              </tr>
+
+              <?php if (empty($row['asignado_cedula'])): ?>
+              <div class="modal fade" id="asignarModal<?php echo $row['confiar_id']; ?>" tabindex="-1">
+                <div class="modal-dialog"><div class="modal-content">
+                  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-link me-2"></i>Asignar comprobante y usuario</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <form method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                      <input type="hidden" name="action" value="asignar">
+                      <input type="hidden" name="confiar_id" value="<?php echo htmlspecialchars($row['confiar_id']); ?>">
+                      <div class="mb-2 position-relative">
+                        <label class="form-label">Cédula</label>
+                        <input class="form-control" name="cedula" id="cedula_<?php echo $row['confiar_id']; ?>" placeholder="Buscar por cédula o nombre" autocomplete="off" required oninput="buscarAsociados('cedula_<?php echo $row['confiar_id']; ?>','asoc_results_<?php echo $row['confiar_id']; ?>','cedula_nombre_<?php echo $row['confiar_id']; ?>')">
+                        <div class="form-text" id="cedula_nombre_<?php echo $row['confiar_id']; ?>"></div>
+                        <div id="asoc_results_<?php echo $row['confiar_id']; ?>" class="list-group position-absolute w-100" style="top:100%; left:0; z-index:1070; max-height:220px; overflow:auto; background:#fff; border:1px solid #dee2e6; border-top:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label">Comprobante (imagen o URL)</label>
+                        <input type="file" class="form-control" name="comprobante" accept="image/*">
+                        <div class="form-text">Opcional: si no subes imagen, puedes pegar un enlace abajo.</div>
+                        <input type="url" class="form-control mt-2" name="link" placeholder="https://...">
+                      </div>
+                      <div class="mb-2"><label class="form-label">Comentario (opcional)</label><input class="form-control" name="comentario" maxlength="255"></div>
+                      <div class="small text-muted">Confiar: <?php echo htmlspecialchars($row['confiar_id']); ?> | Fecha: <?php echo htmlspecialchars($row['fecha']); ?> | Valor: <?php echo '$' . number_format((float)$row['valor_consignacion'], 0); ?></div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+                  </form>
+                </div></div>
+              </div>
+              <?php endif; ?>
+
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div></div>
+
+      <?php if (($data['pages'] ?? 1) > 1): $pages=$data['pages']; $cur=$data['current_page']; ?>
+        <nav><ul class="pagination justify-content-center">
+          <?php for ($i=1;$i<=$pages;$i++): ?><li class="page-item <?php echo $i==$cur?'active':''; ?>"><a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&tipo=<?php echo urlencode($tipo); ?>&asignacion=<?php echo urlencode($asignacion); ?>"><?php echo $i; ?></a></li><?php endfor; ?>
+        </ul></nav>
+      <?php endif; ?>
+
+    </main>
+  </div>
+</div>
+
+<?php include '../../../views/layouts/footer.php'; ?>
+
+<script>
+// Búsqueda simple de asociados con lista clickeable
+async function buscarAsociados(inputId, listContainerId, nombreId){
+  const input = document.getElementById(inputId);
+  const q = input.value.trim();
+  const cont = document.getElementById(listContainerId);
+  cont.innerHTML = '<div class="list-group-item text-muted">Buscando…</div>';
+  if (q.length < 2) return;
+  try {
+    const res = await fetch('<?php echo getBaseUrl(); ?>modules/oficina/api/buscar_asociados.php?q='+encodeURIComponent(q));
+    const data = await res.json();
+    const items = data.items||[];
+    if (items.length === 0) { cont.innerHTML = '<div class="list-group-item text-muted">Sin resultados</div>'; return; }
+    const frag = document.createDocumentFragment();
+    items.forEach(a => {
+      const el = document.createElement('a');
+      el.href = '#';
+      el.className = 'list-group-item list-group-item-action';
+      el.textContent = `${a.cedula} — ${a.nombre}`;
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        input.value = a.cedula;
+        document.getElementById(nombreId).textContent = 'Nombre: ' + a.nombre;
+        cont.innerHTML = '';
+      });
+      frag.appendChild(el);
+    });
+    cont.innerHTML = '';
+    cont.appendChild(frag);
+  } catch (e) {
+    cont.innerHTML = '<div class="list-group-item text-danger">Error de búsqueda</div>';
+  }
+}
+
+// Delegación para inputs de cédula
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id && e.target.id.startsWith('cedula_')){
+    const id = e.target.id.replace('cedula_','');
+    buscarAsociados('cedula_'+id, 'asoc_results_'+id, 'cedula_nombre_'+id);
+  }
+});
+
+// Ocultar lista al hacer click fuera
+document.addEventListener('click', (e) => {
+  const lists = document.querySelectorAll('[id^="asoc_results_"]');
+  lists.forEach(list => {
+    if (!list.contains(e.target) && !(document.getElementById(list.id.replace('asoc_results_','cedula_'))?.contains(e.target))){
+      list.innerHTML = '';
+    }
+  });
+});
+</script>

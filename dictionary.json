@@ -1,0 +1,160 @@
+{
+    "tablas" : {
+        "sifone_asociados" : {
+            "cedula" : {
+                "nombre" : "Cédula",
+                "descripcion" : "llave primaria de asociado"
+            },
+            "nombre" : {
+                "nombre" : "Nombre",
+                "descripcion" : "Nombre completo del asociado"
+            },
+            "fecnac" : {
+                "nombre" : "Fecha de nacimiento",
+                "descripcion" : "Fecha de nacimiento del asociado"
+            },
+            "aportes" : {
+                "nombre" : "Aportes",
+                "descripcion" : "Aportes del asociado"
+            },
+            "celula" : {
+                "nombre" : "Celular",
+                "descripcion" : "Celular del asociado"
+            },
+            "mail" : {
+                "nombre" : "Email",
+                "descripcion" : "Email del asociado"
+            },
+            "direcc" : {
+                "nombre" : "Dirección",
+                "descripcion" : "Dirección del asociado"
+            },
+            "ciudad" : {
+                "nombre" : "Ciudad",
+                "descripcion" : "Ciudad del asociado"
+            }
+        },
+        "sifone_cartera_aseguradora" : {
+            "cedula" : {
+                "nombre" : "Cédula",
+                "descripcion" : "llave primaria de asociado"
+            },
+            "numero" : {
+                "nombre" : "Crédito",
+                "descripcion" : "llave primaria de la crédito"
+            },
+            "plazo" : {
+                "nombre" : "Plazo",
+                "descripcion" : "Plazo de la crédito"
+            },
+            "tipopr" : {
+                "nombre" : "Tipo Préstamo",
+                "descripcion" : "Tipo de préstamo"
+            },
+            "valorc" : {
+                "nombre" : "Valor Cuota",
+                "descripcion" : "Valor de la cuota"
+            },
+            "tasa" : {
+                "nombre" : "Tasa Interés",
+                "descripcion" : "Tasa de interés"
+            },
+            "carter" : {
+                "nombre" : "Deuda Capital",
+                "descripcion" : "Deuda capital del crédito"
+            }
+        },
+        "sifone_cartera_mora" : {
+            "cedula" : {
+                "nombre" : "Cédula",
+                "descripcion" : "llave primaria de asociado"
+            },
+            "presta" : {
+                "nombre" : "Crédito",
+                "descripcion" : "llave primaria de la crédito"
+            },
+            "sdomor" : {
+                "nombre" : "Saldo Mora",
+                "descripcion" : "Saldo de la mora del crédito"
+            },
+            "diav" : {
+                "nombre" : "Días Mora",
+                "descripcion" : "Días de mora del crédito"
+            }
+        },
+        "control_asociados" : {
+            "cedula" : {
+                "nombre" : "Cédula",
+                "descripcion" : "llave primaria de asociado"
+            },
+            "estado_activo" : {
+                "nombre" : "Estado Asociado",
+                "descripcion" : "Estado del asociado"
+            }
+        },
+        "banco_pse" : {
+            "pse_id" : {
+                "nombre" : "ID PSE",
+                "descripcion" : "llave primaria de la transacción PSE"
+            },
+            "valor" : {
+                "nombre" : "Valor",
+                "descripcion" : "Valor de la transacción PSE"
+            },
+            "estado" : {
+                "nombre" : "Estado",
+                "descripcion" : "Estado de la transacción PSE"
+            },
+            "banco_originador" :{
+                "nombre" : "Banco Originador",
+                "descripcion" : "Banco originador de la transacción PSE"
+            },
+            "fecha_hora_resolucion_de_la_transaccion" : {
+                "nombre" : "Fecha y Hora de Resolución",
+                "descripcion" : "Fecha y hora de resolución de la transacción PSE"
+            },
+            "referencia_2" : {
+                "nombre" : "Cedula",
+                "descripcion" : "Cedula de quien realizo la transacción"
+            },
+            "referencia_3" : {
+                "nombre" : "Nombre",
+                "descripcion" : "Nombre de quien realizo la transacción"
+            }
+        },
+        "banco_confiar" : {
+            "confiar_id" : {
+                "nombre" : "ID Confiar",
+                "descripcion" : "llave primaria de la transacción Confiar"
+            },
+            "descripcion" : {
+                "nombre" : "Descripción",
+                "descripcion" : "Descripción de la transacción Confiar"
+            },
+            "valor_consignacion" : {
+                "nombre" : "Valor Consignación",
+                "descripcion" : "Valor de la consignación"
+            },
+            "valor_retiro" : {
+                "nombre" : "Valor Retiro",
+                "descripcion" : "Valor del retiro"
+            },
+            "tipo_transaccion" : {
+                "nombre" : "Tipo de Transacción",
+                "descripcion" : "Tipo de transacción"
+            }
+        }
+    },
+    "llaves": {
+        "asociado": {
+            "sifone_asociados": "cedula",
+            "sifone_cartera_mora": "cedula",
+            "sifone_cartera_aseguradora": "cedula",
+            "control_asociados": "cedula"
+        },
+        "credito": {
+            "sifone_cartera_mora": "presta",
+            "sifone_cartera_aseguradora": "numero"
+        }
+    }
+}
