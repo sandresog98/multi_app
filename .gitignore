@@ -1,0 +1,63 @@
+# Ignorar archivos de datos pero mantener estructura de carpetas
+py/data/**/*
+!py/data/
+!py/data/**/
+!py/data/pagos/
+!py/data/pagos/confiar/
+!py/data/pagos/pse/
+!py/data/sifone/
+
+# Archivos específicos que siempre se ignoran
+*.log
+*.tmp
+*.cache
+*.bak
+*.swp
+*.swo
+
+# Archivos de configuración local
+.env
+.env.local
+.env.*.local
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Archivos de dependencias
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos de logs
+logs/
+*.log
+
+# Archivos temporales
+temp/
+tmp/
+*.tmp
+
+# Archivos de base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos de backup
+*.backup
+*.old
