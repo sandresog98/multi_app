@@ -7,6 +7,11 @@ py/data/**/*
 !py/data/pagos/pse/
 !py/data/sifone/
 
+# Ignorar archivos de uploads pero mantener estructura de carpetas
+ui/uploads/**/*
+!ui/uploads/
+!ui/uploads/**/
+
 # Archivos específicos que siempre se ignoran
 *.log
 *.tmp
