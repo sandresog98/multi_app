@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 try {
 	$auth = new AuthController();
-	$auth->requireRole('admin');
+	$auth->requireAnyRole(['admin', 'oficina']);
 	$cedula = $_GET['cedula'] ?? '';
 	if (!$cedula) { throw new Exception('Cédula requerida'); }
 	$model = new Comunicacion();

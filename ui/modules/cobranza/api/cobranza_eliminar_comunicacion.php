@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 
 try {
 	$auth = new AuthController();
-	$auth->requireRole('admin');
+	$auth->requireAnyRole(['admin', 'oficina']);
 	$user = $auth->getCurrentUser();
 
 	if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Método no permitido');
@@ -23,7 +23,7 @@ try {
 } catch (Throwable $e) {
 	try { (new Logger())->logEditar('cobranza', 'Error al eliminar comunicación', null, ['error'=>$e->getMessage()]); } catch (Throwable $ignored) {}
 	http_response_code(400);
-	echo json_encode(['success'=>false, 'message'=>$e->getMessage()]);
+	echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
 }
 
 

@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 
 try {
 	$auth = new AuthController();
-	$auth->requireRole('admin');
+	$auth->requireAnyRole(['admin', 'oficina']);
 	$user = $auth->getCurrentUser();
 
 	if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Método no permitido');
