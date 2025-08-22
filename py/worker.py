@@ -10,7 +10,7 @@ import argparse
 import logging
 import time
 from typing import Optional, Dict, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from config.logging_config import logging as _unused  # asegura configuración si existe
@@ -37,6 +37,20 @@ class Job:
     archivo_ruta: str
     estado: str = JobStatus.PENDIENTE.value
     mensaje_log: Optional[str] = None
+    # Campos adicionales que pueden venir de la base de datos
+    usuario_id: Optional[int] = None
+    fecha_creacion: Optional[str] = None
+    fecha_procesamiento: Optional[str] = None
+    # Campo para almacenar campos adicionales no mapeados
+    extra_fields: Dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Procesar campos adicionales después de la inicialización"""
+        # Si hay campos extra, moverlos a extra_fields
+        if hasattr(self, '_extra_fields'):
+            for key, value in self._extra_fields.items():
+                if not hasattr(self, key):
+                    self.extra_fields[key] = value
 
 
 def obtener_job_pendiente(db: DatabaseManager) -> Optional[Job]:
@@ -48,7 +62,30 @@ def obtener_job_pendiente(db: DatabaseManager) -> Optional[Job]:
     cur.close()
     
     if row:
-        return Job(**row)
+        # Filtrar solo los campos que conocemos para la clase Job
+        known_fields = {
+            'id', 'tipo', 'archivo_ruta', 'estado', 'mensaje_log',
+            'usuario_id', 'fecha_creacion', 'fecha_procesamiento'
+        }
+        
+        job_data = {}
+        extra_fields = {}
+        
+        for key, value in row.items():
+            if key in known_fields:
+                job_data[key] = value
+            else:
+                extra_fields[key] = value
+        
+        # Crear el job con los campos conocidos
+        job = Job(**job_data)
+        
+        # Agregar campos extra si existen
+        if extra_fields:
+            job.extra_fields = extra_fields
+            
+        return job
+    
     return None
 
 
