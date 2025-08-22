@@ -4,9 +4,9 @@
  */
 
 // Configuración de la base de datos
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', '192.168.10.30');
 define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PASS', '123456789');
 define('DB_NAME', 'multiapptwo');
 
 class Database {

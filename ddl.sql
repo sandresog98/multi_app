@@ -2,7 +2,7 @@ CREATE DATABASE multiapptwo;
 USE multiapptwo;
 
 -- Tabla de logs del sistema (eventos seleccionados)
-CREATE OR REPLACE TABLE control_logs (
+CREATE TABLE control_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -11,8 +11,8 @@ CREATE OR REPLACE TABLE control_logs (
     detalle TEXT,
     ip_address VARCHAR(45),
     user_agent TEXT,
-    datos_anteriores JSON,
-    datos_nuevos JSON,
+    datos_anteriores LONGTEXT,
+    datos_nuevos LONGTEXT,
     nivel ENUM('info','warning','error','critical') DEFAULT 'info',
     INDEX idx_accion (accion),
     INDEX idx_modulo (modulo),
@@ -20,7 +20,7 @@ CREATE OR REPLACE TABLE control_logs (
 );
 
 -- Tablas de Sifone
-CREATE OR REPLACE TABLE sifone_asociados (
+CREATE TABLE sifone_asociados (
     cedula VARCHAR(20),
     clased VARCHAR(10),
     codigo VARCHAR(20),
@@ -106,7 +106,7 @@ CREATE OR REPLACE TABLE sifone_asociados (
     pais VARCHAR(100),
     paisrf INT
 );
-CREATE OR REPLACE TABLE sifone_cartera_aseguradora (
+CREATE TABLE sifone_cartera_aseguradora (
     cedula VARCHAR(20),
     numero VARCHAR(20),
     priape VARCHAR(100),
@@ -124,7 +124,7 @@ CREATE OR REPLACE TABLE sifone_cartera_aseguradora (
     valorc DECIMAL(15,2),
     tasa DECIMAL(5,4)
 );
-CREATE OR REPLACE TABLE sifone_cartera_mora (
+CREATE TABLE sifone_cartera_mora (
     nombre VARCHAR(255),
     telefo VARCHAR(20),
     cedula VARCHAR(20),
@@ -155,7 +155,7 @@ CREATE OR REPLACE TABLE sifone_cartera_mora (
 );
 
 -- Tabla de usuarios para autenticación
-CREATE OR REPLACE TABLE control_usuarios (
+CREATE TABLE control_usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -164,18 +164,32 @@ CREATE OR REPLACE TABLE control_usuarios (
     rol VARCHAR(20) NOT NULL,
     estado_activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
 );
+-- Triggers control_usuarios
+DROP TRIGGER IF EXISTS control_usuarios_bu;
+CREATE TRIGGER control_usuarios_bu BEFORE UPDATE ON control_usuarios
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS control_usuarios_bi;
+CREATE TRIGGER control_usuarios_bi BEFORE INSERT ON control_usuarios
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
     -- Usuario administrador por defecto (contraseña ya hasheada)
     INSERT INTO control_usuarios (usuario, password, nombre_completo, email, rol)
     VALUES ('admin', '$2y$10$AfwFabRPO0HtoRYHmDFZ3eN5ynO4z8yGe.rcBOUhbchrk3DSwFi..', 'Administrador del Sistema', 'admin@coomultiunion.com', 'admin');
 
-CREATE OR REPLACE TABLE control_asociados (
+CREATE TABLE control_asociados (
     cedula VARCHAR(20) UNIQUE PRIMARY KEY,
     estado_activo BOOLEAN DEFAULT TRUE,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
 );
-CREATE OR REPLACE TABLE control_productos (
+-- Triggers control_asociados
+DROP TRIGGER IF EXISTS control_asociados_bu;
+CREATE TRIGGER control_asociados_bu BEFORE UPDATE ON control_asociados
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS control_asociados_bi;
+CREATE TRIGGER control_asociados_bi BEFORE INSERT ON control_asociados
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+CREATE TABLE control_productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
@@ -185,9 +199,16 @@ CREATE OR REPLACE TABLE control_productos (
     prioridad INT NOT NULL DEFAULT 100,
     estado_activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
 );
-CREATE OR REPLACE TABLE control_asignacion_asociado_producto (
+-- Triggers control_productos
+DROP TRIGGER IF EXISTS control_productos_bu;
+CREATE TRIGGER control_productos_bu BEFORE UPDATE ON control_productos
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS control_productos_bi;
+CREATE TRIGGER control_productos_bi BEFORE INSERT ON control_productos
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+CREATE TABLE control_asignacion_asociado_producto (
   id INT AUTO_INCREMENT PRIMARY KEY,
   cedula VARCHAR(20) NOT NULL,
   producto_id INT NOT NULL,
@@ -195,10 +216,17 @@ CREATE OR REPLACE TABLE control_asignacion_asociado_producto (
   monto_pago DECIMAL(12,2) NOT NULL,
   estado_activo BOOLEAN DEFAULT TRUE,
   fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
 );
+-- Triggers control_asignacion_asociado_producto
+DROP TRIGGER IF EXISTS control_asig_prod_bu;
+CREATE TRIGGER control_asig_prod_bu BEFORE UPDATE ON control_asignacion_asociado_producto
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS control_asig_prod_bi;
+CREATE TRIGGER control_asig_prod_bi BEFORE INSERT ON control_asignacion_asociado_producto
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
 -- Transacciones (cabecera)
-CREATE OR REPLACE TABLE control_transaccion (
+CREATE TABLE control_transaccion (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) NOT NULL,
     origen_pago ENUM('pse','cash_qr') NOT NULL,
@@ -214,7 +242,7 @@ CREATE OR REPLACE TABLE control_transaccion (
 );
 
 -- Transacciones (detalle)
-CREATE OR REPLACE TABLE control_transaccion_detalle (
+CREATE TABLE control_transaccion_detalle (
     id INT AUTO_INCREMENT PRIMARY KEY,
     transaccion_id INT NOT NULL,
     tipo_rubro ENUM('credito_mora','cobranza','credito','producto') NOT NULL,
@@ -231,7 +259,7 @@ CREATE OR REPLACE TABLE control_transaccion_detalle (
 );
 
 -- Comunicaciones de cobranza
-CREATE OR REPLACE TABLE cobranza_comunicaciones (
+CREATE TABLE cobranza_comunicaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asociado_cedula VARCHAR(20) NOT NULL,
     tipo_comunicacion ENUM('Llamada','Mensaje de Texto','Whatsapp','Email') NOT NULL,
@@ -245,7 +273,7 @@ CREATE OR REPLACE TABLE cobranza_comunicaciones (
 );
 
 -- Tablas de pagos bancarios
-CREATE OR REPLACE TABLE banco_pse (
+CREATE TABLE banco_pse (
     pse_id VARCHAR(50) PRIMARY KEY,
     cus BIGINT NOT NULL,
     valor BIGINT NOT NULL,
@@ -278,7 +306,7 @@ CREATE OR REPLACE TABLE banco_pse (
     navegador VARCHAR(50) NOT NULL,
     tipo_de_flujo VARCHAR(50) NOT NULL
 );
-CREATE OR REPLACE TABLE banco_confiar (
+CREATE TABLE banco_confiar (
     confiar_id VARCHAR(50) PRIMARY KEY,
     fecha DATE NULL,
     descripcion VARCHAR(255) NULL,
@@ -289,7 +317,7 @@ CREATE OR REPLACE TABLE banco_confiar (
     saldo DOUBLE NULL,
     tipo_transaccion VARCHAR(50) NULL
 );
-CREATE OR REPLACE TABLE banco_asignacion_pse (
+CREATE TABLE banco_asignacion_pse (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pse_id VARCHAR(50) NOT NULL,
     confiar_id VARCHAR(50) NOT NULL,
@@ -299,7 +327,7 @@ CREATE OR REPLACE TABLE banco_asignacion_pse (
     KEY idx_pse (pse_id),
     KEY idx_confiar (confiar_id)
 );
-CREATE OR REPLACE TABLE banco_confirmacion_confiar (
+CREATE TABLE banco_confirmacion_confiar (
     id INT AUTO_INCREMENT PRIMARY KEY,
     confiar_id VARCHAR(50) NOT NULL UNIQUE,
     cedula VARCHAR(20) NOT NULL,
@@ -309,7 +337,7 @@ CREATE OR REPLACE TABLE banco_confirmacion_confiar (
 );
 
 -- Orquestación de cargas de archivos (jobs)
-CREATE OR REPLACE TABLE control_cargas (
+CREATE TABLE control_cargas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo VARCHAR(50) NOT NULL, -- ej: sifone_libro, sifone_cartera_aseguradora, sifone_cartera_mora, pagos_pse, pagos_confiar
     archivo_ruta VARCHAR(255) NOT NULL,
@@ -317,7 +345,7 @@ CREATE OR REPLACE TABLE control_cargas (
     mensaje_log TEXT NULL,
     usuario_id INT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
     KEY idx_tipo (tipo),
     KEY idx_estado (estado),
     KEY idx_usuario (usuario_id),
