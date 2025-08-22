@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Worker de cargas: lee control_cargas y ejecuta el procesador correspondiente.
 
@@ -8,7 +9,11 @@ Modo: --run-once (procesa una tanda y sale) o en bucle con sleep.
 import argparse
 import logging
 import time
-from typing import Optional
+try:
+    from typing import Optional
+except ImportError:
+    # Fallback para Python 3.6
+    Optional = lambda T: T
 
 from config.logging_config import logging  as _unused  # asegura configuración si existe
 from core.database import DatabaseManager
@@ -65,7 +70,7 @@ def procesar_job(db: DatabaseManager, job: dict):
                     sp.truncate_table('sifone_cartera_aseguradora')
                     sp.insert_data('sifone_cartera_aseguradora', data, check_duplicates=False)
             else:
-                raise ValueError(f"Tipo de sifone no soportado: {tipo}")
+                raise ValueError("Tipo de sifone no soportado: {}".format(tipo))
 
         elif tipo in ('pagos_pse', 'pagos_confiar'):
             pp = PagosProcessor()
@@ -78,7 +83,7 @@ def procesar_job(db: DatabaseManager, job: dict):
                 if data:
                     pp.insert_data('banco_confiar', data, check_duplicates=True, id_column='confiar_id')
         else:
-            raise ValueError(f"Tipo no soportado: {tipo}")
+            raise ValueError("Tipo no soportado: {}".format(tipo))
 
         actualizar_estado(db, job_id, 'completado')
 
@@ -110,7 +115,7 @@ def main():
         while True:
             job = obtener_job_pendiente(db)
             if not job:
-                logger.info('No hay más jobs pendientes')
+                logger.info('No hay mas jobs pendientes')
                 break
             procesar_job(db, job)
         return
