@@ -1,153 +1,204 @@
-# Multi App v2 – Guía funcional y de uso
+# Multi App v2 – Sistema Integral de Gestión
 
-Este documento resume el alcance actual de la versión 2 (v2), qué incluye cada sección y cómo utilizar las páginas disponibles.
+Sistema modular para gestión de oficinas, procesamiento de datos y administración de usuarios con interfaz web moderna y procesamiento backend en Python.
 
-## 1) Alcance general
+## 🚀 **Características Principales**
 
-- UI modular en `ui/modules/` con sesiones aisladas (`multiapptwo_session`).
-- Procesamiento de datos con Python (ETL) en `v2/py/`, soportado por un worker `worker.py` y orquestación `control_cargas` desde la UI.
-- BD: `multiapptwo` con tablas principales para Sifone, Pagos (PSE/Confiar), Transacciones y control.
-- Logs de auditoría en `control_logs` (login, crear, editar, eliminar) con detalle antes/después.
+- **UI Modular**: Interfaz web responsive con módulos independientes
+- **Procesamiento ETL**: Sistema Python para transformación y carga de datos
+- **Worker Automático**: Procesamiento asíncrono de cargas de archivos
+- **Sistema de Roles**: Control de acceso granular (admin, oficina)
+- **Logging Completo**: Auditoría de todas las operaciones
+- **Base de Datos**: MySQL con esquema optimizado para consultas
 
-## 2) Autenticación y roles
+## 📁 **Estructura del Proyecto**
 
-- Inicio de sesión en `v2/ui/login.php`.
-- Rol requerido: `admin` para acceder a Oficina, Usuarios, Logs y Cargas.
+```
+multi_app/
+├── ui/                           # 🌐 Interfaz web (PHP)
+│   ├── modules/                  # Módulos funcionales
+│   │   ├── oficina/             # Gestión de oficina
+│   │   ├── cobranza/            # Gestión de cobranza
+│   │   ├── usuarios/            # Administración de usuarios
+│   │   └── logs/                # Sistema de auditoría
+│   ├── controllers/             # Controladores de autenticación
+│   ├── models/                  # Modelos de datos
+│   └── views/                   # Plantillas y layouts
+├── py/                          # 🐍 Backend Python (ETL)
+│   ├── core/                    # Módulos centrales
+│   ├── processors/              # Procesadores de datos
+│   ├── worker.py                # Worker de procesamiento
+│   └── requirements.txt         # Dependencias Python
+├── ddl.sql                      # 🗄️ Esquema de base de datos
+└── .gitignore                   # Configuración Git
+```
 
-## 3) Navegación (Sidebar)
+## 🔐 **Sistema de Autenticación y Roles**
 
-- Inicio (Dashboard simple)
-- Oficina (acordeón): Resumen, Productos, Asociados (+ detalle), Pagos PSE, Pagos Cash/QR, Transacciones, Trx List, Cargas.
-- Usuarios: gestión básica de usuarios (rol admin).
-- Logs: visor de eventos y “Ver detalle”.
-- Beneficios, FAU, Tienda: placeholders.
+### **Roles Disponibles:**
+- **`admin`**: Acceso completo a todos los módulos
+- **`oficina`**: Acceso a módulos de oficina y cobranza
+- **`usuario`**: Acceso limitado (en desarrollo)
 
-## 4) Diccionario de datos (UI)
+### **Módulos por Rol:**
+- **Admin**: Oficina, Cobranza, Usuarios, Logs, Cargas
+- **Oficina**: Oficina, Cobranza, Cargas (solo lectura en algunos casos)
 
-- `v2/ui/utils/dictionary.php` + `diccionario.json`: mapean nombres de columnas a etiquetas amigables y llaves lógicas (persona/credito) para evitar acoplar la UI al esquema físico.
+## 🏢 **Módulo Oficina**
 
-## 5) Oficina – Resumen
+### **Funcionalidades Principales:**
+- **Dashboard**: KPIs en tiempo real, estado de cargas, logs recientes
+- **Productos**: Gestión de productos financieros con parámetros configurables
+- **Asociados**: CRUD completo con asignación de productos
+- **Pagos PSE**: Gestión y asignación de pagos PSE a Confiar
+- **Pagos Cash/QR**: Confirmación de pagos en efectivo y QR
+- **Transacciones**: Sistema de asignación automática con prioridades
+- **Cargas**: Subida de archivos y monitoreo de procesamiento
 
-Ruta: `v2/ui/modules/oficina/pages/index.php`
+### **KPIs del Dashboard:**
+- Asociados activos/inactivos
+- Productos activos
+- Asignaciones activas
+- Pagos PSE sin asignar
+- Transacciones del día
+- Estado de cargas recientes
 
-- KPIs: asociados activos/inactivos, productos activos, asignaciones activas, PSE “Aprobada” sin asignar, Cash/QR confirmados hoy, transacciones de hoy (cantidad/valor).
-- Data freshness: última carga completada por tipo (`control_cargas`).
-- Estado de pagos: conteo por estado (sin asignar/parcial/completado) para PSE y Cash/QR.
-- Cargas: totales por estado y últimas 5 cargas.
-- Logs recientes: últimos 10 eventos con resumen.
+## 💰 **Módulo Cobranza**
 
-## 6) Oficina – Productos
+### **Funcionalidades:**
+- **Comunicaciones**: Historial y gestión de comunicaciones por asociado
+- **Estados de Mora**: Clasificación automática (persuasiva, prejurídico, jurídico)
+- **Filtros Avanzados**: Por estado, rango de comunicación, búsqueda
+- **Acceso Universal**: Disponible para roles admin y oficina
 
-Ruta: `v2/ui/modules/oficina/pages/productos.php`
+## 📊 **Sistema de Procesamiento (Python)**
 
-- Crear/editar productos (sin eliminación por ahora).
-- Campo `parametros`: texto libre (no JSON).
-- Rango valor mostrado con formato: `$X - $Y` sin decimales.
+### **Componentes:**
+- **Worker**: Procesamiento asíncrono de jobs (`worker.py`)
+- **Procesadores**: Especializados por tipo de dato (Sifone, Pagos)
+- **Limpieza de Datos**: Normalización automática de cédulas y campos
+- **Relaciones Automáticas**: Creación inteligente de relaciones PSE-Confiar
 
-Uso:
-1) Ir a Productos.
-2) Crear o editar con nombre, valores mínimo/máximo y estado.
+### **Tipos de Archivos Soportados:**
+- **Sifone**: `.xls`, `.xlsx` (asociados, cartera, aseguradora)
+- **Pagos**: `.xls` (Confiar), `.xlsx` (PSE)
+- **Procesamiento**: Automático con validación y limpieza
 
-## 7) Oficina – Asociados (lista y detalle)
+### **Estados de Procesamiento:**
+- `pendiente` → `procesando` → `completado`/`error`
+- Logs detallados en `mensaje_log`
+- Monitoreo en tiempo real desde la UI
 
-Rutas: `asociados.php` y `asociados_detalle.php`
+## 🗄️ **Base de Datos**
 
-- Lista: muestra Cédula, Nombre, Email, Teléfono.
-- Filtro por defecto: “Activos”.
-- Botones: Activar/Inactivar y “Ver detalle”.
-- Detalle del asociado: información personal, monetaria, de crédito y productos asignados.
-- Asignación de productos: crear/editar/eliminar; valida `monto_pago` contra `valor_minimo`/`valor_maximo` del producto; el formulario no se cierra si hay error.
+### **Tablas Principales:**
+- **Sifone**: `sifone_asociados`, `sifone_cartera_mora`, `sifone_cartera_aseguradora`
+- **Pagos**: `banco_pse`, `banco_confiar`, `pagos_relacion`
+- **Control**: `control_cargas`, `control_asociados`, `control_transaccion`
+- **Auditoría**: `control_logs`, `control_usuarios`
 
-## 8) Oficina – Pagos PSE
+### **Características:**
+- Esquema normalizado para consultas eficientes
+- Índices optimizados para búsquedas frecuentes
+- Triggers para auditoría automática
+- Relaciones referenciales integridad de datos
 
-Ruta: `pagos_pse.php`
+## 🔧 **Instalación y Configuración**
 
-- Lista de PSE relacionados (con `confiar_id` cuando aplica), referencias (“CC: ref2 | ref3”), `tipo_asignacion` y estado de asignación.
-- Asignación manual de Confiar:
-  - Modal “Asignar Confiar” (ancho `modal-xl`).
-  - Filtros: fecha (simplificado) y búsqueda por `pse_id`.
-  - Sugeridos: por coincidencia fecha/valor; si no hay, muestra recientes (hasta 50).
-  - Solo “Pago ACH”.
-  - Bloqueo por capacidad: no se puede asignar si la suma de `banco_pse.valor` ya cubre `banco_confiar.valor_consignacion`.
-  - Si ya tiene `confiar_id`: solo “Ver detalle” y “Eliminar asignación”.
+### **Requisitos del Sistema:**
+- **Servidor Web**: Apache/Nginx con PHP 8.0+
+- **Base de Datos**: MySQL 8.0+ o MariaDB 10.5+
+- **Python**: 3.10+ (recomendado para funcionalidades modernas)
+- **Sistema Operativo**: Linux (CentOS 7+, Ubuntu 20.04+), Windows 10+
 
-## 9) Oficina – Pagos Cash/QR
+### **Pasos de Instalación:**
+1. **Clonar repositorio** y configurar servidor web
+2. **Importar esquema** de base de datos (`ddl.sql`)
+3. **Configurar conexión** a base de datos
+4. **Instalar dependencias** Python (`pip install -r requirements.txt`)
+5. **Configurar worker** para procesamiento automático
 
-Ruta: `pagos_cash_qr.php`
+### **Configuración del Worker:**
+```bash
+# Procesamiento único
+python3 worker.py --run-once
 
-- Confirmación de pagos para “Pago Efectivo” y “Pago QR”.
-- Asigna cédula (autocomplete), link de comprobante y comentario opcional.
-- En tabla se muestra: `cedula` (línea 1), `nombre` (línea 2), link (como “LINK”) y comentario (mismo tamaño de letra).
+# Procesamiento continuo (cada 15 segundos)
+python3 worker.py --interval 15
 
-## 10) Oficina – Transacciones
+# Procesamiento personalizado
+python3 worker.py --interval 30
+```
 
-Ruta: `transacciones.php`
+## 📝 **Logging y Auditoría**
 
-Flujo:
-1) Buscar asociado (autocomplete por cédula/nombre).
-2) Se muestra “Información del asociado” y la tabla de rubros recomendados con prioridades:
-   - Créditos con mora: `sdomor`.
-   - Cobranza: porcentaje según `diav` (>60=8%, >50=6%, >40=5%, >30=4%, >20=3%, >11=2%, <12=0%).
-   - Créditos sin mora: `valorc` (de `sifone_cartera_aseguradora`).
-   - Productos: `monto_pago` (de `control_asignacion_asociado_producto`).
-3) Seleccionar pago en modales (PSE o Cash/QR):
-   - PSE: filtros por fecha, `referencia_2`, `referencia_3`, `pse_id`.
-   - Cash/QR: filtros por fecha, `cedula`, `descripcion`, `confiar_id`.
-   - Cada modal muestra “Usado” y “Restante” y deshabilita selección si restante=0.
-4) Validación: el total asignado no puede exceder el valor del pago; se previene reuso de pagos.
-5) Crear transacción y ver en el listado (con eliminar y “Ver detalle”).
+### **Sistema de Logs:**
+- **Control Logs**: Todas las operaciones CRUD
+- **Logs de Carga**: Estado y resultados de procesamiento
+- **Logs de Usuario**: Login, logout, cambios de sesión
+- **Logs de Sistema**: Errores y eventos del worker
 
-## 11) Oficina – Trx List
+### **Información Registrada:**
+- Usuario que realizó la acción
+- Timestamp de la operación
+- Datos antes y después del cambio
+- IP y agente del usuario
+- Contexto de la operación
 
-Ruta: `trx_list.php`
+## 🚨 **Solución de Problemas Comunes**
 
-- Vista informativa de pagos PSE y Cash/QR, en dos secciones (tabs/botones).
-- Muestra estado: “Sin asignar”, “Parcial”, “Completado” según valores usados.
-- Filtros por fecha y campos relevantes (PSE: ref2/ref3; Cash/QR: cedula/descripcion).
+### **Problemas de Carga:**
+- **Archivos no se mueven**: Verificar permisos en `py/data/`
+- **Worker no procesa**: Verificar conexión a base de datos
+- **Errores de formato**: Verificar estructura de archivos Excel
 
-## 12) Oficina – Cargas (subidas + worker)
+### **Problemas de UI:**
+- **Sesión expira**: Verificar configuración de PHP
+- **Acceso denegado**: Verificar rol del usuario
+- **Datos no aparecen**: Verificar que se ejecutó el worker
 
-Ruta: `cargas.php`
+### **Problemas de Base de Datos:**
+- **Conexión falla**: Verificar host, usuario y contraseña
+- **Tablas no existen**: Ejecutar `ddl.sql`
+- **Permisos insuficientes**: Verificar privilegios del usuario MySQL
 
-- Formularios para subir archivos por tipo:
-  - Sifone: `sifone_libro`, `sifone_cartera_aseguradora`, `sifone_cartera_mora` → destino `v2/py/data/sifone/`.
-  - Pagos: `pagos_pse` → `v2/py/data/pagos/pse/`; `pagos_confiar` → `v2/py/data/pagos/confiar/`.
-- Al subir, se crea un job en `control_cargas` (estado inicial `pendiente`).
-- Tabla “Cargas recientes” muestra estado, mensaje y fechas (carga y última actualización).
+## 🔮 **Roadmap y Extensiones**
 
-Procesamiento:
-- Worker Python: `python v2/py/worker.py --run-once` (drena todos los pendientes) o `python v2/py/worker.py --interval 15` (daemon cada 15s).
-- Estados: `pendiente` → `procesando` → `completado`/`error`.
-- `mensaje_log` se va completando con resultados/resúmenes.
+### **Próximas Funcionalidades:**
+- **Gráficas Interactivas**: Dashboard con visualizaciones
+- **Reportes Avanzados**: Exportación a PDF/Excel
+- **API REST**: Endpoints para integración externa
+- **Notificaciones**: Sistema de alertas por email/SMS
 
-## 13) Logs (auditoría)
+### **Mejoras Técnicas:**
+- **Cache Redis**: Para consultas frecuentes
+- **Queue System**: Para procesamiento masivo
+- **Microservicios**: Arquitectura distribuida
+- **Docker**: Containerización completa
 
-- `control_logs` almacena: login, crear, editar, eliminar.
-- Página de Logs (módulo Logs) muestra listado con filtro y “Ver detalle” (before/after, usuario, fecha, agente, IP).
-- “Cargas” registra creación de job y errores en `control_logs`.
+## 📚 **Documentación Adicional**
 
-## 14) Requisitos y compatibilidad (Python)
+- **`ui/README.md`**: Guía completa de la interfaz web
+- **`py/README.md`**: Documentación del sistema Python
+- **`ddl.sql`**: Esquema completo de base de datos
+- **Comentarios en código**: Documentación inline
 
-- `pandas>=2.2.2`, `xlrd>=2.0.1`, `openpyxl>=3.1.2`.
-- Lectura Excel: `.xls` con `xlrd`, `.xlsx` con `openpyxl` (configurado en `excel_processor.py`).
-- Si hay error de socket MySQL en Python, usar host `127.0.0.1` en `config/settings.py`.
+## 🤝 **Soporte y Contribución**
 
-## 15) Errores comunes y solución rápida
+### **Para Reportar Problemas:**
+1. Verificar logs del sistema
+2. Revisar documentación relevante
+3. Crear issue con detalles del problema
+4. Incluir logs de error y pasos para reproducir
 
-- No se mueven archivos en Cargas: verificar permisos de escritura en `v2/py/data/`.
-- No aparecen datos en PSE/Confiar: verificar que se ejecutó el worker y que `banco_pse`/`banco_confiar` tienen registros.
-- Asignación bloqueada: revisar capacidad restante del `confiar_id` y estado “Completado”.
-- Transacciones exceden pago: ajustar “valor a asignar” para no superar el “valor del pago”.
-
-## 16) Pendientes/Extensiones posibles
-
-- Gráficas en Resumen (línea/dona/barras).
-- Más acciones en Productos (eliminación con historial).
-- Más filtros y exportaciones en Pagos/Transacciones.
-- Programación automática del worker (launchd/systemd) en producción.
+### **Para Contribuir:**
+1. Fork del repositorio
+2. Crear rama para nueva funcionalidad
+3. Implementar cambios con tests
+4. Crear Pull Request con descripción detallada
 
 ---
 
-Ante cualquier duda, revisar también:
-- `v2/ui/README.md` (estructura UI y despliegue)
-- `v2/py/README.md` (ETL, worker y configuración Python)
+**Multi App v2** - Sistema integral para gestión de oficinas y procesamiento de datos financieros.
+
+*Desarrollado con PHP 8+, Python 3.10+, MySQL 8.0+ y tecnologías web modernas.*
