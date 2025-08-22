@@ -9,13 +9,11 @@ Modo: --run-once (procesa una tanda y sale) o en bucle con sleep.
 import argparse
 import logging
 import time
-try:
-    from typing import Optional
-except ImportError:
-    # Fallback para Python 3.6
-    Optional = lambda T: T
+from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from enum import Enum
 
-from config.logging_config import logging  as _unused  # asegura configuración si existe
+from config.logging_config import logging as _unused  # asegura configuración si existe
 from core.database import DatabaseManager
 from processors.sifone_processor import SifoneProcessor
 from processors.pagos_processor import PagosProcessor
@@ -23,111 +21,240 @@ from processors.pagos_processor import PagosProcessor
 logger = logging.getLogger(__name__)
 
 
-def obtener_job_pendiente(db: DatabaseManager) -> Optional[dict]:
+class JobStatus(Enum):
+    """Estados posibles de un job"""
+    PENDIENTE = "pendiente"
+    PROCESANDO = "procesando"
+    COMPLETADO = "completado"
+    ERROR = "error"
+
+
+@dataclass
+class Job:
+    """Clase para representar un job de procesamiento"""
+    id: int
+    tipo: str
+    archivo_ruta: str
+    estado: str = JobStatus.PENDIENTE.value
+    mensaje_log: Optional[str] = None
+
+
+def obtener_job_pendiente(db: DatabaseManager) -> Optional[Job]:
+    """Obtener el siguiente job pendiente de la cola"""
     conn = db.get_connection()
     cur = conn.cursor(dictionary=True)
     cur.execute("SELECT * FROM control_cargas WHERE estado='pendiente' ORDER BY id ASC LIMIT 1")
     row = cur.fetchone()
     cur.close()
-    return row
+    
+    if row:
+        return Job(**row)
+    return None
 
 
-def actualizar_estado(db: DatabaseManager, job_id: int, estado: str, mensaje: Optional[str] = None):
+def actualizar_estado(db: DatabaseManager, job_id: int, estado: str, mensaje: Optional[str] = None) -> None:
+    """Actualizar el estado de un job en la base de datos"""
     conn = db.get_connection()
     cur = conn.cursor()
+    
     if mensaje is not None:
-        cur.execute("UPDATE control_cargas SET estado=%s, mensaje_log=%s WHERE id=%s", (estado, mensaje[:65000], job_id))
+        cur.execute(
+            "UPDATE control_cargas SET estado=%s, mensaje_log=%s WHERE id=%s", 
+            (estado, mensaje[:65000], job_id)
+        )
     else:
-        cur.execute("UPDATE control_cargas SET estado=%s WHERE id=%s", (estado, job_id))
+        cur.execute(
+            "UPDATE control_cargas SET estado=%s WHERE id=%s", 
+            (estado, job_id)
+        )
+    
     conn.commit()
     cur.close()
 
 
-def procesar_job(db: DatabaseManager, job: dict):
-    job_id = job['id']
-    tipo = job['tipo']
-    archivo = job['archivo_ruta']
-    actualizar_estado(db, job_id, 'procesando')
-
+def procesar_job_sifone(job: Job, sp: SifoneProcessor) -> bool:
+    """Procesar un job de tipo Sifone"""
     try:
-        if tipo.startswith('sifone_'):
-            sp = SifoneProcessor()
-            # Elegir subtipo
-            if tipo == 'sifone_libro':
-                data = sp.process_asociados_file(archivo)
+        match job.tipo:
+            case "sifone_libro":
+                data = sp.process_asociados_file(job.archivo_ruta)
                 if data:
                     sp.truncate_table('sifone_asociados')
                     sp.insert_data('sifone_asociados', data, check_duplicates=False)
                     sp.insert_control_asociados()
-            elif tipo == 'sifone_cartera_mora':
-                data = sp.process_cartera_mora_file(archivo)
+                    return True
+                    
+            case "sifone_cartera_mora":
+                data = sp.process_cartera_mora_file(job.archivo_ruta)
                 if data:
                     sp.truncate_table('sifone_cartera_mora')
                     sp.insert_data('sifone_cartera_mora', data, check_duplicates=False)
-            elif tipo == 'sifone_cartera_aseguradora':
-                data = sp.process_cartera_aseguradora_file(archivo)
+                    return True
+                    
+            case "sifone_cartera_aseguradora":
+                data = sp.process_cartera_aseguradora_file(job.archivo_ruta)
                 if data:
                     sp.truncate_table('sifone_cartera_aseguradora')
                     sp.insert_data('sifone_cartera_aseguradora', data, check_duplicates=False)
-            else:
-                raise ValueError("Tipo de sifone no soportado: {}".format(tipo))
+                    return True
+                    
+            case _:
+                raise ValueError(f"Tipo de sifone no soportado: {job.tipo}")
+                
+    except Exception as e:
+        logger.error(f"Error procesando job sifone {job.tipo}: {e}")
+        return False
+    
+    return False
 
-        elif tipo in ('pagos_pse', 'pagos_confiar'):
-            pp = PagosProcessor()
-            if tipo == 'pagos_pse':
-                data = pp.process_pse_file(archivo)
+
+def procesar_job_pagos(job: Job, pp: PagosProcessor) -> bool:
+    """Procesar un job de tipo Pagos"""
+    try:
+        match job.tipo:
+            case "pagos_pse":
+                data = pp.process_pse_file(job.archivo_ruta)
                 if data:
                     pp.insert_data('banco_pse', data, check_duplicates=True, id_column='pse_id')
-            else:
-                data = pp.process_confiar_file(archivo)
+                    return True
+                    
+            case "pagos_confiar":
+                data = pp.process_confiar_file(job.archivo_ruta)
                 if data:
                     pp.insert_data('banco_confiar', data, check_duplicates=True, id_column='confiar_id')
+                    return True
+                    
+            case _:
+                raise ValueError(f"Tipo de pagos no soportado: {job.tipo}")
+                
+    except Exception as e:
+        logger.error(f"Error procesando job pagos {job.tipo}: {e}")
+        return False
+    
+    return False
+
+
+def procesar_job(db: DatabaseManager, job: Job) -> None:
+    """Procesar un job específico"""
+    logger.info(f"🔄 Procesando job {job.id}: {job.tipo}")
+    actualizar_estado(db, job.id, JobStatus.PROCESANDO.value)
+
+    try:
+        success = False
+        
+        if job.tipo.startswith('sifone_'):
+            with SifoneProcessor() as sp:
+                success = procesar_job_sifone(job, sp)
+                
+        elif job.tipo in ('pagos_pse', 'pagos_confiar'):
+            with PagosProcessor() as pp:
+                success = procesar_job_pagos(job, pp)
+                
         else:
-            raise ValueError("Tipo no soportado: {}".format(tipo))
+            raise ValueError(f"Tipo no soportado: {job.tipo}")
 
-        actualizar_estado(db, job_id, 'completado')
-
-        # Adjuntar nota al mensaje_log con resumen mínimo
-        try:
-            conn = db.get_connection()
-            cur = conn.cursor()
-            cur.execute("UPDATE control_cargas SET mensaje_log = CONCAT(COALESCE(mensaje_log,''), '\nOK: ', %s) WHERE id = %s", (tipo, job_id))
-            conn.commit()
-            cur.close()
-        except Exception:
-            pass
+        if success:
+            actualizar_estado(db, job.id, JobStatus.COMPLETADO.value)
+            logger.info(f"✅ Job {job.id} completado exitosamente")
+            
+            # Adjuntar nota al mensaje_log con resumen mínimo
+            try:
+                conn = db.get_connection()
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE control_cargas SET mensaje_log = CONCAT(COALESCE(mensaje_log,''), '\nOK: ', %s) WHERE id = %s", 
+                    (job.tipo, job.id)
+                )
+                conn.commit()
+                cur.close()
+            except Exception as e:
+                logger.warning(f"No se pudo actualizar mensaje_log: {e}")
+        else:
+            raise RuntimeError("El procesamiento no fue exitoso")
 
     except Exception as e:
-        logger.exception("Error procesando job")
-        actualizar_estado(db, job_id, 'error', str(e))
+        logger.exception(f"❌ Error procesando job {job.id}")
+        actualizar_estado(db, job.id, JobStatus.ERROR.value, str(e))
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--interval', type=int, default=15, help='Segundos entre ciclos cuando corre en loop')
-    parser.add_argument('--run-once', action='store_true', help='Procesa una vez y termina')
-    args = parser.parse_args()
-
-    db = DatabaseManager()
-
-    # Modo drenado: procesa todos los pendientes y termina
-    if args.run_once:
-        while True:
-            job = obtener_job_pendiente(db)
-            if not job:
-                logger.info('No hay mas jobs pendientes')
-                break
-            procesar_job(db, job)
-        return
-
-    # Modo daemon: ciclo con espera
+def procesar_jobs_pendientes(db: DatabaseManager) -> int:
+    """Procesar todos los jobs pendientes y retornar la cantidad procesada"""
+    jobs_procesados = 0
+    
     while True:
         job = obtener_job_pendiente(db)
-        if job:
-            procesar_job(db, job)
-        else:
-            logger.info('No hay jobs pendientes')
-            time.sleep(args.interval)
+        if not job:
+            break
+            
+        procesar_job(db, job)
+        jobs_procesados += 1
+        
+    return jobs_procesados
+
+
+def main() -> None:
+    """Función principal del worker"""
+    parser = argparse.ArgumentParser(
+        description="Worker para procesar jobs de control_cargas",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos de uso:
+  python3 worker.py --run-once     # Procesa una vez y termina
+  python3 worker.py --interval 30  # Procesa cada 30 segundos
+  python3 worker.py                # Procesa cada 15 segundos (por defecto)
+        """
+    )
+    
+    parser.add_argument(
+        '--interval', 
+        type=int, 
+        default=15, 
+        help='Segundos entre ciclos cuando corre en loop (por defecto: 15)'
+    )
+    parser.add_argument(
+        '--run-once', 
+        action='store_true', 
+        help='Procesa una vez y termina'
+    )
+    
+    args = parser.parse_args()
+
+    try:
+        db = DatabaseManager()
+        logger.info("🚀 Worker iniciado")
+
+        # Modo drenado: procesa todos los pendientes y termina
+        if args.run_once:
+            logger.info("🔄 Modo run-once: procesando todos los jobs pendientes")
+            jobs_procesados = procesar_jobs_pendientes(db)
+            logger.info(f"✅ Procesamiento completado. Jobs procesados: {jobs_procesados}")
+            return
+
+        # Modo daemon: ciclo con espera
+        logger.info(f"🔄 Modo daemon: procesando cada {args.interval} segundos")
+        while True:
+            try:
+                jobs_procesados = procesar_jobs_pendientes(db)
+                
+                if jobs_procesados > 0:
+                    logger.info(f"📊 Procesados {jobs_procesados} jobs en este ciclo")
+                else:
+                    logger.debug("ℹ️ No hay jobs pendientes")
+                    
+                time.sleep(args.interval)
+                
+            except KeyboardInterrupt:
+                logger.info("⚠️ Interrupción del usuario recibida")
+                break
+            except Exception as e:
+                logger.error(f"❌ Error en ciclo principal: {e}")
+                time.sleep(args.interval)  # Continuar después del error
+                
+    except Exception as e:
+        logger.error(f"❌ Error crítico en el worker: {e}")
+        raise
+    finally:
+        logger.info("🛑 Worker detenido")
 
 
 if __name__ == '__main__':
