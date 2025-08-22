@@ -18,7 +18,7 @@ class ExcelProcessor:
         pass
     
     def read_excel_file(self, file_path: str, header_row: Optional[int] = None, 
-                       skiprows: Optional[int] = None) -> pd.DataFrame:
+                       skiprows: Optional[int] = None, preserve_cedula: bool = True) -> pd.DataFrame:
         """Leer archivo Excel con opciones flexibles"""
         try:
             logger.info(f"📖 Leyendo archivo: {os.path.basename(file_path)}")
@@ -32,12 +32,30 @@ class ExcelProcessor:
                 # xlrd>=2.0.1 solo soporta .xls si se usa formato BIFF; pandas 2.x leerá con xlrd instalado
                 engine = 'xlrd'
 
+            # Configurar conversión de tipos para preservar cédulas como texto
+            dtype_dict = {}
+            if preserve_cedula:
+                # Forzar columnas que contengan 'cedula' en el nombre a ser string
+                dtype_dict = {'cedula': str}
+                # También incluir variaciones comunes
+                dtype_dict.update({
+                    'cedula_asociado': str,
+                    'cedula_cliente': str,
+                    'numero_cedula': str,
+                    'identificacion': str,
+                    'id_persona': str
+                })
+
             if header_row is not None:
-                df = pd.read_excel(file_path, skiprows=header_row, engine=engine)
+                df = pd.read_excel(file_path, skiprows=header_row, engine=engine, dtype=dtype_dict)
             elif skiprows is not None:
-                df = pd.read_excel(file_path, skiprows=skiprows, engine=engine)
+                df = pd.read_excel(file_path, skiprows=skiprows, engine=engine, dtype=dtype_dict)
             else:
-                df = pd.read_excel(file_path, engine=engine)
+                df = pd.read_excel(file_path, engine=engine, dtype=dtype_dict)
+            
+            # Asegurar que las columnas de cédula sean string después de la lectura
+            if preserve_cedula:
+                df = self._ensure_cedula_columns_as_string(df)
             
             logger.info(f"✅ Archivo leído: {len(df)} filas, {len(df.columns)} columnas")
             return df
@@ -45,6 +63,19 @@ class ExcelProcessor:
         except Exception as e:
             logger.error(f"❌ Error leyendo archivo {file_path}: {e}")
             raise
+    
+    def _ensure_cedula_columns_as_string(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Asegurar que las columnas de cédula se mantengan como string"""
+        cedula_columns = [col for col in df.columns if 'cedula' in col.lower() or 
+                         col.lower() in ['identificacion', 'id_persona', 'numero_cedula']]
+        
+        for col in cedula_columns:
+            if col in df.columns:
+                # Convertir a string preservando ceros a la izquierda
+                df[col] = df[col].astype(str).str.zfill(10)  # Asegurar mínimo 10 dígitos
+                logger.debug(f"🔒 Columna {col} convertida a string con formato preservado")
+        
+        return df
     
     def detect_header_row(self, file_path: str, keyword: str, max_rows: int = 20) -> Optional[int]:
         """Detectar la fila de encabezados basándose en una palabra clave"""

@@ -31,23 +31,20 @@ class DataCleaner:
         return cleaned
     
     def clean_cedula_field(self, value: Any) -> str:
-        """Limpiar campo de cédula con reglas específicas"""
+        """Limpiar campo de cédula preservando formato original"""
         if pd.isna(value) or value is None:
             return ""
         
         # Convertir a string y limpiar espacios
         cedula = str(value).strip()
         
-        # Si contiene guión, no eliminar ceros previos
-        if '-' in cedula:
-            return cedula
+        # Preservar formato original - no eliminar ceros previos
+        # Solo limpiar espacios y caracteres no válidos
+        cedula = re.sub(r'[^\d\-]', '', cedula)
         
-        # Eliminar ceros previos solo si no tiene guión
-        cedula = cedula.lstrip('0')
-        
-        # Si quedó vacío después de quitar ceros, restaurar al menos un cero
+        # Si quedó vacío después de limpiar, retornar string vacío
         if not cedula:
-            cedula = "0"
+            return ""
         
         return cedula
     
