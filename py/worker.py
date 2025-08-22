@@ -218,6 +218,14 @@ def procesar_jobs_pendientes(db: DatabaseManager) -> int:
     """Procesar todos los jobs pendientes y retornar la cantidad procesada"""
     jobs_procesados = 0
     
+    # Verificar si hay jobs pendientes antes de procesar
+    primer_job = obtener_job_pendiente(db)
+    if not primer_job:
+        logger.info("ℹ️ No hay jobs pendientes para procesar")
+        return 0
+    
+    logger.info(f"🔄 Iniciando procesamiento de jobs pendientes...")
+    
     while True:
         job = obtener_job_pendiente(db)
         if not job:
@@ -226,6 +234,9 @@ def procesar_jobs_pendientes(db: DatabaseManager) -> int:
         procesar_job(db, job)
         jobs_procesados += 1
         
+    if jobs_procesados > 0:
+        logger.info(f"✅ Procesamiento completado: {jobs_procesados} jobs procesados")
+    
     return jobs_procesados
 
 
@@ -264,19 +275,28 @@ Ejemplos de uso:
         if args.run_once:
             logger.info("🔄 Modo run-once: procesando todos los jobs pendientes")
             jobs_procesados = procesar_jobs_pendientes(db)
-            logger.info(f"✅ Procesamiento completado. Jobs procesados: {jobs_procesados}")
+            
+            if jobs_procesados == 0:
+                logger.info("ℹ️ No se encontraron jobs pendientes para procesar")
+            else:
+                logger.info(f"✅ Procesamiento completado. Jobs procesados: {jobs_procesados}")
             return
 
         # Modo daemon: ciclo con espera
         logger.info(f"🔄 Modo daemon: procesando cada {args.interval} segundos")
+        ciclo = 0
+        
         while True:
             try:
+                ciclo += 1
+                logger.info(f"🔄 Ciclo #{ciclo} - Verificando jobs pendientes...")
+                
                 jobs_procesados = procesar_jobs_pendientes(db)
                 
                 if jobs_procesados > 0:
-                    logger.info(f"📊 Procesados {jobs_procesados} jobs en este ciclo")
+                    logger.info(f"📊 Ciclo #{ciclo}: {jobs_procesados} jobs procesados exitosamente")
                 else:
-                    logger.debug("ℹ️ No hay jobs pendientes")
+                    logger.info(f"ℹ️ Ciclo #{ciclo}: No hay jobs pendientes - esperando {args.interval} segundos...")
                     
                 time.sleep(args.interval)
                 
@@ -284,7 +304,7 @@ Ejemplos de uso:
                 logger.info("⚠️ Interrupción del usuario recibida")
                 break
             except Exception as e:
-                logger.error(f"❌ Error en ciclo principal: {e}")
+                logger.error(f"❌ Error en ciclo #{ciclo}: {e}")
                 time.sleep(args.interval)  # Continuar después del error
                 
     except Exception as e:
