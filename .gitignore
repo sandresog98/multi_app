@@ -11,6 +11,12 @@ py/data/**/*
 ui/uploads/**/*
 !ui/uploads/
 !ui/uploads/**/
+ui/assets/uploads/
+ui/uploads/
+!ui/uploads/.gitkeep
+!ui/uploads/creditos/
+!ui/uploads/creditos/.gitkeep
+!ui/assets/uploads/.gitkeep
 
 # Archivos específicos que siempre se ignoran
 *.log
@@ -66,3 +72,4 @@ tmp/
 # Archivos de backup
 *.backup
 *.old
+

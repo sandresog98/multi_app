@@ -18,11 +18,10 @@ ui/
 ├── modules/                      # 🧩 Módulos funcionales
 │   ├── oficina/                 # Gestión completa de oficina
 │   ├── cobranza/                # Sistema de cobranza
+│   ├── boleteria/               # Venta y administración de boletas
+│   ├── creditos/                # Gestión de solicitudes de crédito
 │   ├── usuarios/                # Administración de usuarios
-│   ├── logs/                    # Auditoría del sistema
-│   ├── beneficios/              # Módulo de beneficios (placeholder)
-│   ├── fau/                     # Módulo FAU (placeholder)
-│   └── tienda/                  # Módulo de tienda (placeholder)
+│   └── logs/                    # Auditoría del sistema
 ├── pages/                        # 📄 Páginas principales
 │   └── dashboard.php            # Dashboard principal
 ├── views/                        # 🎨 Plantillas y layouts
@@ -53,10 +52,10 @@ ui/
   - `isAuthenticated()`: Verificación de sesión activa
   - `getCurrentUser()`: Obtener usuario actual
 
-### **Roles del Sistema:**
-- **`admin`**: Acceso completo a todos los módulos
-- **`oficina`**: Acceso a módulos de oficina y cobranza
-- **`usuario`**: Acceso limitado (en desarrollo)
+### **Roles del Sistema (roles.json):**
+- **`admin`**: acceso total
+- **`lider`**: acceso total (con restricciones administrativas)
+- **`oficina`**: acceso a Oficina, Boletería, Cobranza y Créditos (sin aprobar/rechazar)
 
 ### **Módulos por Rol:**
 | Módulo | Admin | Oficina | Usuario |
@@ -153,6 +152,20 @@ ui/
   - **Pagos**: PSE, Confiar
 
 ## 💰 **Módulo Cobranza**
+## 🎟️ **Módulo Boletería**
+
+- Categorías y boletas; estados: disponible, vendida, anulada
+- Venta con búsqueda de asociado, método de venta y comprobante
+- Subida de archivo en la boleta (JPG/JPEG/PNG/PDF) y vista/descarga
+
+## 🧾 **Módulo Gestión Créditos**
+
+- Solicitudes: formulario dinámico por tipo (Dependiente/Independiente)
+- Adjuntos requeridos (PDF/JPG/PNG, 5MB máx.) según tipo y etapa
+- Estados y flujo: Creado → Con Datacrédito → (Aprobado/Rechazado) → Con Estudio → Guardado
+- Listado con acciones por etapa y “Ver detalle” con historial
+- Resumen con tablas + mini gráficos por tipo y estado
+- Auditoría en `creditos_historial` y `control_logs`
 
 ### **Sistema de Comunicaciones:**
 - **Historial de comunicaciones**: Por asociado y por estado

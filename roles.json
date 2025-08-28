@@ -1,0 +1,22 @@
+{
+    "roles" : {
+        "lider" : {
+            "modulos" : [
+                "oficina",
+                "boleteria",
+                "cobranza",
+                "usuarios",
+                "logs",
+                "creditos"
+            ]
+        },
+        "oficina" : {
+            "modulos" : [
+                "oficina",
+                "boleteria",
+                "cobranza",
+                "creditos"
+            ]
+        }
+    }
+}

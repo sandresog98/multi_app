@@ -1,8 +1,8 @@
-CREATE DATABASE multiapptwo;
+CREATE DATABASE IF NOT EXISTS multiapptwo;
 USE multiapptwo;
 
 -- Tabla de logs del sistema (eventos seleccionados)
-CREATE TABLE control_logs (
+CREATE TABLE IF NOT EXISTS control_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -20,7 +20,7 @@ CREATE TABLE control_logs (
 );
 
 -- Tablas de Sifone
-CREATE TABLE sifone_asociados (
+CREATE TABLE IF NOT EXISTS sifone_asociados (
     cedula VARCHAR(20),
     clased VARCHAR(10),
     codigo VARCHAR(20),
@@ -106,7 +106,7 @@ CREATE TABLE sifone_asociados (
     pais VARCHAR(100),
     paisrf INT
 );
-CREATE TABLE sifone_cartera_aseguradora (
+CREATE TABLE IF NOT EXISTS sifone_cartera_aseguradora (
     cedula VARCHAR(20),
     numero VARCHAR(20),
     priape VARCHAR(100),
@@ -124,7 +124,7 @@ CREATE TABLE sifone_cartera_aseguradora (
     valorc DECIMAL(15,2),
     tasa DECIMAL(5,4)
 );
-CREATE TABLE sifone_cartera_mora (
+CREATE TABLE IF NOT EXISTS sifone_cartera_mora (
     nombre VARCHAR(255),
     telefo VARCHAR(20),
     cedula VARCHAR(20),
@@ -155,7 +155,7 @@ CREATE TABLE sifone_cartera_mora (
 );
 
 -- Tabla de usuarios para autenticación
-CREATE TABLE control_usuarios (
+CREATE TABLE IF NOT EXISTS control_usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -174,10 +174,10 @@ DROP TRIGGER IF EXISTS control_usuarios_bi;
 CREATE TRIGGER control_usuarios_bi BEFORE INSERT ON control_usuarios
 FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
     -- Usuario administrador por defecto (contraseña ya hasheada)
-    INSERT INTO control_usuarios (usuario, password, nombre_completo, email, rol)
+    INSERT IGNORE INTO control_usuarios (usuario, password, nombre_completo, email, rol)
     VALUES ('admin', '$2y$10$AfwFabRPO0HtoRYHmDFZ3eN5ynO4z8yGe.rcBOUhbchrk3DSwFi..', 'Administrador del Sistema', 'admin@coomultiunion.com', 'admin');
 
-CREATE TABLE control_asociados (
+CREATE TABLE IF NOT EXISTS control_asociados (
     cedula VARCHAR(20) UNIQUE PRIMARY KEY,
     estado_activo BOOLEAN DEFAULT TRUE,
     fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
@@ -189,7 +189,7 @@ FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
 DROP TRIGGER IF EXISTS control_asociados_bi;
 CREATE TRIGGER control_asociados_bi BEFORE INSERT ON control_asociados
 FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
-CREATE TABLE control_productos (
+CREATE TABLE IF NOT EXISTS control_productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     descripcion TEXT,
@@ -208,7 +208,7 @@ FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
 DROP TRIGGER IF EXISTS control_productos_bi;
 CREATE TRIGGER control_productos_bi BEFORE INSERT ON control_productos
 FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
-CREATE TABLE control_asignacion_asociado_producto (
+CREATE TABLE IF NOT EXISTS control_asignacion_asociado_producto (
   id INT AUTO_INCREMENT PRIMARY KEY,
   cedula VARCHAR(20) NOT NULL,
   producto_id INT NOT NULL,
@@ -226,7 +226,7 @@ DROP TRIGGER IF EXISTS control_asig_prod_bi;
 CREATE TRIGGER control_asig_prod_bi BEFORE INSERT ON control_asignacion_asociado_producto
 FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
 -- Transacciones (cabecera)
-CREATE TABLE control_transaccion (
+CREATE TABLE IF NOT EXISTS control_transaccion (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) NOT NULL,
     origen_pago ENUM('pse','cash_qr') NOT NULL,
@@ -242,7 +242,7 @@ CREATE TABLE control_transaccion (
 );
 
 -- Transacciones (detalle)
-CREATE TABLE control_transaccion_detalle (
+CREATE TABLE IF NOT EXISTS control_transaccion_detalle (
     id INT AUTO_INCREMENT PRIMARY KEY,
     transaccion_id INT NOT NULL,
     tipo_rubro ENUM('credito_mora','cobranza','credito','producto') NOT NULL,
@@ -259,7 +259,7 @@ CREATE TABLE control_transaccion_detalle (
 );
 
 -- Comunicaciones de cobranza
-CREATE TABLE cobranza_comunicaciones (
+CREATE TABLE IF NOT EXISTS cobranza_comunicaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asociado_cedula VARCHAR(20) NOT NULL,
     tipo_comunicacion ENUM('Llamada','Mensaje de Texto','Whatsapp','Email') NOT NULL,
@@ -273,7 +273,7 @@ CREATE TABLE cobranza_comunicaciones (
 );
 
 -- Tablas de pagos bancarios
-CREATE TABLE banco_pse (
+CREATE TABLE IF NOT EXISTS banco_pse (
     pse_id VARCHAR(50) PRIMARY KEY,
     cus BIGINT NOT NULL,
     valor BIGINT NOT NULL,
@@ -306,7 +306,7 @@ CREATE TABLE banco_pse (
     navegador VARCHAR(50) NOT NULL,
     tipo_de_flujo VARCHAR(50) NOT NULL
 );
-CREATE TABLE banco_confiar (
+CREATE TABLE IF NOT EXISTS banco_confiar (
     confiar_id VARCHAR(50) PRIMARY KEY,
     fecha DATE NULL,
     descripcion VARCHAR(255) NULL,
@@ -317,7 +317,7 @@ CREATE TABLE banco_confiar (
     saldo DOUBLE NULL,
     tipo_transaccion VARCHAR(50) NULL
 );
-CREATE TABLE banco_asignacion_pse (
+CREATE TABLE IF NOT EXISTS banco_asignacion_pse (
     id INT AUTO_INCREMENT PRIMARY KEY,
     pse_id VARCHAR(50) NOT NULL,
     confiar_id VARCHAR(50) NOT NULL,
@@ -327,7 +327,7 @@ CREATE TABLE banco_asignacion_pse (
     KEY idx_pse (pse_id),
     KEY idx_confiar (confiar_id)
 );
-CREATE TABLE banco_confirmacion_confiar (
+CREATE TABLE IF NOT EXISTS banco_confirmacion_confiar (
     id INT AUTO_INCREMENT PRIMARY KEY,
     confiar_id VARCHAR(50) NOT NULL UNIQUE,
     cedula VARCHAR(20) NOT NULL,
@@ -337,7 +337,7 @@ CREATE TABLE banco_confirmacion_confiar (
 );
 
 -- Orquestación de cargas de archivos (jobs)
-CREATE TABLE control_cargas (
+CREATE TABLE IF NOT EXISTS control_cargas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo VARCHAR(50) NOT NULL, -- ej: sifone_libro, sifone_cartera_aseguradora, sifone_cartera_mora, pagos_pse, pagos_confiar
     archivo_ruta VARCHAR(255) NOT NULL,
@@ -350,4 +350,108 @@ CREATE TABLE control_cargas (
     KEY idx_estado (estado),
     KEY idx_usuario (usuario_id),
     KEY idx_fecha (fecha_creacion)
+);
+
+-- Boletería: categorías
+CREATE TABLE IF NOT EXISTS boleteria_categoria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(120) NOT NULL,
+    precio_compra DECIMAL(12,2) NOT NULL,
+    precio_venta DECIMAL(12,2) NOT NULL,
+    descripcion VARCHAR(500) NULL,
+    estado ENUM('activo','inactivo') DEFAULT 'activo',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_bol_cat_nombre (nombre),
+    KEY idx_bol_cat_estado (estado)
+);
+-- Triggers boleteria_categoria
+DROP TRIGGER IF EXISTS boleteria_categoria_bu;
+CREATE TRIGGER boleteria_categoria_bu BEFORE UPDATE ON boleteria_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS boleteria_categoria_bi;
+CREATE TRIGGER boleteria_categoria_bi BEFORE INSERT ON boleteria_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Boletería: boletas
+CREATE TABLE IF NOT EXISTS boleteria_boletas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    categoria_id INT NOT NULL,
+    serial VARCHAR(64) NOT NULL,
+    precio_compra_snapshot DECIMAL(12,2) NOT NULL,
+    precio_venta_snapshot DECIMAL(12,2) NOT NULL,
+    archivo_ruta VARCHAR(255) NULL,
+    estado ENUM('disponible','vendida','anulada') DEFAULT 'disponible',
+    asociado_cedula VARCHAR(20) NULL,
+    metodo_venta VARCHAR(20) NULL,
+    comprobante VARCHAR(255) NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vendida TIMESTAMP NULL,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_bol_serial_cat (categoria_id, serial),
+    KEY idx_bol_categoria (categoria_id),
+    KEY idx_bol_estado (estado),
+    KEY idx_bol_cedula (asociado_cedula)
+);
+-- Triggers boleteria_boletas
+DROP TRIGGER IF EXISTS boleteria_boletas_bu;
+CREATE TRIGGER boleteria_boletas_bu BEFORE UPDATE ON boleteria_boletas
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS boleteria_boletas_bi;
+CREATE TRIGGER boleteria_boletas_bi BEFORE INSERT ON boleteria_boletas
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Gestión Créditos: solicitudes
+CREATE TABLE IF NOT EXISTS creditos_solicitudes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombres VARCHAR(120) NOT NULL,
+    identificacion VARCHAR(30) NOT NULL,
+    celular VARCHAR(30) NOT NULL,
+    email VARCHAR(120) NOT NULL,
+    monto_deseado DECIMAL(12,2) NULL,
+    tipo ENUM('Dependiente','Independiente') NOT NULL,
+    estado ENUM('Creado','Con Datacrédito','Aprobado','Rechazado','Con Estudio','Guardado') DEFAULT 'Creado',
+    -- Rutas de archivos (opcionales según tipo/estado)
+    dep_nomina_1 VARCHAR(255) NULL,
+    dep_nomina_2 VARCHAR(255) NULL,
+    dep_cert_laboral VARCHAR(255) NULL,
+    dep_simulacion_pdf VARCHAR(255) NULL,
+    ind_decl_renta VARCHAR(255) NULL,
+    ind_simulacion_pdf VARCHAR(255) NULL,
+    ind_codeudor_nomina_1 VARCHAR(255) NULL,
+    ind_codeudor_nomina_2 VARCHAR(255) NULL,
+    ind_codeudor_cert_laboral VARCHAR(255) NULL,
+    archivo_datacredito VARCHAR(255) NULL,
+    archivo_estudio VARCHAR(255) NULL,
+    archivo_pagare_pdf VARCHAR(255) NULL,
+    archivo_amortizacion VARCHAR(255) NULL,
+    creado_por INT NULL,
+    aprobado_por INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_identificacion (identificacion),
+    INDEX idx_estado (estado)
+);
+-- Triggers creditos_solicitudes
+DROP TRIGGER IF EXISTS creditos_solicitudes_bu;
+CREATE TRIGGER creditos_solicitudes_bu BEFORE UPDATE ON creditos_solicitudes
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS creditos_solicitudes_bi;
+CREATE TRIGGER creditos_solicitudes_bi BEFORE INSERT ON creditos_solicitudes
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Gestión Créditos: historial de acciones
+CREATE TABLE IF NOT EXISTS creditos_historial (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    usuario_id INT NULL,
+    accion VARCHAR(60) NOT NULL,
+    estado_anterior ENUM('Creado','Con Datacrédito','Aprobado','Rechazado','Con Estudio','Guardado') NULL,
+    estado_nuevo ENUM('Creado','Con Datacrédito','Aprobado','Rechazado','Con Estudio','Guardado') NULL,
+    archivo_campo VARCHAR(64) NULL,
+    archivo_ruta VARCHAR(255) NULL,
+    detalle TEXT NULL,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_solicitud (solicitud_id),
+    INDEX idx_fecha (fecha)
 );

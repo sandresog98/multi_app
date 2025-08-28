@@ -6,7 +6,7 @@ require_once '../../../models/Logger.php';
 require_once '../../../utils/dictionary.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.asociados');
 $currentUser = $auth->getCurrentUser();
 $asociadoModel = new Asociado();
 $logger = new Logger();

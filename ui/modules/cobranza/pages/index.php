@@ -4,7 +4,7 @@ require_once '../../../config/paths.php';
 require_once '../models/Cobranza.php';
 
 $authController = new AuthController();
-$authController->requireAnyRole(['admin','oficina']);
+$authController->requireModule('cobranza.resumen');
 $currentUser = $authController->getCurrentUser();
 
 $pageTitle = 'Cobranza - Resumen';

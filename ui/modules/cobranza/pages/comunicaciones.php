@@ -5,7 +5,7 @@ require_once '../models/Cobranza.php';
 require_once '../models/Comunicacion.php';
 
 $authController = new AuthController();
-$authController->requireAnyRole(['admin','oficina']);
+$authController->requireModule('cobranza.comunicaciones');
 $currentUser = $authController->getCurrentUser();
 
 $pageTitle = 'Cobranza - Comunicaciones';
@@ -94,62 +94,30 @@ function tiempoRelativo($fecha) {
 			<div class="card">
 				<div class="card-header d-flex justify-content-between align-items-center">
 					<strong>Asociados con créditos en mora</strong>
-					<small class="text-muted">Top 200 por días/valor</small>
+					<small class="text-muted">Listado paginado</small>
 				</div>
 				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-center mb-2">
+						<div class="small text-muted" id="comResumen"></div>
+						<div class="btn-group btn-group-sm" role="group">
+							<button class="btn btn-outline-secondary" id="comPrev">«</button>
+							<button class="btn btn-outline-secondary" id="comNext">»</button>
+						</div>
+					</div>
 					<div class="table-responsive">
-						<table class="table table-sm align-middle">
+						<table class="table table-sm align-middle" id="tablaCom">
 							<thead class="table-light">
 								<tr>
-									<th>Cédula</th>
-									<th>Nombre</th>
+									<th data-sort="cedula" class="sortable">Cédula</th>
+									<th data-sort="nombre" class="sortable">Nombre</th>
 									<th>Detalle</th>
-									<th class="text-center">Máx. días</th>
+									<th data-sort="max_diav" class="text-center sortable">Máx. días</th>
 									<th>Estado</th>
-									<th>Última comunicación</th>
+									<th data-sort="ultima_comunicacion" class="sortable">Última comunicación</th>
 									<th class="text-end">Acciones</th>
 								</tr>
 							</thead>
-							<tbody>
-								<?php foreach ($lista as $row): ?>
-									<?php $estado = $row['estado_mora']; ?>
-									<tr>
-										<td><?php echo htmlspecialchars($row['cedula']); ?></td>
-										<td><?php echo htmlspecialchars($row['nombre']); ?></td>
-										<td>
-											<div class="small">Mora: <strong><?php echo '$'.number_format((float)$row['total_mora'], 0); ?></strong></div>
-											<div class="small text-muted">Cartera: <strong><?php echo '$'.number_format((float)($row['total_cartera'] ?? 0), 0); ?></strong></div>
-										</td>
-										<td class="text-center"><?php echo (int)$row['max_diav']; ?></td>
-										<td>
-											<span class="badge bg-<?php echo $estado['color']; ?>"><?php echo htmlspecialchars($estado['label']); ?></span>
-										</td>
-										<td>
-											<?php if (!empty($row['ultima_comunicacion'])): ?>
-												<?php $d = isset($row['dias_ultima']) ? (int)$row['dias_ultima'] : 0; ?>
-												<?php if ($d === 0) { try { $d = max(0, (new DateTime())->diff(new DateTime($row['ultima_comunicacion']))->days); } catch (Throwable $e) { $d = 0; } } ?>
-												<?php $label = ($d < 2 ? 'Muy reciente' : ($d < 5 ? 'Reciente' : ($d < 10 ? 'Intermedia' : ($d <= 20 ? 'Lejana' : 'Muy lejana')))); ?>
-												<?php $color = ($label === 'Muy reciente' ? 'success' : ($label === 'Reciente' ? 'primary' : ($label === 'Intermedia' ? 'warning' : ($label === 'Lejana' ? 'secondary' : 'dark')))); ?>
-												<small class="badge bg-<?php echo $color; ?>"><?php echo $label; ?></small>
-												<div class="small text-muted mt-1" title="<?php echo htmlspecialchars($row['ultima_comunicacion']); ?>"><?php echo tiempoRelativo($row['ultima_comunicacion']); ?></div>
-											<?php else: ?>
-												<small class="badge bg-danger">Sin comunicación</small>
-											<?php endif; ?>
-										</td>
-										<td class="text-end">
-											<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDetalle" data-cedula="<?php echo htmlspecialchars($row['cedula']); ?>" data-nombre="<?php echo htmlspecialchars($row['nombre']); ?>">
-												<i class="fas fa-eye"></i>
-											</button>
-											<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#offHistorial" aria-controls="offHistorial" data-cedula="<?php echo htmlspecialchars($row['cedula']); ?>" data-nombre="<?php echo htmlspecialchars($row['nombre']); ?>">
-												<i class="fas fa-clock"></i> Historial
-											</button>
-											<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalComunicacion" data-cedula="<?php echo htmlspecialchars($row['cedula']); ?>" data-nombre="<?php echo htmlspecialchars($row['nombre']); ?>">
-												<i class="fas fa-plus"></i> Comunicación
-											</button>
-										</td>
-									</tr>
-								<?php endforeach; ?>
-							</tbody>
+							<tbody id="comBody"></tbody>
 						</table>
 					</div>
 				</div>
@@ -257,6 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
 	function cargarHistorialDesdeBoton(btn) {
 		const nombre = btn.getAttribute('data-nombre') || '';
 		const cedula = btn.getAttribute('data-cedula') || '';
+		cargarHistorial(cedula, nombre);
+	}
+
+	function cargarHistorial(cedula, nombre) {
 		document.getElementById('histNombre').textContent = nombre;
 		document.getElementById('histCedula').textContent = cedula;
 		document.getElementById('histContenido').innerHTML = 'Cargando...';
@@ -272,26 +244,11 @@ document.addEventListener('DOMContentLoaded', () => {
 				for (const it of rows) {
 					const canEdit = window.CURRENT_USER_ID && it.id_usuario && Number(window.CURRENT_USER_ID)===Number(it.id_usuario);
 					const safeComentario = String(it.comentario||'').replace(/</g,'&lt;');
-					const dataTipo = String(it.tipo_comunicacion||'').replace(/"/g,'&quot;');
-					const dataEstado = String(it.estado||'').replace(/"/g,'&quot;');
-					const dataComentario = String(it.comentario||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+					const dataTipo = String(it.tipo_comunicacion||'').replace(/\"/g,'&quot;');
+					const dataEstado = String(it.estado||'').replace(/\"/g,'&quot;');
+					const dataComentario = String(it.comentario||'').replace(/\"/g,'&quot;').replace(/</g,'&lt;');
 					const dataFecha = String(it.fecha_comunicacion||'');
-					html += `<div class="list-group-item" data-id="${it.id}" data-tipo="${dataTipo}" data-estado="${dataEstado}" data-comentario="${dataComentario}" data-fecha="${dataFecha}">
-						<div class="d-flex justify-content-between">
-							<div>
-								<strong>${it.tipo_comunicacion}</strong> · ${it.estado}
-								<div class="small text-muted">por ${(it.usuario_nombre||'—').replace(/</g,'&lt;')}</div>
-							</div>
-							<div class="text-end">
-								<small class="text-muted">${(it.fecha_comunicacion||'').replace('T',' ')}</small>
-								${canEdit ? (`
-								<button type="button" class="btn btn-sm btn-outline-secondary ms-2" data-action="edit" data-id="${it.id}" title="Editar"><i class="fas fa-pen"></i></button>
-								<button type="button" class="btn btn-sm btn-outline-danger ms-1" data-action="delete" data-id="${it.id}" title="Eliminar"><i class="fas fa-trash"></i></button>
-								`) : ''}
-							</div>
-						</div>
-						<div class="small">${safeComentario}</div>
-					</div>`;
+					html += `<div class=\"list-group-item\" data-id=\"${it.id}\" data-tipo=\"${dataTipo}\" data-estado=\"${dataEstado}\" data-comentario=\"${dataComentario}\" data-fecha=\"${dataFecha}\">\n\	\t\t\t<div class=\"d-flex justify-content-between\">\n\	\t\t\t\t<div>\n\	\t\t\t\t\t<strong>${it.tipo_comunicacion}</strong> · ${it.estado}\n\	\t\t\t\t\t<div class=\"small text-muted\">por ${(it.usuario_nombre||'—').replace(/</g,'&lt;')}</div>\n\	\t\t\t\t</div>\n\	\t\t\t\t<div class=\"text-end\">\n\	\t\t\t\t\t<small class=\"text-muted\">${(it.fecha_comunicacion||'').replace('T',' ')}</small>\n\	\t\t\t\t\t${canEdit ? (`\n\	\t\t\t\t\t<button type=\"button\" class=\"btn btn-sm btn-outline-secondary ms-2\" data-action=\"edit\" data-id=\"${it.id}\" title=\"Editar\"><i class=\"fas fa-pen\"></i></button>\n\	\t\t\t\t\t<button type=\"button\" class=\"btn btn-sm btn-outline-danger ms-1\" data-action=\"delete\" data-id=\"${it.id}\" title=\"Eliminar\"><i class=\"fas fa-trash\"></i></button>\n\	\t\t\t\t\t`) : ''}\n\	\t\t\t\t</div>\n\	\t\t\t</div>\n\	\t\t\t<div class=\"small\">${safeComentario}</div>\n\	\t\t</div>`;
 				}
 				html += '</div>';
 				document.getElementById('histContenido').innerHTML = html;
@@ -368,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
 				.then(r=>r.json()).then(data => {
 					if (data.success) {
 						bootstrap.Offcanvas.getInstance(document.getElementById('offHistorial')).hide();
-						alert('Eliminado');
+						mostrarToast('Comunicación eliminada');
+						if (typeof cargarTablaCom === 'function') { cargarTablaCom(); }
 					} else { alert(data.message||'Error'); }
 				}).catch(()=>alert('Error solicitud'));
 		} else if (action === 'edit') {
@@ -399,7 +357,8 @@ document.addEventListener('DOMContentLoaded', () => {
 					bootstrap.Modal.getInstance(document.getElementById('modalEditarCom')).hide();
 					const oc = bootstrap.Offcanvas.getInstance(document.getElementById('offHistorial'));
 					if (oc) oc.hide();
-					alert('Actualizado');
+					mostrarToast('Comunicación actualizada');
+					if (typeof cargarTablaCom === 'function') { cargarTablaCom(); }
 				} else { alert(data.message||'Error'); }
 			}).catch(()=>alert('Error solicitud'));
 	});
@@ -419,14 +378,88 @@ document.addEventListener('DOMContentLoaded', () => {
 			.then(r => r.json()).then(data => {
 				if (data.success) {
 					bootstrap.Modal.getInstance(modalCom).hide();
-					alert('Comunicación registrada');
+					mostrarToast('Comunicación registrada');
+					if (typeof cargarTablaCom === 'function') { cargarTablaCom(); }
+					// Abrir/refrescar historial del asociado
+					const ced = document.getElementById('comCedulaInput').value || '';
+					const nom = document.getElementById('comNombre').textContent || '';
+					const off = new bootstrap.Offcanvas(document.getElementById('offHistorial'));
+					off.show();
+					cargarHistorial(ced, nom);
 				} else {
 					alert('Error: ' + (data.message||'No se pudo registrar'));
 				}
 			})
 			.catch(() => alert('Error en solicitud'));
 	});
+
+	// Tabla paginada con orden
+	window.comPage = 1; window.comPages = 1; window.comSortBy = 'max_diav'; window.comSortDir = 'DESC';
+	document.querySelectorAll('#tablaCom thead th.sortable').forEach(th => th.addEventListener('click', () => cambiarOrdenCom(th.dataset.sort)));
+	document.getElementById('comPrev').addEventListener('click', () => cambiarPaginaCom(-1));
+	document.getElementById('comNext').addEventListener('click', () => cambiarPaginaCom(1));
+	cargarTablaCom();
+
+	function cambiarOrdenCom(col) {
+		if (!col) return; if (window.comSortBy === col) { window.comSortDir = (window.comSortDir === 'ASC') ? 'DESC' : 'ASC'; } else { window.comSortBy = col; window.comSortDir = 'ASC'; }
+		cargarTablaCom();
+	}
+	function cambiarPaginaCom(delta) {
+		const np = window.comPage + delta; if (np < 1 || np > window.comPages) return; window.comPage = np; cargarTablaCom();
+	}
+	async function cargarTablaCom() {
+		const params = new URLSearchParams({
+			page: window.comPage, limit: 10, sort_by: window.comSortBy, sort_dir: window.comSortDir,
+			q: '<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES); ?>',
+			estado: '<?php echo htmlspecialchars($_GET['estado'] ?? '', ENT_QUOTES); ?>',
+			rango: '<?php echo htmlspecialchars($_GET['rango'] ?? '', ENT_QUOTES); ?>'
+		});
+		const tbody = document.getElementById('comBody');
+		tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Cargando…</td></tr>';
+		try {
+			const res = await fetch('../api/cobranza_listar_paginado.php?' + params.toString());
+			const json = await res.json();
+			const data = json && json.data ? json.data : {};
+			const items = data.items || [];
+			window.comPages = data.pages || 1;
+			document.getElementById('comResumen').textContent = `Página ${data.current_page || window.comPage} de ${window.comPages} · Total: ${data.total || items.length}`;
+			if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Sin datos.</td></tr>'; return; }
+			tbody.innerHTML = items.map(row => {
+				const estado = (function(maxd){ if (maxd>=91) return {label:'Jurídico',color:'danger'}; if (maxd>=61) return {label:'Prejurídico',color:'warning'}; return {label:'Persuasiva',color:'primary'}; })(Number(row.max_diav||0));
+				let ultimaHtml = '<small class="badge bg-danger">Sin comunicación</small>';
+				if (row.ultima_comunicacion) {
+					const d = Number(row.dias_ultima||0);
+					const label = (d<2?'Muy reciente':(d<5?'Reciente':(d<10?'Intermedia':(d<=20?'Lejana':'Muy lejana'))));
+					const color = (label==='Muy reciente'?'success':(label==='Reciente'?'primary':(label==='Intermedia'?'warning':(label==='Lejana'?'secondary':'dark'))));
+					ultimaHtml = `<small class="badge bg-${color}">${label}</small><div class="small text-muted mt-1" title="${row.ultima_comunicacion}">${row.ultima_comunicacion}</div>`;
+				}
+				return `<tr>
+					<td><span class="cursor-pointer" onclick="navigator.clipboard.writeText('${row.cedula||''}')">${row.cedula||''}</span></td>
+					<td>${(row.nombre||'').replace(/</g,'&lt;')}</td>
+					<td><div class="small">Mora: <strong>$${Number(row.total_mora||0).toLocaleString('es-CO')}</strong></div><div class="small text-muted">Cartera: <strong>$${Number(row.total_cartera||0).toLocaleString('es-CO')}</strong></div></td>
+					<td class="text-center">${Number(row.max_diav||0)}</td>
+					<td><span class="badge bg-${estado.color}">${estado.label}</span></td>
+					<td>${ultimaHtml}</td>
+					<td class="text-end">
+						<button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalDetalle" data-cedula="${row.cedula||''}" data-nombre="${(row.nombre||'').replace(/</g,'&lt;')}"><i class="fas fa-eye"></i></button>
+						<button class="btn btn-sm btn-outline-secondary" data-bs-toggle="offcanvas" data-bs-target="#offHistorial" aria-controls="offHistorial" data-cedula="${row.cedula||''}" data-nombre="${(row.nombre||'').replace(/</g,'&lt;')}"><i class="fas fa-clock"></i> Historial</button>
+						<button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalComunicacion" data-cedula="${row.cedula||''}" data-nombre="${(row.nombre||'').replace(/</g,'&lt;')}"><i class="fas fa-plus"></i> Comunicación</button>
+					</td>
+				</tr>`;
+			}).join('');
+		} catch (e) {
+			tbody.innerHTML = '<tr><td colspan="7" class="text-danger">Error al cargar.</td></tr>';
+		}
+	}
 });
+
+function mostrarToast(mensaje) {
+	let cont = document.getElementById('toastContainer');
+	if (!cont) { cont = document.createElement('div'); cont.id = 'toastContainer'; cont.className = 'toast-container position-fixed top-0 end-0 p-3'; document.body.appendChild(cont); }
+	const el = document.createElement('div'); el.className = 'toast align-items-center text-bg-success border-0'; el.role = 'alert'; el.ariaLive = 'assertive'; el.ariaAtomic = 'true';
+	el.innerHTML = `<div class=\"d-flex\"><div class=\"toast-body\">${mensaje.replace(/</g,'&lt;')}</div><button type=\"button\" class=\"btn-close btn-close-white me-2 m-auto\" data-bs-dismiss=\"toast\" aria-label=\"Close\"></button></div>`;
+	cont.appendChild(el); const toast = new bootstrap.Toast(el, { delay: 3000 }); toast.show(); el.addEventListener('hidden.bs.toast', () => el.remove());
+}
 </script>
 
 <?php include '../../../views/layouts/footer.php'; ?>

@@ -4,7 +4,7 @@ require_once '../../../config/paths.php';
 require_once '../models/Transaccion.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.trx_list');
 $currentUser = $auth->getCurrentUser();
 $model = new Transaccion();
 

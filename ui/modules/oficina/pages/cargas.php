@@ -4,7 +4,7 @@ require_once '../../../config/paths.php';
 require_once '../models/Cargas.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.cargas');
 $currentUser = $auth->getCurrentUser();
 $model = new Cargas();
 

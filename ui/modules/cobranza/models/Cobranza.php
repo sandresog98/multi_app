@@ -87,6 +87,95 @@ class Cobranza {
 		return $rows;
 	}
 
+	public function listarAsociadosConMoraPaginado($filtros = [], $page = 1, $limit = 20, $sortBy = 'max_diav', $sortDir = 'DESC') {
+		$page = max(1, (int)$page);
+		$limit = max(1, min(200, (int)$limit));
+		$offset = ($page - 1) * $limit;
+
+		$where = [];
+		$params = [];
+		if (!empty($filtros['q'])) {
+			$where[] = '(m.cedula LIKE ? OR m.nombre LIKE ? OR m.telefo LIKE ? OR m.mail LIKE ?)';
+			$q = '%' . $filtros['q'] . '%';
+			array_push($params, $q, $q, $q, $q);
+		}
+		$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+		$having = [];
+		if (!empty($filtros['estado'])) {
+			$estado = strtolower($filtros['estado']);
+			if ($estado === 'juridico') { $having[] = 'max_diav >= 91'; }
+			elseif ($estado === 'prejuridico' || $estado === 'prejurídico') { $having[] = 'max_diav BETWEEN 61 AND 90'; }
+			elseif ($estado === 'persuasiva' || $estado === 'persuasivo') { $having[] = 'max_diav <= 60'; }
+		}
+		if (!empty($filtros['rango'])) {
+			$rango = strtolower($filtros['rango']);
+			if ($rango === 'sin') { $having[] = 'ultima_comunicacion IS NULL'; }
+			elseif ($rango === 'muy_reciente') { $having[] = 'ultima_comunicacion IS NOT NULL AND DATEDIFF(CURDATE(), ultima_comunicacion) < 2'; }
+			elseif ($rango === 'reciente') { $having[] = 'ultima_comunicacion IS NOT NULL AND DATEDIFF(CURDATE(), ultima_comunicacion) >= 2 AND DATEDIFF(CURDATE(), ultima_comunicacion) < 5'; }
+			elseif ($rango === 'intermedia') { $having[] = 'ultima_comunicacion IS NOT NULL AND DATEDIFF(CURDATE(), ultima_comunicacion) >= 5 AND DATEDIFF(CURDATE(), ultima_comunicacion) < 10'; }
+			elseif ($rango === 'lejana') { $having[] = 'ultima_comunicacion IS NOT NULL AND DATEDIFF(CURDATE(), ultima_comunicacion) >= 10 AND DATEDIFF(CURDATE(), ultima_comunicacion) <= 20'; }
+			elseif ($rango === 'muy_lejana') { $having[] = 'ultima_comunicacion IS NOT NULL AND DATEDIFF(CURDATE(), ultima_comunicacion) > 20'; }
+		}
+		$havingSql = $having ? ('HAVING ' . implode(' AND ', $having)) : '';
+
+		$allowedSort = [
+			'max_diav' => 'max_diav',
+			'total_mora' => 'total_mora',
+			'nombre' => 'nombre',
+			'ultima_comunicacion' => 'ultima_comunicacion'
+		];
+		$col = $allowedSort[$sortBy] ?? 'max_diav';
+		$dir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
+
+		$base = "
+			FROM sifone_cartera_mora m
+			LEFT JOIN (
+				SELECT asociado_cedula, MAX(fecha_comunicacion) AS ultima_comunicacion, COUNT(*) AS total_comunicaciones
+				FROM cobranza_comunicaciones
+				GROUP BY asociado_cedula
+			) cc ON cc.asociado_cedula = m.cedula
+			LEFT JOIN (
+				SELECT cedula, SUM(COALESCE(carter,0)) AS total_cartera
+				FROM sifone_cartera_aseguradora
+				GROUP BY cedula
+			) car ON car.cedula = m.cedula
+			$whereSql
+			GROUP BY m.cedula, cc.ultima_comunicacion, cc.total_comunicaciones, car.total_cartera
+			$havingSql
+		";
+
+		$dataSql = "SELECT 
+			m.cedula,
+			MAX(m.nombre) AS nombre,
+			MAX(m.diav) AS max_diav,
+			SUM(CASE WHEN m.sdomor IS NOT NULL THEN m.sdomor ELSE 0 END) AS total_mora,
+			cc.ultima_comunicacion,
+			DATEDIFF(CURDATE(), cc.ultima_comunicacion) AS dias_ultima,
+			cc.total_comunicaciones,
+			car.total_cartera
+			$base
+			ORDER BY $col $dir
+			LIMIT ? OFFSET ?";
+		$stmt = $this->conn->prepare($dataSql);
+		$paramsExec = array_merge($params, [$limit, $offset]);
+		$stmt->execute($paramsExec);
+		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		foreach ($rows as &$r) { $r['estado_mora'] = $this->clasificarEstadoMora((int)$r['max_diav']); }
+
+		$countSql = "SELECT COUNT(1) AS total FROM (SELECT m.cedula $base) t";
+		$countStmt = $this->conn->prepare($countSql);
+		$countStmt->execute($params);
+		$total = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+		return [
+			'items' => $rows,
+			'total' => $total,
+			'pages' => $limit > 0 ? (int)ceil($total / $limit) : 1,
+			'current_page' => $page
+		];
+	}
+
 	public function obtenerDetalleMoraPorAsociado($cedula) {
 		$sql = "
 			SELECT m.presta, COALESCE(a2.tipopr, '') AS tipopr, m.sdomor, m.diav, m.intmora

@@ -5,7 +5,7 @@ require_once '../models/PagoPse.php';
 require_once '../../../models/Logger.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.pagos_pse');
 $currentUser = $auth->getCurrentUser();
 $model = new PagoPse();
 $logger = new Logger();

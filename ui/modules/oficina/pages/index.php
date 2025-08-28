@@ -4,7 +4,7 @@ require_once '../../../config/paths.php';
 require_once '../models/Dashboard.php';
 
 $authController = new AuthController();
-$authController->requireAnyRole(['admin','oficina']);
+$authController->requireModule('oficina.resumen');
 $currentUser = $authController->getCurrentUser();
 $dash = new Dashboard();
 $kpis = $dash->getKpis();

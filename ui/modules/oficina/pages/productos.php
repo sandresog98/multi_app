@@ -5,7 +5,7 @@ require_once '../models/Producto.php';
 require_once '../../../models/Logger.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.productos');
 $currentUser = $auth->getCurrentUser();
 $productoModel = new Producto();
 $logger = new Logger();

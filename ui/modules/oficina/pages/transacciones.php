@@ -6,7 +6,7 @@ require_once '../models/DetalleAsociado.php';
 require_once '../../../models/Logger.php';
 
 $auth = new AuthController();
-$auth->requireAnyRole(['admin','oficina']);
+$auth->requireModule('oficina.transacciones');
 $currentUser = $auth->getCurrentUser();
 $model = new Transaccion();
 $logger = new Logger();

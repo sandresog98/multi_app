@@ -5,7 +5,7 @@ require_once '../../../config/database.php';
 require_once '../../../models/Logger.php';
 
 $authController = new AuthController();
-$authController->requireRole('admin');
+$authController->requireModule('logs.gestion');
 
 $pageTitle = 'Logs del Sistema - Multi v2';
 $currentPage = 'logs';

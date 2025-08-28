@@ -10,11 +10,12 @@ require_once '../../../utils/dictionary.php';
 require_once '../../../models/Logger.php';
 
 $authController = new AuthController();
-$authController->requireRole('admin');
+$authController->requireModule('usuarios.gestion');
 
 $userModel = new User();
 $message = '';
 $error = '';
+$currentUser = $authController->getCurrentUser();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -28,6 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($username) || empty($password) || empty($nombre_completo)) {
                 $error = 'Todos los campos obligatorios deben estar completos.';
             } else {
+                // Restricción: un "lider" no puede crear usuarios con rol "admin"
+                $currentRol = strtolower($currentUser['rol'] ?? '');
+                if ($currentRol === 'lider' && strtolower($rol) === 'admin') {
+                    $error = 'No tienes permiso para crear usuarios con rol Administrador.';
+                    $message = '';
+                    break;
+                }
                 $result = $userModel->create($username, $password, $nombre_completo, $email, $rol);
                 $message = $result['success'] ? 'Usuario creado exitosamente.' : $result['message'];
                 if (!$result['success']) $error = $result['message'];
@@ -52,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Obtener snapshot anterior si se desea más detalle (opcional)
                 $before = $userModel->getById($id);
+                // Si el usuario actual es 'lider' y el objetivo es 'admin', bloquear cambio de rol
+                $targetRolBefore = strtolower($before['rol'] ?? '');
+                $currentRol = strtolower($currentUser['rol'] ?? '');
+                if ($currentRol === 'lider' && $targetRolBefore === 'admin') {
+                    $rol = $before['rol'];
+                }
                 $result = $userModel->update($id, $nombre_completo, $email, $rol, $estado);
                 $message = $result['success'] ? 'Usuario actualizado exitosamente.' : $result['message'];
                 if (!$result['success']) $error = $result['message'];
@@ -70,7 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'] ?? '';
             if (!empty($id)) {
                 $before = $userModel->getById($id);
-                $result = $userModel->delete($id);
+                // Bloqueo: un "lider" no puede eliminar usuarios con rol "admin"
+                $targetRol = strtolower($before['rol'] ?? '');
+                $currentRol = strtolower($currentUser['rol'] ?? '');
+                if ($currentRol === 'lider' && $targetRol === 'admin') {
+                    $result = ['success' => false, 'message' => 'No tienes permiso para eliminar usuarios Administrador.'];
+                } else {
+                    $result = $userModel->delete($id);
+                }
                 $message = $result['success'] ? 'Usuario eliminado exitosamente.' : $result['message'];
                 if (!$result['success']) $error = $result['message'];
                 if ($result['success']) {
@@ -84,7 +105,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($id) || empty($new_password)) {
                 $error = 'Debe proporcionar una nueva contraseña.';
             } else {
-                $result = $userModel->changePassword($id, $new_password);
+                // Restricción: rol 'lider' no puede cambiar contraseñas de usuarios 'admin' o 'lider'
+                $target = $userModel->getById($id);
+                $targetRol = strtolower($target['rol'] ?? '');
+                $currentRol = strtolower($currentUser['rol'] ?? '');
+                if ($currentRol === 'lider' && in_array($targetRol, ['admin','lider'], true)) {
+                    $result = ['success' => false, 'message' => 'No tienes permiso para cambiar la contraseña de usuarios Admin o Líder.'];
+                } else {
+                    $result = $userModel->changePassword($id, $new_password);
+                }
                 $message = $result['success'] ? 'Contraseña actualizada exitosamente.' : $result['message'];
                 if (!$result['success']) $error = $result['message'];
                 if ($result['success']) {
@@ -224,9 +253,10 @@ include '../../../views/layouts/header.php';
           </div>
           <div class="mb-3">
             <label for="rol" class="form-label">Rol</label>
-            <select class="form-select" id="rol" name="rol">
+            <select class="form-select" id="rol" name="rol" <?php if (strtolower($currentUser['rol']??'')==='lider') echo 'data-lock-admin="1"'; ?>>
               <option value="oficina">Oficina</option>
-              <option value="admin">Administrador</option>
+              <option value="lider">Líder</option>
+              <option value="admin" <?php if (strtolower($currentUser['rol']??'')==='lider') echo 'disabled'; ?>>Administrador</option>
             </select>
           </div>
         </div>
@@ -266,10 +296,14 @@ include '../../../views/layouts/header.php';
           </div>
           <div class="mb-3">
             <label for="rol_<?php echo $usuario['id']; ?>" class="form-label">Rol</label>
-            <select class="form-select" id="rol_<?php echo $usuario['id']; ?>" name="rol">
+            <select class="form-select" id="rol_<?php echo $usuario['id']; ?>" name="rol" <?php if (strtolower($currentUser['rol']??'')==='lider' && strtolower($usuario['rol']??'')==='admin') echo 'disabled'; ?>>
               <option value="oficina" <?php echo $usuario['rol'] === 'oficina' ? 'selected' : ''; ?>>Oficina</option>
+              <option value="lider" <?php echo $usuario['rol'] === 'lider' ? 'selected' : ''; ?>>Líder</option>
               <option value="admin" <?php echo $usuario['rol'] === 'admin' ? 'selected' : ''; ?>>Administrador</option>
             </select>
+            <?php if (strtolower($currentUser['rol']??'')==='lider' && strtolower($usuario['rol']??'')==='admin'): ?>
+            <div class="form-text text-muted">No puedes cambiar el rol de un usuario Administrador.</div>
+            <?php endif; ?>
           </div>
           <div class="mb-3">
             <label for="estado_<?php echo $usuario['id']; ?>" class="form-label">Estado</label>

@@ -3,11 +3,50 @@
  * Configuración de la base de datos
  */
 
-// Configuración de la base de datos
-define('DB_HOST', '192.168.10.30');
-define('DB_USER', 'root');
-define('DB_PASS', '123456789');
-define('DB_NAME', 'multiapptwo');
+// Detección de entorno: APP_ENV (development|production). Fallback: auto local -> development
+$__appEnv = getenv('APP_ENV');
+if ($__appEnv === false || $__appEnv === '') {
+    $isCli = php_sapi_name() === 'cli';
+    $serverName = $_SERVER['SERVER_NAME'] ?? '';
+    $serverAddr = $_SERVER['SERVER_ADDR'] ?? '';
+    $httpHost   = $_SERVER['HTTP_HOST'] ?? '';
+    $looksLocal = (
+        $serverName === 'localhost' ||
+        $httpHost === 'localhost' ||
+        $serverAddr === '127.0.0.1' ||
+        strpos($httpHost, '.local') !== false ||
+        $isCli // en CLI, por defecto asumimos desarrollo salvo que se defina APP_ENV
+    );
+    $__appEnv = $looksLocal ? 'development' : 'production';
+}
+define('APP_ENV', $__appEnv);
+
+// Configuración basada en entorno, con posibilidad de override por variables de entorno DB_*
+if (APP_ENV === 'development') {
+    $dbHost = getenv('DB_HOST');
+    $dbUser = getenv('DB_USER');
+    $dbPass = getenv('DB_PASS');
+    $dbName = getenv('DB_NAME');
+    $dbHost = ($dbHost === false || $dbHost === '') ? 'localhost' : $dbHost;
+    $dbUser = ($dbUser === false || $dbUser === '') ? 'root' : $dbUser;
+    $dbPass = ($dbPass === false) ? '' : $dbPass; // contraseña vacía por defecto
+    $dbName = ($dbName === false || $dbName === '') ? 'multiapptwo' : $dbName;
+} else { // production
+    $dbHost = getenv('DB_HOST');
+    $dbUser = getenv('DB_USER');
+    $dbPass = getenv('DB_PASS');
+    $dbName = getenv('DB_NAME');
+    $dbHost = ($dbHost === false || $dbHost === '') ? '192.168.10.30' : $dbHost;
+    $dbUser = ($dbUser === false || $dbUser === '') ? 'root' : $dbUser;
+    $dbPass = ($dbPass === false || $dbPass === '') ? '123456789' : $dbPass;
+    $dbName = ($dbName === false || $dbName === '') ? 'multiapptwo' : $dbName;
+}
+
+// Definiciones para compatibilidad
+define('DB_HOST', $dbHost);
+define('DB_USER', $dbUser);
+define('DB_PASS', $dbPass);
+define('DB_NAME', $dbName);
 
 class Database {
     private static $instance = null;

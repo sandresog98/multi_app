@@ -4,10 +4,10 @@ Sistema modular para gestión de oficinas, procesamiento de datos y administraci
 
 ## 🚀 **Características Principales**
 
-- **UI Modular**: Interfaz web responsive con módulos independientes
+- **UI Modular**: Interfaz web responsive con módulos independientes (Oficina, Cobranza, Boletería, Gestión Créditos, Usuarios, Logs)
 - **Procesamiento ETL**: Sistema Python para transformación y carga de datos
 - **Worker Automático**: Procesamiento asíncrono de cargas de archivos
-- **Sistema de Roles**: Control de acceso granular (admin, oficina)
+- **Sistema de Roles**: Control de acceso granular (admin, lider, oficina) gestionado por `roles.json`
 - **Logging Completo**: Auditoría de todas las operaciones
 - **Base de Datos**: MySQL con esquema optimizado para consultas
 
@@ -19,6 +19,8 @@ multi_app/
 │   ├── modules/                  # Módulos funcionales
 │   │   ├── oficina/             # Gestión de oficina
 │   │   ├── cobranza/            # Gestión de cobranza
+│   │   ├── boleteria/           # Venta y administración de boletas
+│   │   ├── creditos/            # Gestión de solicitudes de crédito
 │   │   ├── usuarios/            # Administración de usuarios
 │   │   └── logs/                # Sistema de auditoría
 │   ├── controllers/             # Controladores de autenticación
@@ -35,14 +37,29 @@ multi_app/
 
 ## 🔐 **Sistema de Autenticación y Roles**
 
-### **Roles Disponibles:**
-- **`admin`**: Acceso completo a todos los módulos
-- **`oficina`**: Acceso a módulos de oficina y cobranza
-- **`usuario`**: Acceso limitado (en desarrollo)
+### **Roles y permisos (roles.json):**
+- **`admin`**: acceso total
+- **`lider`**: acceso total excepto restricciones puntuales de seguridad
+- **`oficina`**: acceso a Oficina, Boletería, Cobranza y Gestión Créditos (sin aprobar/rechazar créditos)
 
-### **Módulos por Rol:**
-- **Admin**: Oficina, Cobranza, Usuarios, Logs, Cargas
-- **Oficina**: Oficina, Cobranza, Cargas (solo lectura en algunos casos)
+Los permisos de navegación/ API se resuelven por prefijos de módulo definidos en `roles.json` (ej. `creditos` habilita `creditos.*`).
+
+## 🎟️ **Módulo Boletería**
+
+- Categorías y Boletas con estados: disponible, vendida, anulada
+- Flujo de venta con búsqueda de asociado, método de venta y comprobante opcional
+- Subida de archivo por boleta (JPG/JPEG/PNG/PDF) con vista/descarga
+- Logs de creación/edición y acciones
+
+## 🧾 **Módulo Gestión Créditos**
+
+- Páginas: Resumen, Solicitudes (crear), Listado (gestión)
+- Solicitud: datos del solicitante, monto deseado, tipo (Dependiente/Independiente) y adjuntos requeridos según tipo
+- Estados: Creado → Con Datacrédito → (Aprobado/Rechazado) → Con Estudio → Guardado
+- Cambios que requieren adjuntos se realizan vía modal (PDF ≤ 5MB) y quedan auditados
+- Historial por solicitud (`creditos_historial`) y logs de sistema
+- Resumen con tablas + mini gráficos por tipo y por estado
+- Restricción: solo `admin`/`lider` pueden Aprobar/Rechazar
 
 ## 🏢 **Módulo Oficina**
 
@@ -93,8 +110,9 @@ multi_app/
 
 ### **Tablas Principales:**
 - **Sifone**: `sifone_asociados`, `sifone_cartera_mora`, `sifone_cartera_aseguradora`
-- **Pagos**: `banco_pse`, `banco_confiar`, `pagos_relacion`
-- **Control**: `control_cargas`, `control_asociados`, `control_transaccion`
+- **Pagos**: `banco_pse`, `banco_confiar`, `control_transaccion`, `control_transaccion_detalle`
+- **Créditos**: `creditos_solicitudes`, `creditos_historial`
+- **Control**: `control_cargas`, `control_asociados`
 - **Auditoría**: `control_logs`, `control_usuarios`
 
 ### **Características:**
@@ -156,6 +174,7 @@ python3 worker.py --interval 30
 - **Sesión expira**: Verificar configuración de PHP
 - **Acceso denegado**: Verificar rol del usuario
 - **Datos no aparecen**: Verificar que se ejecutó el worker
+ - **Subidas fallan**: Validar permisos en `ui/uploads/` y tipos/size (PDF/JPG/PNG ≤ 5MB)
 
 ### **Problemas de Base de Datos:**
 - **Conexión falla**: Verificar host, usuario y contraseña
