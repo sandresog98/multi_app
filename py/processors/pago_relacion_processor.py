@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Tuple
 from datetime import datetime
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(_file_))))
 
 from core.base_processor import BaseProcessor
 from core.database import DatabaseManager
@@ -24,9 +24,9 @@ class PagoRelacionProcessor(BaseProcessor):
     Procesador para crear relaciones automáticas entre pagos PSE y Confiar
     """
     
-    def __init__(self):
-        super().__init__("PagoRelacionProcessor")
-        self.logger = logging.getLogger(__name__)
+    def _init_(self):
+        super()._init_("PagoRelacionProcessor")
+        self.logger = logging.getLogger(_name_)
         
     def process_automatic_relations(self) -> Dict[str, Any]:
         """
@@ -71,49 +71,41 @@ class PagoRelacionProcessor(BaseProcessor):
             return {'success': False, 'message': str(e)}
     
     def _get_pse_data(self) -> pd.DataFrame:
-        """Obtiene datos de PSE aprobados"""
+        """Obtiene datos de PSE aprobados (sin usar pandas.read_sql para evitar dependencia de sqlite)."""
         try:
-            query = """
-                SELECT 
-                    pse_id,
-                    DATE(fecha_hora_resolucion_de_la_transaccion) as fecha_resolucion,
-                    valor,
-                    ciclo_transaccion,
-                    estado
-                FROM banco_pse 
-                WHERE estado = 'Aprobada'
-                ORDER BY fecha_hora_resolucion_de_la_transaccion
-            """
-            
+            query = (
+                "SELECT pse_id, DATE(fecha_hora_resolucion_de_la_transaccion) AS fecha_resolucion, "
+                "valor, ciclo_transaccion, estado "
+                "FROM banco_pse WHERE estado = 'Aprobada' "
+                "ORDER BY fecha_hora_resolucion_de_la_transaccion"
+            )
             with self.db_manager.get_connection() as conn:
-                df = pd.read_sql(query, conn)
-            
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                cursor.close()
+            df = pd.DataFrame(rows)
             self.logger.info(f"Obtenidos {len(df)} registros PSE aprobados")
             return df
-            
         except Exception as e:
             self.logger.error(f"Error obteniendo datos PSE: {e}")
             return pd.DataFrame()
     
     def _get_confiar_data(self) -> pd.DataFrame:
-        """Obtiene datos de Confiar disponibles"""
+        """Obtiene datos de Confiar disponibles (sin pandas.read_sql)."""
         try:
-            query = """
-                SELECT 
-                    confiar_id,
-                    fecha,
-                    valor_consignacion,
-                    descripcion
-                FROM banco_confiar 
-                ORDER BY fecha
-            """
-            
+            query = (
+                "SELECT confiar_id, fecha, valor_consignacion, descripcion "
+                "FROM banco_confiar ORDER BY fecha"
+            )
             with self.db_manager.get_connection() as conn:
-                df = pd.read_sql(query, conn)
-            
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                cursor.close()
+            df = pd.DataFrame(rows)
             self.logger.info(f"Obtenidos {len(df)} registros Confiar")
             return df
-            
         except Exception as e:
             self.logger.error(f"Error obteniendo datos Confiar: {e}")
             return pd.DataFrame()
@@ -289,4 +281,4 @@ class PagoRelacionProcessor(BaseProcessor):
             
         except Exception as e:
             self.logger.error(f"Error insertando relaciones: {e}")
-            return {'success': False, 'message': str(e)} 
+            return {'success': False, 'message': str(e)}
