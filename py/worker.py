@@ -19,7 +19,7 @@ from processors.sifone_processor import SifoneProcessor
 from processors.pagos_processor import PagosProcessor
 from processors.pago_relacion_processor import PagoRelacionProcessor
 
-logger = logging.getLogger(_name_)
+# logger = logging.getLogger(_name_)
 
 
 class JobStatus(Enum):
