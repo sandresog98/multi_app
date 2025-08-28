@@ -9,7 +9,11 @@ from typing import List, Dict, Any, Tuple
 from datetime import datetime
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(_file_))))
+# Asegurar que el proyecto raíz esté en sys.path usando _file_ correctamente
+CURRENT_DIR = os.path.dirname(os.path.abspath(_file_))
+PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
 
 from core.base_processor import BaseProcessor
 from core.database import DatabaseManager
