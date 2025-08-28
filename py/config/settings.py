@@ -6,15 +6,15 @@ Configuración centralizada para el sistema de procesamiento de datos
 import os
 import logging
 
-# Directorio base del proyecto
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Directorio base del proyecto (usar _file_ correctamente)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(_file_)))
 
-# Configuración de la base de datos
+# Configuración de la base de datos (productivo fijo)
 DB_CONFIG = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '123456789',
-    'database': 'multiapptwo',
+    'host': os.getenv('DB_HOST', '192.168.10.30'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASS', '123456789'),
+    'database': os.getenv('DB_NAME', 'multiapptwo'),
     'charset': 'utf8mb4'
 }
 
@@ -43,7 +43,7 @@ DATA_PATHS = {
 
 # Patrones de archivos por tipo
 FILE_PATTERNS = {
-    'confiar': ['*.xls', '*.xlsx'],
+    'confiar': ['.xls', '.xlsx'],
     'pse': ['*.xlsx'],
     # Patrones específicos en una sola carpeta para Sifone
     'asociados': ['librodeasociados.*'],
@@ -63,4 +63,4 @@ PROCESSING_CONFIG = {
     'batch_size': 1000,
     'max_retries': 3,
     'timeout': 30
-} 
+}
