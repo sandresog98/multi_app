@@ -9,14 +9,25 @@ import logging
 # Directorio base del proyecto
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Configuración de la base de datos
-DB_CONFIG = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '123456789',
-    'database': 'multiapptwo',
-    'charset': 'utf8mb4'
-}
+# Configuración de la base de datos con soporte de entornos (LOCAL/PROD)
+APP_ENV = os.getenv('APP_ENV', 'LOCAL').upper()
+if APP_ENV == 'PROD':
+    DB_CONFIG = {
+        'host': os.getenv('DB_HOST', '127.0.0.1'),
+        'user': os.getenv('DB_USER', 'root'),
+        'password': os.getenv('DB_PASS', ''),
+        'database': os.getenv('DB_NAME', 'multiapptwo'),
+        'charset': 'utf8mb4'
+    }
+else:
+    # LOCAL por defecto
+    DB_CONFIG = {
+        'host': os.getenv('DB_HOST', '127.0.0.1'),
+        'user': os.getenv('DB_USER', 'root'),
+        'password': os.getenv('DB_PASS', ''),
+        'database': os.getenv('DB_NAME', 'multiapptwo'),
+        'charset': 'utf8mb4'
+    }
 
 # Configuración de logging (solo consola, sin archivos)
 LOGGING_CONFIG = {

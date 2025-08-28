@@ -6,6 +6,7 @@ py/data/**/*
 !py/data/pagos/confiar/
 !py/data/pagos/pse/
 !py/data/sifone/
+!py/data/**/.gitkeep
 
 # Ignorar archivos de uploads pero mantener estructura de carpetas
 ui/uploads/**/*

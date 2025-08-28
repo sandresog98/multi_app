@@ -448,7 +448,18 @@ async function guardarTransaccion(){
   const origen = document.getElementById('origen').value;
   const pseId = document.getElementById('pseId').value || null;
   const confiarId = document.getElementById('confiarId').value || null;
-  const valorPago = Number((document.getElementById('valorPago').value||'0').replace(/,/g,''));
+  // Tomar el valor de pago directamente del option seleccionado para evitar problemas de formato local
+  let valorPago = 0;
+  if (origen === 'pse') {
+    const opt = document.getElementById('pseId').selectedOptions[0];
+    valorPago = Number(opt ? (opt.dataset.valor||0) : 0);
+  } else if (origen === 'cash_qr') {
+    const opt = document.getElementById('confiarId').selectedOptions[0];
+    valorPago = Number(opt ? (opt.dataset.valor||0) : 0);
+  } else {
+    // Fallback: parsear el input removiendo cualquier separador
+    valorPago = Number((document.getElementById('valorPago').value||'0').replace(/[^\d.-]/g,''));
+  }
   const detalles = [];
   document.querySelectorAll('#rubroBody tr').forEach(tr => {
     const tipo = tr.dataset.tipo;

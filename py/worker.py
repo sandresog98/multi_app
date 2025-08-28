@@ -17,6 +17,7 @@ from config.logging_config import logging as _unused  # asegura configuración s
 from core.database import DatabaseManager
 from processors.sifone_processor import SifoneProcessor
 from processors.pagos_processor import PagosProcessor
+from processors.pago_relacion_processor import PagoRelacionProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -54,38 +55,40 @@ class Job:
 
 
 def obtener_job_pendiente(db: DatabaseManager) -> Optional[Job]:
-    """Obtener el siguiente job pendiente de la cola"""
+    """Obtener el siguiente job pendiente siguiendo prioridad fija."""
+    prioridad = [
+        'sifone_libro',
+        'sifone_cartera_aseguradora',
+        'sifone_cartera_mora',
+        'pagos_pse',
+        'pagos_confiar',
+    ]
     conn = db.get_connection()
     cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM control_cargas WHERE estado='pendiente' ORDER BY id ASC LIMIT 1")
-    row = cur.fetchone()
+    for tipo in prioridad:
+        cur.execute(
+            "SELECT * FROM control_cargas WHERE estado='pendiente' AND tipo=%s ORDER BY id ASC LIMIT 1",
+            (tipo,)
+        )
+        row = cur.fetchone()
+        if row:
+            cur.close()
+            known_fields = {
+                'id', 'tipo', 'archivo_ruta', 'estado', 'mensaje_log',
+                'usuario_id', 'fecha_creacion', 'fecha_procesamiento'
+            }
+            job_data = {}
+            extra_fields = {}
+            for key, value in row.items():
+                if key in known_fields:
+                    job_data[key] = value
+                else:
+                    extra_fields[key] = value
+            job = Job(**job_data)
+            if extra_fields:
+                job.extra_fields = extra_fields
+            return job
     cur.close()
-    
-    if row:
-        # Filtrar solo los campos que conocemos para la clase Job
-        known_fields = {
-            'id', 'tipo', 'archivo_ruta', 'estado', 'mensaje_log',
-            'usuario_id', 'fecha_creacion', 'fecha_procesamiento'
-        }
-        
-        job_data = {}
-        extra_fields = {}
-        
-        for key, value in row.items():
-            if key in known_fields:
-                job_data[key] = value
-            else:
-                extra_fields[key] = value
-        
-        # Crear el job con los campos conocidos
-        job = Job(**job_data)
-        
-        # Agregar campos extra si existen
-        if extra_fields:
-            job.extra_fields = extra_fields
-            
-        return job
-    
     return None
 
 
@@ -112,31 +115,27 @@ def actualizar_estado(db: DatabaseManager, job_id: int, estado: str, mensaje: Op
 def procesar_job_sifone(job: Job, sp: SifoneProcessor) -> bool:
     """Procesar un job de tipo Sifone"""
     try:
-        match job.tipo:
-            case "sifone_libro":
-                data = sp.process_asociados_file(job.archivo_ruta)
-                if data:
-                    sp.truncate_table('sifone_asociados')
-                    sp.insert_data('sifone_asociados', data, check_duplicates=False)
-                    sp.insert_control_asociados()
-                    return True
-                    
-            case "sifone_cartera_mora":
-                data = sp.process_cartera_mora_file(job.archivo_ruta)
-                if data:
-                    sp.truncate_table('sifone_cartera_mora')
-                    sp.insert_data('sifone_cartera_mora', data, check_duplicates=False)
-                    return True
-                    
-            case "sifone_cartera_aseguradora":
-                data = sp.process_cartera_aseguradora_file(job.archivo_ruta)
-                if data:
-                    sp.truncate_table('sifone_cartera_aseguradora')
-                    sp.insert_data('sifone_cartera_aseguradora', data, check_duplicates=False)
-                    return True
-                    
-            case _:
-                raise ValueError(f"Tipo de sifone no soportado: {job.tipo}")
+        if job.tipo == "sifone_libro":
+            data = sp.process_asociados_file(job.archivo_ruta)
+            if data:
+                sp.truncate_table('sifone_asociados')
+                sp.insert_data('sifone_asociados', data, check_duplicates=False)
+                sp.insert_control_asociados()
+                return True
+        elif job.tipo == "sifone_cartera_mora":
+            data = sp.process_cartera_mora_file(job.archivo_ruta)
+            if data:
+                sp.truncate_table('sifone_cartera_mora')
+                sp.insert_data('sifone_cartera_mora', data, check_duplicates=False)
+                return True
+        elif job.tipo == "sifone_cartera_aseguradora":
+            data = sp.process_cartera_aseguradora_file(job.archivo_ruta)
+            if data:
+                sp.truncate_table('sifone_cartera_aseguradora')
+                sp.insert_data('sifone_cartera_aseguradora', data, check_duplicates=False)
+                return True
+        else:
+            raise ValueError(f"Tipo de sifone no soportado: {job.tipo}")
                 
     except Exception as e:
         logger.error(f"Error procesando job sifone {job.tipo}: {e}")
@@ -148,21 +147,18 @@ def procesar_job_sifone(job: Job, sp: SifoneProcessor) -> bool:
 def procesar_job_pagos(job: Job, pp: PagosProcessor) -> bool:
     """Procesar un job de tipo Pagos"""
     try:
-        match job.tipo:
-            case "pagos_pse":
-                data = pp.process_pse_file(job.archivo_ruta)
-                if data:
-                    pp.insert_data('banco_pse', data, check_duplicates=True, id_column='pse_id')
-                    return True
-                    
-            case "pagos_confiar":
-                data = pp.process_confiar_file(job.archivo_ruta)
-                if data:
-                    pp.insert_data('banco_confiar', data, check_duplicates=True, id_column='confiar_id')
-                    return True
-                    
-            case _:
-                raise ValueError(f"Tipo de pagos no soportado: {job.tipo}")
+        if job.tipo == "pagos_pse":
+            data = pp.process_pse_file(job.archivo_ruta)
+            if data:
+                pp.insert_data('banco_pse', data, check_duplicates=True, id_column='pse_id')
+                return True
+        elif job.tipo == "pagos_confiar":
+            data = pp.process_confiar_file(job.archivo_ruta)
+            if data:
+                pp.insert_data('banco_confiar', data, check_duplicates=True, id_column='confiar_id')
+                return True
+        else:
+            raise ValueError(f"Tipo de pagos no soportado: {job.tipo}")
                 
     except Exception as e:
         logger.error(f"Error procesando job pagos {job.tipo}: {e}")
@@ -224,8 +220,9 @@ def procesar_jobs_pendientes(db: DatabaseManager) -> int:
         logger.info("ℹ️ No hay jobs pendientes para procesar")
         return 0
     
-    logger.info(f"🔄 Iniciando procesamiento de jobs pendientes...")
+    logger.info(f"🔄 Iniciando procesamiento de jobs pendientes con prioridad fija...")
     
+    procesado_pagos = False
     while True:
         job = obtener_job_pendiente(db)
         if not job:
@@ -233,9 +230,27 @@ def procesar_jobs_pendientes(db: DatabaseManager) -> int:
             
         procesar_job(db, job)
         jobs_procesados += 1
+        if job.tipo in ('pagos_pse','pagos_confiar'):
+            procesado_pagos = True
         
     if jobs_procesados > 0:
         logger.info(f"✅ Procesamiento completado: {jobs_procesados} jobs procesados")
+    # Si se procesaron pagos en este ciclo, ejecutar relaciones PSE↔Confiar al final
+    if procesado_pagos:
+        try:
+            logger.info("🔗 Ejecutando relaciones automáticas PSE ↔ Confiar")
+            with PagoRelacionProcessor() as relacion_processor:
+                result = relacion_processor.process_automatic_relations()
+                if result.get('success') and result.get('total_valid', 0) > 0:
+                    insert_result = relacion_processor.insert_relations(result['relations'])
+                    if insert_result.get('success'):
+                        logger.info(f"✅ {insert_result.get('message')}")
+                    else:
+                        logger.warning(f"⚠️ Error insertando relaciones: {insert_result.get('message')}")
+                else:
+                    logger.info("ℹ️ No se encontraron relaciones para insertar")
+        except Exception as e:
+            logger.error(f"❌ Error ejecutando relaciones automáticas: {e}")
     
     return jobs_procesados
 

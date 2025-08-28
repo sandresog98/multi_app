@@ -140,12 +140,17 @@ class PagosProcessor(BaseProcessor):
     def segmentar_tipo_pago(self, descripcion: str, valor_consignacion: float) -> str:
         """Segmentar tipo de pago para Confiar según reglas provistas"""
         desc = (descripcion or '').lower()
+        # Normalizar acentos básicos para coincidencias robustas
+        desc_norm = (desc
+            .replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u')
+            .replace('ü','u').replace('ñ','n'))
         if valor_consignacion and valor_consignacion > 0:
             if 'ach' in desc:
                 return 'Pago ACH'
             if 'pago qr' in desc:
                 return 'Pago QR'
-            if 'Consignacion en Cuenta Efectivo' in desc:
+            # Aceptar variantes con/ sin acento, mayúsculas, etc.
+            if 'consignacion en cuenta efectivo' in desc_norm:
                 return 'Pago Efectivo'
         return ''
     
