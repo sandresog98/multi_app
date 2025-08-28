@@ -6,7 +6,7 @@ Configuración centralizada para el sistema de procesamiento de datos
 import os
 import logging
 
-# Directorio base del proyecto
+# Directorio base del proyecto (corrección de _file_)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(_file_)))
 
 # Configuración de la base de datos con soporte de entornos (LOCAL/PROD)
