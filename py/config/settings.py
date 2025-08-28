@@ -6,8 +6,13 @@ Configuración centralizada para el sistema de procesamiento de datos
 import os
 import logging
 
-# Directorio base del proyecto (usar _file_ correctamente)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(_file_)))
+# Directorio base del proyecto (robusto, con fallback si _file_ no existe)
+try:
+    current_path = os.path.abspath(file_)
+except NameError:
+    # Algunos entornos pueden no definir _file_ (p.ej. ejecución embebida)
+    _current_path = os.path.abspath(os.getcwd())
+BASE_DIR = os.path.dirname(os.path.dirname(_current_path))
 
 # Configuración de la base de datos (productivo fijo)
 DB_CONFIG = {
