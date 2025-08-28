@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# -- coding: utf-8 --
 """
 Worker de cargas: lee control_cargas y ejecuta el procesador correspondiente.
 
@@ -19,7 +19,7 @@ from processors.sifone_processor import SifoneProcessor
 from processors.pagos_processor import PagosProcessor
 from processors.pago_relacion_processor import PagoRelacionProcessor
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(_name_)
 
 
 class JobStatus(Enum):
@@ -45,7 +45,7 @@ class Job:
     # Campo para almacenar campos adicionales no mapeados
     extra_fields: Dict[str, Any] = field(default_factory=dict)
     
-    def __post_init__(self):
+    def _post_init_(self):
         """Procesar campos adicionales después de la inicialización"""
         # Si hay campos extra, moverlos a extra_fields
         if hasattr(self, '_extra_fields'):
@@ -235,24 +235,26 @@ def procesar_jobs_pendientes(db: DatabaseManager) -> int:
         
     if jobs_procesados > 0:
         logger.info(f"✅ Procesamiento completado: {jobs_procesados} jobs procesados")
-    # Si se procesaron pagos en este ciclo, ejecutar relaciones PSE↔Confiar al final
-    if procesado_pagos:
-        try:
-            logger.info("🔗 Ejecutando relaciones automáticas PSE ↔ Confiar")
-            with PagoRelacionProcessor() as relacion_processor:
-                result = relacion_processor.process_automatic_relations()
-                if result.get('success') and result.get('total_valid', 0) > 0:
-                    insert_result = relacion_processor.insert_relations(result['relations'])
-                    if insert_result.get('success'):
-                        logger.info(f"✅ {insert_result.get('message')}")
-                    else:
-                        logger.warning(f"⚠️ Error insertando relaciones: {insert_result.get('message')}")
-                else:
-                    logger.info("ℹ️ No se encontraron relaciones para insertar")
-        except Exception as e:
-            logger.error(f"❌ Error ejecutando relaciones automáticas: {e}")
     
     return jobs_procesados
+
+
+def ejecutar_relaciones_automaticas() -> None:
+    """Ejecuta relaciones PSE ↔ Confiar siempre, haya o no nuevos archivos."""
+    try:
+        logger.info("🔗 Ejecutando relaciones automáticas PSE ↔ Confiar (forzado)")
+        with PagoRelacionProcessor() as relacion_processor:
+            result = relacion_processor.process_automatic_relations()
+            if result.get('success') and result.get('total_valid', 0) > 0:
+                insert_result = relacion_processor.insert_relations(result['relations'])
+                if insert_result.get('success'):
+                    logger.info(f"✅ {insert_result.get('message')}")
+                else:
+                    logger.warning(f"⚠️ Error insertando relaciones: {insert_result.get('message')}")
+            else:
+                logger.info("ℹ️ No se encontraron relaciones para insertar")
+    except Exception as e:
+        logger.error(f"❌ Error ejecutando relaciones automáticas: {e}")
 
 
 def main() -> None:
@@ -290,7 +292,8 @@ Ejemplos de uso:
         if args.run_once:
             logger.info("🔄 Modo run-once: procesando todos los jobs pendientes")
             jobs_procesados = procesar_jobs_pendientes(db)
-            
+            # Ejecutar relaciones siempre, haya o no jobs procesados
+            ejecutar_relaciones_automaticas()
             if jobs_procesados == 0:
                 logger.info("ℹ️ No se encontraron jobs pendientes para procesar")
             else:
@@ -312,6 +315,9 @@ Ejemplos de uso:
                     logger.info(f"📊 Ciclo #{ciclo}: {jobs_procesados} jobs procesados exitosamente")
                 else:
                     logger.info(f"ℹ️ Ciclo #{ciclo}: No hay jobs pendientes - esperando {args.interval} segundos...")
+                
+                # Ejecutar relaciones siempre por ciclo
+                ejecutar_relaciones_automaticas()
                     
                 time.sleep(args.interval)
                 
@@ -329,7 +335,5 @@ Ejemplos de uso:
         logger.info("🛑 Worker detenido")
 
 
-if __name__ == '__main__':
+if _name_ == '_main_':
     main()
-
-
