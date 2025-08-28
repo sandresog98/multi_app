@@ -9,6 +9,7 @@ Modo: --run-once (procesa una tanda y sale) o en bucle con sleep.
 import argparse
 import logging
 import time
+import traceback
 from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
@@ -19,8 +20,21 @@ from processors.sifone_processor import SifoneProcessor
 from processors.pagos_processor import PagosProcessor
 from processors.pago_relacion_processor import PagoRelacionProcessor
 
-# logger = logging.getLogger(_name_)
+class SimpleLogger:
+    def info(self, message: str) -> None:
+        print(message)
 
+    def warning(self, message: str) -> None:
+        print(f"⚠️ {message}")
+
+    def error(self, message: str) -> None:
+        print(f"❌ {message}")
+
+    def exception(self, message: str) -> None:
+        print(f"❌ {message}")
+        print(traceback.format_exc())
+
+logger = SimpleLogger()
 
 class JobStatus(Enum):
     """Estados posibles de un job"""
