@@ -335,5 +335,4 @@ Ejemplos de uso:
         logger.info("🛑 Worker detenido")
 
 
-if _name_ == '_main_':
-    main()
+main()
