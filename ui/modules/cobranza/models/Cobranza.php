@@ -189,6 +189,50 @@ class Cobranza {
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
+	public function obtenerDetalleCompletoAsociado($cedula) {
+		// Información del asociado
+		$sqlAsociado = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte FROM sifone_asociados WHERE cedula = ?";
+		$stmtAsociado = $this->conn->prepare($sqlAsociado);
+		$stmtAsociado->execute([$cedula]);
+		$asociado = $stmtAsociado->fetch(PDO::FETCH_ASSOC);
+
+		// Información de créditos
+		$sqlCreditos = "SELECT 
+							a.numero AS numero_credito,
+							a.tipopr AS tipo_prestamo,
+							a.plazo,
+							a.tasa,
+							a.carter AS deuda_capital,
+							m.sdomor AS saldo_mora,
+							m.diav AS dias_mora,
+							m.fechap AS fecha_pago
+						FROM sifone_cartera_aseguradora a
+						LEFT JOIN sifone_cartera_mora m
+							ON m.cedula = a.cedula AND m.presta = a.numero
+						WHERE a.cedula = ?
+						ORDER BY a.numero";
+		$stmtCreditos = $this->conn->prepare($sqlCreditos);
+		$stmtCreditos->execute([$cedula]);
+		$creditos = $stmtCreditos->fetchAll(PDO::FETCH_ASSOC);
+
+		// Información de productos asignados
+		$sqlProductos = "SELECT ap.id, ap.cedula, ap.producto_id, ap.dia_pago, ap.monto_pago, ap.estado_activo,
+							   p.nombre as producto_nombre, p.valor_minimo, p.valor_maximo
+						FROM control_asignacion_asociado_producto ap
+						INNER JOIN control_productos p ON p.id = ap.producto_id
+						WHERE ap.cedula = ?
+						ORDER BY p.nombre";
+		$stmtProductos = $this->conn->prepare($sqlProductos);
+		$stmtProductos->execute([$cedula]);
+		$productos = $stmtProductos->fetchAll(PDO::FETCH_ASSOC);
+
+		return [
+			'asociado' => $asociado,
+			'creditos' => $creditos,
+			'productos' => $productos
+		];
+	}
+
 	private function clasificarEstadoMora($maxDiav) {
 		if ($maxDiav >= 91) return ['label' => 'Jurídico', 'color' => 'danger'];
 		if ($maxDiav >= 61) return ['label' => 'Prejurídico', 'color' => 'warning'];

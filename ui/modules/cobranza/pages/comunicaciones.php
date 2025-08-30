@@ -124,14 +124,14 @@ function tiempoRelativo($fecha) {
 			</div>
 
 			<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
-				<div class="modal-dialog modal-lg modal-dialog-scrollable">
+				<div class="modal-dialog modal-xl modal-dialog-scrollable">
 					<div class="modal-content">
 						<div class="modal-header">
 							<h5 class="modal-title">Detalle de mora - <span id="detalleNombre"></span> (<span id="detalleCedula"></span>)</h5>
 							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
 						<div class="modal-body">
-							<div id="detalleTabla" class="table-responsive"></div>
+							<div id="detalleContenido"></div>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -210,15 +210,152 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.getElementById('detalleCedula').textContent = btn.getAttribute('data-cedula');
 		fetch(`../api/cobranza_detalle.php?cedula=${encodeURIComponent(btn.getAttribute('data-cedula'))}`)
 			.then(r => r.json()).then(data => {
-				const rows = data?.items || [];
-				let html = '<table class="table table-sm"><thead><tr><th>Préstamo</th><th>Tipo</th><th class="text-end">Saldo mora</th><th class="text-center">Días</th><th class="text-end">Int. mora</th></tr></thead><tbody>';
-				for (const it of rows) {
-					html += `<tr><td>${it.presta||''}</td><td>${it.tipopr||''}</td><td class="text-end">$${Number(it.sdomor||0).toLocaleString('es-CO')}</td><td class="text-center">${it.diav||0}</td><td class="text-end">$${Number(it.intmora||0).toLocaleString('es-CO')}</td></tr>`;
+				if (!data.success || !data.data) {
+					document.getElementById('detalleContenido').innerHTML = '<div class="text-danger small">Error al cargar el detalle.</div>';
+					return;
 				}
-				html += '</tbody></table>';
-				document.getElementById('detalleTabla').innerHTML = html;
+				
+				const detalle = data.data;
+				let html = '';
+				
+				// Información del asociado
+				if (detalle.asociado) {
+					html += `
+						<div class="row g-3 mb-3">
+							<div class="col-md-6">
+								<div class="card">
+									<div class="card-header"><strong>Información del asociado</strong></div>
+									<div class="card-body">
+										<div><strong>Nombre:</strong> ${detalle.asociado.nombre || ''}</div>
+										<div><strong>Cédula:</strong> ${detalle.asociado.cedula || ''}</div>
+										<div><strong>Teléfono:</strong> ${detalle.asociado.celula || ''}</div>
+										<div><strong>Email:</strong> ${detalle.asociado.mail || ''}</div>
+										<div><strong>Ciudad:</strong> ${detalle.asociado.ciudad || ''}</div>
+										<div><strong>Dirección:</strong> ${detalle.asociado.direcc || ''}</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="card">
+									<div class="card-header"><strong>Información monetaria</strong></div>
+									<div class="card-body">
+										<div><strong>Aportes:</strong> $${Number(detalle.asociado.aporte || 0).toLocaleString('es-CO')}</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
+				}
+				
+				// Información de créditos
+				if (detalle.creditos && detalle.creditos.length > 0) {
+					html += `
+						<div class="row g-3 mb-3">
+							<div class="col-12">
+								<div class="card">
+									<div class="card-header"><strong>Información crédito</strong></div>
+									<div class="card-body">
+										<div class="table-responsive">
+											<table class="table table-sm table-hover">
+												<thead class="table-light">
+													<tr>
+														<th>Crédito</th>
+														<th>Tipo Préstamo</th>
+														<th>Plazo</th>
+														<th>Tasa Interés</th>
+														<th>Deuda Capital</th>
+														<th>Saldo Mora</th>
+														<th>Días Mora</th>
+														<th>Fecha de Pago</th>
+													</tr>
+												</thead>
+												<tbody>
+					`;
+					
+					for (const credito of detalle.creditos) {
+						const fechaPago = credito.fecha_pago ? new Date(credito.fecha_pago).toLocaleDateString('es-CO') : '-';
+						html += `
+							<tr>
+								<td>${credito.numero_credito || ''}</td>
+								<td>${credito.tipo_prestamo || ''}</td>
+								<td>${Number(credito.plazo || 0)}</td>
+								<td>${Number(credito.tasa || 0) * 100}%</td>
+								<td>$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
+								<td>$${Number(credito.saldo_mora || 0).toLocaleString('es-CO')}</td>
+								<td>${Number(credito.dias_mora || 0)}</td>
+								<td>${fechaPago}</td>
+							</tr>
+						`;
+					}
+					
+					html += `
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
+				}
+				
+				// Información de productos
+				if (detalle.productos && detalle.productos.length > 0) {
+					html += `
+						<div class="row g-3 mb-3">
+							<div class="col-12">
+								<div class="card">
+									<div class="card-header"><strong>Información de productos</strong></div>
+									<div class="card-body">
+										<div class="table-responsive">
+											<table class="table table-sm table-hover">
+												<thead class="table-light">
+													<tr>
+														<th>ID</th>
+														<th>Producto</th>
+														<th>Día Pago</th>
+														<th>Monto Pago</th>
+														<th>Rango</th>
+														<th>Estado</th>
+													</tr>
+												</thead>
+												<tbody>
+					`;
+					
+					for (const producto of detalle.productos) {
+						const estado = producto.estado_activo ? 'Activo' : 'Inactivo';
+						const estadoClass = producto.estado_activo ? 'bg-success' : 'bg-secondary';
+						html += `
+							<tr>
+								<td>${Number(producto.id || 0)}</td>
+								<td>${producto.producto_nombre || ''}</td>
+								<td>${Number(producto.dia_pago || 0)}</td>
+								<td>$${Number(producto.monto_pago || 0).toLocaleString('es-CO')}</td>
+								<td>$${Number(producto.valor_minimo || 0).toLocaleString('es-CO')} - $${Number(producto.valor_maximo || 0).toLocaleString('es-CO')}</td>
+								<td><span class="badge ${estadoClass}">${estado}</span></td>
+							</tr>
+						`;
+					}
+					
+					html += `
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
+				}
+				
+				// Si no hay información
+				if (!detalle.asociado && (!detalle.creditos || detalle.creditos.length === 0) && (!detalle.productos || detalle.productos.length === 0)) {
+					html = '<div class="text-muted">No hay información disponible para este asociado.</div>';
+				}
+				
+				document.getElementById('detalleContenido').innerHTML = html;
 			}).catch(() => {
-				document.getElementById('detalleTabla').innerHTML = '<div class="text-danger small">Error al cargar el detalle.</div>';
+				document.getElementById('detalleContenido').innerHTML = '<div class="text-danger small">Error al cargar el detalle.</div>';
 			});
 	});
 
