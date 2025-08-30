@@ -180,35 +180,37 @@ document.getElementById('btnEjecutarWorker')?.addEventListener('click', async (e
     // Actualizar contenido del modal
     const outputContent = document.getElementById('workerOutputContent');
     
-    if (data.success) {
-      let html = '<div class="alert alert-success">';
-      html += '<h6><i class="fas fa-check-circle me-2"></i>Worker ejecutado exitosamente</h6>';
-      html += '<p class="mb-2">' + (data.message || 'Comando completado') + '</p>';
-      
-      if (data.output && data.output.length > 0) {
-        html += '<h6 class="mt-3">Salida del comando:</h6>';
-        html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
-        html += data.output.join('\n');
-        html += '</pre>';
-      }
-      
-      html += '</div>';
-      outputContent.innerHTML = html;
-    } else {
-      let html = '<div class="alert alert-danger">';
-      html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Error al ejecutar worker</h6>';
-      html += '<p class="mb-2">' + (data.message || 'Error desconocido') + '</p>';
-      
-      if (data.output && data.output.length > 0) {
-        html += '<h6 class="mt-3">Salida del comando:</h6>';
-        html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
-        html += data.output.join('\n');
-        html += '</pre>';
-      }
-      
-      html += '</div>';
-      outputContent.innerHTML = html;
-    }
+         if (data.success) {
+       let html = '<div class="alert alert-success mb-3">';
+       html += '<h6><i class="fas fa-check-circle me-2"></i>Worker ejecutado exitosamente</h6>';
+       html += '</div>';
+       
+       if (data.output && data.output.length > 0) {
+         html += '<h6 class="mb-2">Salida del comando:</h6>';
+         html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
+         html += data.output.join('\n');
+         html += '</pre>';
+       } else {
+         html += '<p class="text-muted">Comando ejecutado sin salida visible.</p>';
+       }
+       
+       outputContent.innerHTML = html;
+     } else {
+       let html = '<div class="alert alert-danger mb-3">';
+       html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Error al ejecutar worker</h6>';
+       html += '</div>';
+       
+       if (data.output && data.output.length > 0) {
+         html += '<h6 class="mb-2">Salida del comando:</h6>';
+         html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
+         html += data.output.join('\n');
+         html += '</pre>';
+       } else {
+         html += '<p class="text-muted">Error sin salida visible.</p>';
+       }
+       
+       outputContent.innerHTML = html;
+     }
     
   } catch (error) {
     const outputContent = document.getElementById('workerOutputContent');
@@ -226,7 +228,7 @@ document.getElementById('btnEjecutarWorker')?.addEventListener('click', async (e
 
 cargarListado();
 
-// Resetear modal cuando se cierre
+// Resetear modal cuando se cierre y actualizar la página
 document.getElementById('modalWorkerOutput')?.addEventListener('hidden.bs.modal', () => {
   const outputContent = document.getElementById('workerOutputContent');
   outputContent.innerHTML = `
@@ -235,6 +237,9 @@ document.getElementById('modalWorkerOutput')?.addEventListener('hidden.bs.modal'
       <p>Ejecutando worker...</p>
     </div>
   `;
+  
+  // Actualizar la lista de cargas para ver el estado actualizado
+  cargarListado();
 });
 </script>
 
