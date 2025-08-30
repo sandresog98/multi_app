@@ -506,6 +506,22 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.getElementById('comNombre').textContent = btn.getAttribute('data-nombre');
 		document.getElementById('comCedula').textContent = btn.getAttribute('data-cedula');
 		document.getElementById('comCedulaInput').value = btn.getAttribute('data-cedula');
+		
+		// Limpiar el formulario para evitar confusión con valores anteriores
+		const form = document.getElementById('formComunicacion');
+		form.reset();
+		
+		// Establecer fecha actual por defecto
+		const fechaInput = form.querySelector('input[name="fecha"]');
+		if (fechaInput) {
+			const now = new Date();
+			const year = now.getFullYear();
+			const month = String(now.getMonth() + 1).padStart(2, '0');
+			const day = String(now.getDate()).padStart(2, '0');
+			const hours = String(now.getHours()).padStart(2, '0');
+			const minutes = String(now.getMinutes()).padStart(2, '0');
+			fechaInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+		}
 	});
 
 	document.getElementById('formComunicacion').addEventListener('submit', (ev) => {
