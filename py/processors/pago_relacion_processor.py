@@ -9,8 +9,8 @@ from typing import List, Dict, Any, Tuple
 from datetime import datetime
 import sys
 import os
-# Asegurar que el proyecto raíz esté en sys.path usando _file_ correctamente
-CURRENT_DIR = os.path.dirname(os.path.abspath(_file_))
+# Asegurar que el proyecto raíz esté en sys.path usando __file__ correctamente
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
@@ -28,9 +28,9 @@ class PagoRelacionProcessor(BaseProcessor):
     Procesador para crear relaciones automáticas entre pagos PSE y Confiar
     """
     
-    def _init_(self):
-        super()._init_("PagoRelacionProcessor")
-        self.logger = logging.getLogger(_name_)
+    def __init__(self):
+        super().__init__("PagoRelacionProcessor")
+        self.logger = logging.getLogger(__name__)
         
     def process_automatic_relations(self) -> Dict[str, Any]:
         """
