@@ -80,6 +80,10 @@
             "diav" : {
                 "nombre" : "Días Mora",
                 "descripcion" : "Días de mora del crédito"
+            },
+            "fechap" : {
+                "nombre" : "Fecha de Pago",
+                "descripcion" : "Fecha de pago del crédito"
             }
         },
         "control_asociados" : {

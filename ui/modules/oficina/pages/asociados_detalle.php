@@ -95,6 +95,7 @@ include '../../../views/layouts/header.php';
                   <th><?php echo dict_label('sifone_cartera_aseguradora','carter','Deuda Capital'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_mora','sdomor','Saldo Mora'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_mora','diav','Días Mora'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_mora','fechap','Fecha de Pago'); ?></th>
                 </tr></thead>
                 <tbody>
                   <?php foreach ($creditos as $c): ?>
@@ -106,6 +107,7 @@ include '../../../views/layouts/header.php';
                     <td><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
                     <td><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></td>
                     <td><?php echo (int)$c['dias_mora']; ?></td>
+                    <td><?php echo $c['fecha_pago'] ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>

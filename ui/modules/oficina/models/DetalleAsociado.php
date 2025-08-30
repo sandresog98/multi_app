@@ -20,7 +20,8 @@ class DetalleAsociado {
                     a.tasa,
                     a.carter AS deuda_capital,
                     m.sdomor AS saldo_mora,
-                    m.diav AS dias_mora
+                    m.diav AS dias_mora,
+                    m.fechap AS fecha_pago
                 FROM sifone_cartera_aseguradora a
                 LEFT JOIN sifone_cartera_mora m
                     ON m.cedula = a.cedula AND m.presta = a.numero
