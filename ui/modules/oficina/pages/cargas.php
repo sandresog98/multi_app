@@ -19,6 +19,11 @@ include '../../../views/layouts/header.php';
     <main class="col-12 main-content">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2"><i class="fas fa-file-upload me-2"></i>Cargas</h1>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" id="btnEjecutarWorker" title="Ejecutar worker de Python">
+            <i class="fas fa-play me-1"></i>Ejecutar Worker
+          </button>
+        </div>
       </div>
 
       <div class="row g-3">
@@ -86,6 +91,31 @@ include '../../../views/layouts/header.php';
         </div>
       </div>
 
+      <!-- Modal para mostrar la salida del worker -->
+      <div class="modal fade" id="modalWorkerOutput" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                <i class="fas fa-terminal me-2"></i>Salida del Worker
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="workerOutputContent">
+                <div class="text-center text-muted">
+                  <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                  <p>Ejecutando worker...</p>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -127,7 +157,85 @@ function estadoBadge(est){
   return '<span class="badge bg-secondary">Pendiente</span>';
 }
 document.getElementById('btnRefrescar')?.addEventListener('click', (e)=>{ e.preventDefault(); cargarListado(); });
+
+// Botón para ejecutar worker
+document.getElementById('btnEjecutarWorker')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const btn = e.target.closest('button');
+  const originalText = btn.innerHTML;
+  
+  try {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Ejecutando...';
+    
+    // Mostrar modal con estado de ejecución
+    const modal = new bootstrap.Modal(document.getElementById('modalWorkerOutput'));
+    modal.show();
+    
+    const res = await fetch('<?php echo getBaseUrl(); ?>modules/oficina/api/ejecutar_worker.php', { 
+      method: 'POST' 
+    });
+    const data = await res.json();
+    
+    // Actualizar contenido del modal
+    const outputContent = document.getElementById('workerOutputContent');
+    
+    if (data.success) {
+      let html = '<div class="alert alert-success">';
+      html += '<h6><i class="fas fa-check-circle me-2"></i>Worker ejecutado exitosamente</h6>';
+      html += '<p class="mb-2">' + (data.message || 'Comando completado') + '</p>';
+      
+      if (data.output && data.output.length > 0) {
+        html += '<h6 class="mt-3">Salida del comando:</h6>';
+        html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
+        html += data.output.join('\n');
+        html += '</pre>';
+      }
+      
+      html += '</div>';
+      outputContent.innerHTML = html;
+    } else {
+      let html = '<div class="alert alert-danger">';
+      html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Error al ejecutar worker</h6>';
+      html += '<p class="mb-2">' + (data.message || 'Error desconocido') + '</p>';
+      
+      if (data.output && data.output.length > 0) {
+        html += '<h6 class="mt-3">Salida del comando:</h6>';
+        html += '<pre class="bg-light p-2 rounded small" style="max-height: 300px; overflow-y: auto;">';
+        html += data.output.join('\n');
+        html += '</pre>';
+      }
+      
+      html += '</div>';
+      outputContent.innerHTML = html;
+    }
+    
+  } catch (error) {
+    const outputContent = document.getElementById('workerOutputContent');
+    outputContent.innerHTML = `
+      <div class="alert alert-danger">
+        <h6><i class="fas fa-exclamation-triangle me-2"></i>Error de conexión</h6>
+        <p>${error.message}</p>
+      </div>
+    `;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+});
+
 cargarListado();
+
+// Resetear modal cuando se cierre
+document.getElementById('modalWorkerOutput')?.addEventListener('hidden.bs.modal', () => {
+  const outputContent = document.getElementById('workerOutputContent');
+  outputContent.innerHTML = `
+    <div class="text-center text-muted">
+      <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+      <p>Ejecutando worker...</p>
+    </div>
+  `;
+});
 </script>
 
 <?php include '../../../views/layouts/footer.php'; ?>
