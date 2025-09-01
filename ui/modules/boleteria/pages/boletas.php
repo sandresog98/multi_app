@@ -11,6 +11,37 @@ $currentPage = 'boleteria_boletas';
 include '../../../views/layouts/header.php';
 ?>
 
+<style>
+.timeline {
+  position: relative;
+  padding-left: 20px;
+}
+
+.timeline-item {
+  position: relative;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -25px;
+  top: 5px;
+}
+
+.timeline-marker i {
+  font-size: 12px;
+}
+
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: -19px;
+  top: 20px;
+  bottom: -20px;
+  width: 2px;
+  background-color: #e9ecef;
+}
+</style>
+
 <div class="container-fluid">
   <div class="row">
     <?php include '../../../views/layouts/sidebar.php'; ?>
@@ -34,9 +65,10 @@ include '../../../views/layouts/header.php';
               <label class="form-label">Estado</label>
               <select class="form-select" id="filtroEstado">
                 <option value="">Todos</option>
-                <option value="disponible" selected>Disponible</option>
+                <option value="disponible">Disponible</option>
                 <option value="vendida">Vendida</option>
                 <option value="anulada">Anulada</option>
+                <option value="contabilizada">Contabilizada</option>
               </select>
             </div>
             <div class="col-6 col-md-2">
@@ -62,6 +94,14 @@ include '../../../views/layouts/header.php';
                 <input type="date" class="form-control" id="fvDesde">
                 <span class="input-group-text">a</span>
                 <input type="date" class="form-control" id="fvHasta">
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label">F. vencimiento (desde - hasta)</label>
+              <div class="input-group">
+                <input type="date" class="form-control" id="fvenDesde">
+                <span class="input-group-text">a</span>
+                <input type="date" class="form-control" id="fvenHasta">
               </div>
             </div>
             <div class="col-12 col-md-2 d-flex align-items-end">
@@ -95,6 +135,8 @@ include '../../../views/layouts/header.php';
                   <th>Método</th>
                   <th data-sort="fecha_creacion" class="sortable">F. creación</th>
                   <th data-sort="fecha_vendida" class="sortable">F. vendida</th>
+                  <th data-sort="fecha_vencimiento" class="sortable">F. vencimiento</th>
+                  <th>Auditoría</th>
                   <th class="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -133,6 +175,10 @@ include '../../../views/layouts/header.php';
                   </div>
                 </div>
                 <div class="mb-3 mt-2">
+                  <label class="form-label">Fecha de vencimiento (opcional)</label>
+                  <input type="date" class="form-control" id="bolFechaVencimiento">
+                </div>
+                <div class="mb-3 mt-2">
                   <label class="form-label">Archivo (opcional) JPG/JPEG/PNG/PDF</label>
                   <input type="file" class="form-control" id="bolArchivo" accept=".jpg,.jpeg,.png,.pdf">
                 </div>
@@ -161,25 +207,67 @@ include '../../../views/layouts/header.php';
                 <div id="bol_asoc_results" class="list-group position-absolute w-100" style="top:100%; left:0; z-index:1070; max-height:220px; overflow:auto; background:#fff; border:1px solid #dee2e6; border-top:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
               </div>
               <div class="row g-2 mt-2">
-                <div class="col-12 col-md-6">
+                <div class="col-12">
                   <label class="form-label">Método de venta</label>
                   <select class="form-select" id="metodoVenta" required>
-                    <option value="">Seleccione…</option>
-                    <option value="Directa">Directa</option>
-                    <option value="Incentivos">Incentivos</option>
-                    <option value="Credito">Credito</option>
+                    <option value="credito" selected>Crédito</option>
+                    <option value="regalo_cooperativa">Regalo Cooperativa</option>
                   </select>
                 </div>
-                <div class="col-12 col-md-6">
-                  <label class="form-label">Comprobante (opcional)</label>
-                  <input type="text" class="form-control" id="comprobanteVenta" placeholder="Referencia, nota, etc.">
-                </div>
               </div>
-              
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
               <button type="button" class="btn btn-primary" id="btnConfirmarVenta" disabled>Confirmar venta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Contabilizar Boleta -->
+      <div class="modal fade" id="modalContabilizar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Contabilizar boleta</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Comprobante</label>
+                <input type="text" class="form-control" id="comprobanteContabilizacion" placeholder="Número de comprobante" required>
+              </div>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Solo se pueden contabilizar boletas que estén vendidas.
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+              <button type="button" class="btn btn-primary" id="btnConfirmarContabilizacion">Contabilizar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Detalle de Boleta -->
+      <div class="modal fade" id="modalDetalleBoleta" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Detalle de boleta</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div id="detalleBoletaContenido">
+                <div class="text-center text-muted">
+                  <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                  <p>Cargando detalle...</p>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
           </div>
         </div>
@@ -197,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnFiltrar').addEventListener('click', cargarBoletas);
   document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltrosBoletas);
   document.getElementById('btnGuardarBoleta').addEventListener('click', guardarBoleta);
+  document.getElementById('btnConfirmarContabilizacion').addEventListener('click', confirmarContabilizacion);
   document.getElementById('bolSerial').addEventListener('input', (e) => {
     const v = e.target.value;
     // Solo alfanumérico y guiones opcionales si lo deseas; por ahora alfanumérico puro
@@ -252,7 +341,7 @@ async function poblarCategoriasSelects() {
 
 async function cargarBoletas() {
   const tbody = document.getElementById('boletasBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="11" class="text-muted">Cargando…</td></tr>';
   const categoria_id = document.getElementById('filtroCategoria').value;
   const estado = document.getElementById('filtroEstado').value;
   const serial = document.getElementById('filtroSerial').value;
@@ -261,17 +350,40 @@ async function cargarBoletas() {
   const fc_hasta = document.getElementById('fcHasta').value;
   const fv_desde = document.getElementById('fvDesde').value;
   const fv_hasta = document.getElementById('fvHasta').value;
-  const params = new URLSearchParams({ categoria_id, estado, serial, cedula, fc_desde, fc_hasta, fv_desde, fv_hasta, page: bolPage, limit: 10, sort_by: bolSortBy, sort_dir: bolSortDir });
+  const fven_desde = document.getElementById('fvenDesde').value;
+  const fven_hasta = document.getElementById('fvenHasta').value;
+  
+  // Debug: mostrar filtros en consola
+  console.log('Filtros aplicados:', { categoria_id, estado, serial, cedula, fc_desde, fc_hasta, fv_desde, fv_hasta, fven_desde, fven_hasta });
+  
+  const params = new URLSearchParams({ categoria_id, estado, serial, cedula, fc_desde, fc_hasta, fv_desde, fv_hasta, fven_desde, fven_hasta, page: bolPage, limit: 10, sort_by: bolSortBy, sort_dir: bolSortDir });
+  const url = '../../boleteria/api/boletas_listar.php?' + params.toString();
   try {
-    const res = await fetch('../../boleteria/api/boletas_listar.php?' + params.toString());
+    const res = await fetch(url);
+    if (!res.ok) {
+      const txt = await res.text();
+      tbody.innerHTML = `<tr><td colspan="11" class="text-danger">Error ${res.status}: ${escapeHtml(txt)}</td></tr>`;
+      return;
+    }
     const json = await res.json();
-    const data = json && json.data ? json.data : {};
+    if (!json || json.success === false) {
+      tbody.innerHTML = `<tr><td colspan="11" class="text-danger">${escapeHtml(json && json.message ? json.message : 'Error desconocido')}</td></tr>`;
+      return;
+    }
+    const data = json.data || {};
     const items = data.items || [];
     bolPages = data.pages || 1;
     document.getElementById('bolResumen').textContent = `Página ${data.current_page || bolPage} de ${bolPages} · Total: ${data.total || items.length}`;
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Sin datos.</td></tr>'; return; }
+    if (!items.length) { 
+      tbody.innerHTML = '<tr><td colspan="11" class="text-muted">Sin datos.</td></tr>'; 
+      return; 
+    }
     tbody.innerHTML = items.map(item => {
-      const estadoBadge = item.estado === 'disponible' ? '<span class="badge bg-success">Disponible</span>' : (item.estado === 'vendida' ? '<span class="badge bg-primary">Vendida</span>' : '<span class="badge bg-secondary">Anulada</span>');
+      const estadoBadge = item.estado === 'disponible' ? '<span class="badge bg-success">Disponible</span>' : 
+                          (item.estado === 'vendida' ? '<span class="badge bg-primary">Vendida</span>' : 
+                          (item.estado === 'contabilizada' ? '<span class="badge bg-info">Contabilizada</span>' : 
+                          '<span class="badge bg-secondary">Anulada</span>'));
+      
       let acciones = '<span class="text-muted small">—</span>';
       if (item.estado === 'disponible') {
         acciones = `<div class="btn-group btn-group-sm">
@@ -281,6 +393,7 @@ async function cargarBoletas() {
       } else if (item.estado === 'vendida') {
         acciones = `<div class="btn-group btn-group-sm">
              <button class="btn btn-outline-warning" onclick="deshacerVenta(${item.id})" title="Deshacer venta"><i class="fas fa-undo"></i></button>
+             <button class="btn btn-outline-info" onclick="abrirContabilizar(${item.id})" title="Contabilizar"><i class="fas fa-calculator"></i></button>
            </div>`;
       } else if (item.estado === 'anulada') {
         acciones = `<div class="btn-group btn-group-sm">
@@ -289,7 +402,7 @@ async function cargarBoletas() {
       }
       const base = '<?php echo getBaseUrl(); ?>';
       const fileLink = item.archivo_ruta ? `<div class=\"btn-group btn-group-sm\"><a href=\"${escapeHtml(base + item.archivo_ruta)}\" target=\"_blank\" class=\"btn btn-outline-primary\" title=\"Ver\"><i class=\"fas fa-eye\"></i></a><a href=\"${escapeHtml(base + item.archivo_ruta)}\" download class=\"btn btn-outline-secondary\" title=\"Descargar\"><i class=\"fas fa-download\"></i></a></div>` : '';
-      const metodoHtml = item.metodo_venta ? `${escapeHtml(item.metodo_venta)}${item.comprobante ? `<br><small class=\"text-muted\">${escapeHtml(item.comprobante)}</small>` : ''}` : '<span class="text-muted small">—</span>';
+      const metodoHtml = item.metodo_venta ? `${escapeHtml(item.metodo_venta === 'credito' ? 'Crédito' : 'Regalo Cooperativa')}${item.comprobante ? `<br><small class=\"text-muted\">${escapeHtml(item.comprobante)}</small>` : ''}` : '<span class="text-muted small">—</span>';
       return `<tr>
         <td>${escapeHtml(item.serial)}</td>
         <td>${escapeHtml(item.categoria_nombre || String(item.categoria_id))}</td>
@@ -299,7 +412,22 @@ async function cargarBoletas() {
         <td>${metodoHtml}</td>
         <td><small>${escapeHtml(sinSegundos(item.fecha_creacion) || '')}</small></td>
         <td><small>${escapeHtml(sinSegundos(item.fecha_vendida) || '')}</small></td>
-        <td class="text-end" style="white-space: nowrap; width:1%"><div class="d-inline-flex align-items-center gap-1">${fileLink}${acciones}</div></td>
+        <td><small>${item.fecha_vencimiento ? new Date(item.fecha_vencimiento).toLocaleDateString('es-CO') : '-'}</small></td>
+        <td>
+          <div class="small">
+            <div><strong>Creado:</strong> ${item.creado_por_nombre || 'N/A'}</div>
+            ${item.vendido_por_nombre ? `<div><strong>Vendido:</strong> ${item.vendido_por_nombre}</div>` : ''}
+            ${item.contabilizado_por_nombre ? `<div><strong>Contabilizado:</strong> ${item.contabilizado_por_nombre}</div>` : ''}
+          </div>
+        </td>
+        <td class="text-end" style="white-space: nowrap; width:1%">
+          <div class="d-inline-flex align-items-center gap-1">
+            <button class="btn btn-sm btn-outline-info" onclick="abrirDetalleBoleta(${item.id})" title="Ver detalle">
+              <i class="fas fa-info-circle"></i>
+            </button>
+            ${fileLink}${acciones}
+          </div>
+        </td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -355,6 +483,8 @@ async function guardarBoleta() {
     formData.append('serial', serial);
     formData.append('precio_compra', precio_compra);
     formData.append('precio_venta', precio_venta);
+    const fechaVencimiento = document.getElementById('bolFechaVencimiento').value;
+    if (fechaVencimiento) { formData.append('fecha_vencimiento', fechaVencimiento); }
     const file = document.getElementById('bolArchivo').files[0];
     if (file) { formData.append('archivo', file); }
     const res = await fetch('../../boleteria/api/boletas_guardar.php', { method: 'POST', body: formData });
@@ -410,9 +540,9 @@ function abrirVender(id) {
   boletaAOperar = id;
   document.getElementById('buscarAsociado').value = '';
   const dl = document.getElementById('asociadosList'); if (dl) dl.innerHTML = '';
+  const cont = document.getElementById('bol_asoc_results'); if (cont) cont.innerHTML = '';
   window.asociadoSeleccionado = null;
-  const metodo = document.getElementById('metodoVenta'); if (metodo) metodo.value = '';
-  const comp = document.getElementById('comprobanteVenta'); if (comp) comp.value = '';
+  // Mantener método por defecto 'credito' seleccionado
   actualizarEstadoConfirmarVenta();
   new bootstrap.Modal(document.getElementById('modalVender')).show();
 }
@@ -468,12 +598,11 @@ async function confirmarVenta(cedula, nombre) {
   const id = boletaAOperar;
   if (!id) return;
   const metodoVenta = (document.getElementById('metodoVenta').value || '').trim();
-  const comprobante = (document.getElementById('comprobanteVenta').value || '').trim();
-  const permitidos = ['Directa','Incentivos','Credito'];
+  const permitidos = ['credito','regalo_cooperativa'];
   if (!metodoVenta) { alert('Seleccione método de venta'); return; }
   if (!permitidos.includes(metodoVenta)) { alert('Método de venta inválido'); return; }
   try {
-    const res = await fetch('../../boleteria/api/boletas_vender.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, cedula, metodo_venta: metodoVenta, comprobante }) });
+    const res = await fetch('../../boleteria/api/boletas_vender.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, cedula, metodo_venta: metodoVenta }) });
     const json = await res.json();
     if (json && json.success) {
       bootstrap.Modal.getInstance(document.getElementById('modalVender')).hide();
@@ -496,6 +625,86 @@ async function anularBoleta(id) {
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"]+/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+}
+
+function abrirContabilizar(id) {
+  boletaAOperar = id;
+  document.getElementById('comprobanteContabilizacion').value = '';
+  new bootstrap.Modal(document.getElementById('modalContabilizar')).show();
+}
+
+async function confirmarContabilizacion() {
+  const comprobante = document.getElementById('comprobanteContabilizacion').value.trim();
+  if (!comprobante) {
+    alert('Comprobante requerido');
+    return;
+  }
+
+  try {
+    const res = await fetch('../../boleteria/api/boletas_contabilizar.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: boletaAOperar, comprobante })
+    });
+    const json = await res.json();
+    if (json && json.success) {
+      mostrarToast('Boleta contabilizada exitosamente');
+      bootstrap.Modal.getInstance(document.getElementById('modalContabilizar')).hide();
+      cargarBoletas();
+    } else {
+      alert(json.message || 'No se pudo contabilizar');
+    }
+  } catch (e) {
+    alert('Error: ' + e);
+  }
+}
+
+function abrirDetalleBoleta(id) {
+  boletaAOperar = id;
+  const modal = new bootstrap.Modal(document.getElementById('modalDetalleBoleta'));
+  modal.show();
+  cargarDetalleBoleta(id);
+}
+
+async function cargarDetalleBoleta(id) {
+  try {
+    const res = await fetch(`../../boleteria/api/boletas_eventos.php?id=${id}`);
+    const json = await res.json();
+    const contenido = document.getElementById('detalleBoletaContenido');
+    
+    if (json.success && json.eventos) {
+      let html = '<div class="timeline">';
+      json.eventos.forEach(evento => {
+        const fecha = new Date(evento.fecha).toLocaleString('es-CO');
+        const accion = evento.accion.charAt(0).toUpperCase() + evento.accion.slice(1);
+        html += `
+          <div class="timeline-item mb-3">
+            <div class="d-flex align-items-start">
+              <div class="timeline-marker me-3">
+                <i class="fas fa-circle text-primary"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start">
+                  <h6 class="mb-1">${accion}</h6>
+                  <small class="text-muted">${fecha}</small>
+                </div>
+                <div class="small text-muted mb-1">Por: ${evento.usuario_nombre || 'N/A'}</div>
+                ${evento.detalle ? `<p class="mb-0 small">${escapeHtml(evento.detalle)}</p>` : ''}
+                ${evento.estado_anterior && evento.estado_nuevo ? 
+                  `<div class="mt-2"><span class="badge bg-secondary">${evento.estado_anterior}</span> → <span class="badge bg-primary">${evento.estado_nuevo}</span></div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      contenido.innerHTML = html;
+    } else {
+      contenido.innerHTML = '<div class="text-muted">No hay eventos disponibles para esta boleta.</div>';
+    }
+  } catch (e) {
+    document.getElementById('detalleBoletaContenido').innerHTML = '<div class="text-danger">Error al cargar el detalle.</div>';
+  }
 }
 
 function mostrarToast(mensaje) {
@@ -522,12 +731,47 @@ function limpiarFiltrosBoletas() {
   const selCat = document.getElementById('filtroCategoria'); if (selCat) selCat.value = '';
   const selEst = document.getElementById('filtroEstado'); if (selEst) selEst.value = '';
   const inpSer = document.getElementById('filtroSerial'); if (inpSer) inpSer.value = '';
+  const inpCed = document.getElementById('filtroCedula'); if (inpCed) inpCed.value = '';
   const fcD = document.getElementById('fcDesde'); if (fcD) fcD.value = '';
   const fcH = document.getElementById('fcHasta'); if (fcH) fcH.value = '';
   const fvD = document.getElementById('fvDesde'); if (fvD) fvD.value = '';
   const fvH = document.getElementById('fvHasta'); if (fvH) fvH.value = '';
+  const fvenD = document.getElementById('fvenDesde'); if (fvenD) fvenD.value = '';
+  const fvenH = document.getElementById('fvenHasta'); if (fvenH) fvenH.value = '';
   bolPage = 1; bolSortBy = 'id'; bolSortDir = 'DESC';
   cargarBoletas();
+}
+
+async function debugBoletas() {
+  console.log('=== DEBUG BOLETAS ===');
+  console.log('Filtros actuales:');
+  console.log('- Categoría:', document.getElementById('filtroCategoria').value);
+  console.log('- Estado:', document.getElementById('filtroEstado').value);
+  console.log('- Serial:', document.getElementById('filtroSerial').value);
+  console.log('- Cédula:', document.getElementById('filtroCedula').value);
+  console.log('- F. creación desde:', document.getElementById('fcDesde').value);
+  console.log('- F. creación hasta:', document.getElementById('fcHasta').value);
+  console.log('- F. vendida desde:', document.getElementById('fvDesde').value);
+  console.log('- F. vendida hasta:', document.getElementById('fvHasta').value);
+  console.log('- F. vencimiento desde:', document.getElementById('fvenDesde').value);
+  console.log('- F. vencimiento hasta:', document.getElementById('fvenHasta').value);
+  console.log('- Página:', bolPage);
+  console.log('- Orden:', bolSortBy, bolSortDir);
+  
+  // Hacer una consulta sin filtros para ver todas las boletas
+  try {
+    const res = await fetch('../../boleteria/api/boletas_listar.php?limit=1000');
+    const json = await res.json();
+    console.log('Todas las boletas (sin filtros):', json);
+    
+    if (json.success && json.data && json.data.items) {
+      console.log('Total de boletas en BD:', json.data.total);
+      console.log('Estados disponibles:', [...new Set(json.data.items.map(b => b.estado))]);
+      console.log('Primeras 5 boletas:', json.data.items.slice(0, 5));
+    }
+  } catch (e) {
+    console.error('Error en debug:', e);
+  }
 }
 </script>
 

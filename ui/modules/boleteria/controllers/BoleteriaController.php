@@ -64,7 +64,9 @@ class BoleteriaController {
             $data['serial'] ?? '',
             $data['precio_compra'] ?? 0,
             $data['precio_venta'] ?? 0,
-            $data['archivo_ruta'] ?? null
+            $data['archivo_ruta'] ?? null,
+            $data['fecha_vencimiento'] ?? null,
+            $this->auth->getCurrentUser()['id'] ?? null
         );
         if (!empty($res['success'])) {
             $this->logger->logCrear('boleteria.boleta', 'Crear boleta', [
@@ -78,10 +80,10 @@ class BoleteriaController {
     public function boletas_existe($categoriaId, $serial) {
         return $this->boleta->existeSerial((int)$categoriaId, (string)$serial);
     }
-    public function boletas_vender($id, $cedula, $metodoVenta = null, $comprobante = null) {
-        $res = $this->boleta->vender((int)$id, $cedula, $metodoVenta, $comprobante);
+    public function boletas_vender($id, $cedula, $metodoVenta = 'credito') {
+        $res = $this->boleta->vender((int)$id, $cedula, $metodoVenta, $this->auth->getCurrentUser()['id'] ?? null);
         if (!empty($res['success'])) {
-            $this->logger->logEditar('boleteria.boleta', 'Vender boleta', null, ['id' => (int)$id, 'cedula' => $cedula, 'metodo' => $metodoVenta, 'comprobante' => $comprobante]);
+            $this->logger->logEditar('boleteria.boleta', 'Vender boleta', null, ['id' => (int)$id, 'cedula' => $cedula, 'metodo' => $metodoVenta]);
         }
         return $res;
     }
@@ -109,6 +111,18 @@ class BoleteriaController {
 
     public function resumen_kpis() {
         return $this->boleta->getResumenKpis();
+    }
+
+    public function boletas_contabilizar($id, $comprobante) {
+        $res = $this->boleta->contabilizar((int)$id, $comprobante, $this->auth->getCurrentUser()['id'] ?? null);
+        if (!empty($res['success'])) {
+            $this->logger->logEditar('boleteria.boleta', 'Contabilizar boleta', null, ['id' => (int)$id, 'comprobante' => $comprobante]);
+        }
+        return $res;
+    }
+
+    public function boletas_obtener_eventos($id) {
+        return $this->boleta->obtenerEventos((int)$id);
     }
 }
 

@@ -381,17 +381,24 @@ CREATE TABLE IF NOT EXISTS boleteria_boletas (
     precio_compra_snapshot DECIMAL(12,2) NOT NULL,
     precio_venta_snapshot DECIMAL(12,2) NOT NULL,
     archivo_ruta VARCHAR(255) NULL,
-    estado ENUM('disponible','vendida','anulada') DEFAULT 'disponible',
+    fecha_vencimiento DATE NULL,
+    estado ENUM('disponible','vendida','anulada','contabilizada') DEFAULT 'disponible',
     asociado_cedula VARCHAR(20) NULL,
-    metodo_venta VARCHAR(20) NULL,
+    metodo_venta ENUM('credito','regalo_cooperativa') NULL,
     comprobante VARCHAR(255) NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_vendida TIMESTAMP NULL,
+    fecha_contabilizacion TIMESTAMP NULL,
     fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    -- Campos de auditoría
+    creado_por INT NULL,
+    vendido_por INT NULL,
+    contabilizado_por INT NULL,
     UNIQUE KEY uq_bol_serial_cat (categoria_id, serial),
     KEY idx_bol_categoria (categoria_id),
     KEY idx_bol_estado (estado),
-    KEY idx_bol_cedula (asociado_cedula)
+    KEY idx_bol_cedula (asociado_cedula),
+    KEY idx_bol_fecha_vencimiento (fecha_vencimiento)
 );
 -- Triggers boleteria_boletas
 DROP TRIGGER IF EXISTS boleteria_boletas_bu;
@@ -453,5 +460,21 @@ CREATE TABLE IF NOT EXISTS creditos_historial (
     detalle TEXT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_solicitud (solicitud_id),
+    INDEX idx_fecha (fecha)
+);
+
+-- Boletería: historial de eventos
+CREATE TABLE IF NOT EXISTS boleteria_eventos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    boleta_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    accion ENUM('crear','vender','contabilizar','anular','desanular') NOT NULL,
+    estado_anterior ENUM('disponible','vendida','anulada','contabilizada') NULL,
+    estado_nuevo ENUM('disponible','vendida','anulada','contabilizada') NULL,
+    detalle TEXT NULL,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_boleta (boleta_id),
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_accion (accion),
     INDEX idx_fecha (fecha)
 );

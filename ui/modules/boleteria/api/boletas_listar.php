@@ -11,13 +11,15 @@ try {
     $limit = (int)($_GET['limit'] ?? 20);
     $filters = [
         'categoria_id' => $_GET['categoria_id'] ?? null,
-        'estado' => $_GET['estado'] ?? '',
+        'estado' => $_GET['estado'] ?? null,
         'serial' => $_GET['serial'] ?? '',
         'cedula' => $_GET['cedula'] ?? '',
         'fecha_creacion_desde' => $_GET['fc_desde'] ?? '',
         'fecha_creacion_hasta' => $_GET['fc_hasta'] ?? '',
         'fecha_vendida_desde' => $_GET['fv_desde'] ?? '',
-        'fecha_vendida_hasta' => $_GET['fv_hasta'] ?? ''
+        'fecha_vendida_hasta' => $_GET['fv_hasta'] ?? '',
+        'fecha_vencimiento_desde' => $_GET['fven_desde'] ?? '',
+        'fecha_vencimiento_hasta' => $_GET['fven_hasta'] ?? ''
     ];
     $sortBy = $_GET['sort_by'] ?? 'id';
     $sortDir = $_GET['sort_dir'] ?? 'DESC';

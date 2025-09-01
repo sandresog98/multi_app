@@ -11,13 +11,12 @@ try {
     if (!is_array($input)) { $input = $_POST; }
     $id = (int)($input['id'] ?? 0);
     $cedula = (string)($input['cedula'] ?? '');
-    $metodo = (string)($input['metodo_venta'] ?? '');
-    $comprobante = isset($input['comprobante']) ? (string)$input['comprobante'] : null;
+    $metodo = (string)($input['metodo_venta'] ?? 'credito');
     if ($id <= 0) { throw new Exception('ID inválido'); }
     if ($cedula === '') { throw new Exception('Cédula requerida'); }
-    $permitidos = ['Directa','Incentivos','Credito'];
-    if ($metodo === '' || !in_array($metodo, $permitidos, true)) { throw new Exception('Método de venta inválido'); }
-    echo json_encode($c->boletas_vender($id, $cedula, $metodo, $comprobante));
+    $permitidos = ['credito', 'regalo_cooperativa'];
+    if (!in_array($metodo, $permitidos, true)) { throw new Exception('Método de venta inválido'); }
+    echo json_encode($c->boletas_vender($id, $cedula, $metodo));
 } catch (Throwable $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

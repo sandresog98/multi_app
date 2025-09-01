@@ -22,6 +22,8 @@ class Boleta {
             if (!empty($filters['fecha_creacion_hasta'])) { $where[] = 'DATE(b.fecha_creacion) <= ?'; $params[] = $filters['fecha_creacion_hasta']; }
             if (!empty($filters['fecha_vendida_desde'])) { $where[] = 'DATE(b.fecha_vendida) >= ?'; $params[] = $filters['fecha_vendida_desde']; }
             if (!empty($filters['fecha_vendida_hasta'])) { $where[] = 'DATE(b.fecha_vendida) <= ?'; $params[] = $filters['fecha_vendida_hasta']; }
+            if (!empty($filters['fecha_vencimiento_desde'])) { $where[] = 'DATE(b.fecha_vencimiento) >= ?'; $params[] = $filters['fecha_vencimiento_desde']; }
+            if (!empty($filters['fecha_vencimiento_hasta'])) { $where[] = 'DATE(b.fecha_vencimiento) <= ?'; $params[] = $filters['fecha_vencimiento_hasta']; }
 
             $whereClause = empty($where) ? '' : ('WHERE ' . implode(' AND ', $where));
 
@@ -39,10 +41,14 @@ class Boleta {
             $col = $allowedSort[$sortBy] ?? 'b.id';
             $dir = strtoupper($sortDir) === 'ASC' ? 'ASC' : 'DESC';
 
-            $sql = "SELECT b.id, b.categoria_id, c.nombre AS categoria_nombre, b.serial, b.precio_compra_snapshot, b.precio_venta_snapshot, b.estado, b.asociado_cedula, sa.nombre AS asociado_nombre, b.metodo_venta, b.comprobante, b.fecha_creacion, b.fecha_vendida, b.fecha_actualizacion, b.archivo_ruta
+            $sql = "SELECT b.id, b.categoria_id, c.nombre AS categoria_nombre, b.serial, b.precio_compra_snapshot, b.precio_venta_snapshot, b.estado, b.asociado_cedula, sa.nombre AS asociado_nombre, b.metodo_venta, b.comprobante, b.fecha_creacion, b.fecha_vendida, b.fecha_contabilizacion, b.fecha_vencimiento, b.fecha_actualizacion, b.archivo_ruta,
+                           uc.nombre_completo AS creado_por_nombre, uv.nombre_completo AS vendido_por_nombre, uco.nombre_completo AS contabilizado_por_nombre
                     FROM boleteria_boletas b
                     LEFT JOIN boleteria_categoria c ON c.id = b.categoria_id
                     LEFT JOIN sifone_asociados sa ON sa.cedula = b.asociado_cedula
+                    LEFT JOIN control_usuarios uc ON uc.id = b.creado_por
+                    LEFT JOIN control_usuarios uv ON uv.id = b.vendido_por
+                    LEFT JOIN control_usuarios uco ON uco.id = b.contabilizado_por
                     $whereClause
                     ORDER BY $col $dir
                     LIMIT ? OFFSET ?";
@@ -70,7 +76,7 @@ class Boleta {
         }
     }
 
-    public function crear($categoriaId, $serial, $precioCompra, $precioVenta, $archivoRuta = null) {
+    public function crear($categoriaId, $serial, $precioCompra, $precioVenta, $archivoRuta = null, $fechaVencimiento = null, $usuarioId = null) {
         try {
             if ((int)$categoriaId <= 0) { return ['success' => false, 'message' => 'Categoría requerida']; }
             $serial = trim((string)$serial);
@@ -81,9 +87,14 @@ class Boleta {
             // Unicidad de serial por categoría
             if ($this->existeSerial($categoriaId, $serial)) { return ['success' => false, 'message' => 'El serial ya existe en esta categoría']; }
 
-            $stmt = $this->conn->prepare("INSERT INTO boleteria_boletas (categoria_id, serial, precio_compra_snapshot, precio_venta_snapshot, archivo_ruta) VALUES (?, ?, ?, ?, ?)");
-            $ok = $stmt->execute([$categoriaId, $serial, $precioCompra, $precioVenta, $archivoRuta]);
-            if ($ok) { return ['success' => true, 'id' => $this->conn->lastInsertId(), 'message' => 'Boleta creada']; }
+            $stmt = $this->conn->prepare("INSERT INTO boleteria_boletas (categoria_id, serial, precio_compra_snapshot, precio_venta_snapshot, archivo_ruta, fecha_vencimiento, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $ok = $stmt->execute([$categoriaId, $serial, $precioCompra, $precioVenta, $archivoRuta, $fechaVencimiento, $usuarioId]);
+            if ($ok) { 
+                $boletaId = $this->conn->lastInsertId();
+                // Registrar evento
+                $this->registrarEvento($boletaId, $usuarioId, 'crear', null, 'disponible', 'Boleta creada');
+                return ['success' => true, 'id' => $boletaId, 'message' => 'Boleta creada']; 
+            }
             return ['success' => false, 'message' => 'No se pudo crear la boleta'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
@@ -96,19 +107,21 @@ class Boleta {
         return (bool)$stmt->fetchColumn();
     }
 
-    public function vender($id, $cedulaAsociado, $metodoVenta = null, $comprobante = null) {
+    public function vender($id, $cedulaAsociado, $metodoVenta = 'credito', $usuarioId = null) {
         try {
             $cedula = trim((string)$cedulaAsociado);
             if ($cedula === '') { return ['success' => false, 'message' => 'Cédula requerida']; }
-            $metodo = $metodoVenta ? (string)$metodoVenta : null;
-            $comp = $comprobante !== null ? (string)$comprobante : null;
-            $permitidos = ['Directa','Incentivos','Credito'];
-            if ($metodo === null || !in_array($metodo, $permitidos, true)) {
-                return ['success' => false, 'message' => 'Método de venta inválido'];
+            
+            // Solo permitir los dos métodos especificados
+            $metodo = in_array($metodoVenta, ['credito', 'regalo_cooperativa']) ? $metodoVenta : 'credito';
+            
+            $stmt = $this->conn->prepare("UPDATE boleteria_boletas SET estado = 'vendida', asociado_cedula = ?, fecha_vendida = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP, metodo_venta = ?, vendido_por = ? WHERE id = ? AND estado = 'disponible'");
+            $ok = $stmt->execute([$cedula, $metodo, $usuarioId, $id]);
+            if ($ok && $stmt->rowCount() > 0) { 
+                // Registrar evento
+                $this->registrarEvento($id, $usuarioId, 'vender', 'disponible', 'vendida', 'Boleta vendida a ' . $cedula . ' por método ' . $metodo);
+                return ['success' => true, 'message' => 'Boleta vendida']; 
             }
-            $stmt = $this->conn->prepare("UPDATE boleteria_boletas SET estado = 'vendida', asociado_cedula = ?, fecha_vendida = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP, metodo_venta = ?, comprobante = ? WHERE id = ? AND estado = 'disponible'");
-            $ok = $stmt->execute([$cedula, $metodo, $comp, $id]);
-            if ($ok && $stmt->rowCount() > 0) { return ['success' => true, 'message' => 'Boleta vendida']; }
             return ['success' => false, 'message' => 'No se pudo vender (ya vendida/anulada o no existe)'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
@@ -148,6 +161,63 @@ class Boleta {
         }
     }
 
+    public function contabilizar($id, $comprobante, $usuarioId = null) {
+        try {
+            if (empty($comprobante)) {
+                return ['success' => false, 'message' => 'Comprobante requerido'];
+            }
+
+            // Verificar que la boleta esté vendida
+            $stmt = $this->conn->prepare("SELECT estado FROM boleteria_boletas WHERE id = ?");
+            $stmt->execute([$id]);
+            $boleta = $stmt->fetch();
+            
+            if (!$boleta) {
+                return ['success' => false, 'message' => 'Boleta no encontrada'];
+            }
+            
+            if ($boleta['estado'] !== 'vendida') {
+                return ['success' => false, 'message' => 'Solo se pueden contabilizar boletas vendidas'];
+            }
+
+            $stmt = $this->conn->prepare("UPDATE boleteria_boletas SET estado = 'contabilizada', comprobante = ?, fecha_contabilizacion = CURRENT_TIMESTAMP, fecha_actualizacion = CURRENT_TIMESTAMP, contabilizado_por = ? WHERE id = ? AND estado = 'vendida'");
+            $ok = $stmt->execute([$comprobante, $usuarioId, $id]);
+            if ($ok && $stmt->rowCount() > 0) { 
+                // Registrar evento
+                $this->registrarEvento($id, $usuarioId, 'contabilizar', 'vendida', 'contabilizada', 'Boleta contabilizada con comprobante: ' . $comprobante);
+                return ['success' => true, 'message' => 'Boleta contabilizada']; 
+            }
+            return ['success' => false, 'message' => 'No se pudo contabilizar'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function registrarEvento($boletaId, $usuarioId, $accion, $estadoAnterior, $estadoNuevo, $detalle = null) {
+        try {
+            $stmt = $this->conn->prepare("INSERT INTO boleteria_eventos (boleta_id, usuario_id, accion, estado_anterior, estado_nuevo, detalle) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$boletaId, $usuarioId, $accion, $estadoAnterior, $estadoNuevo, $detalle]);
+        } catch (Exception $e) {
+            error_log('Error al registrar evento: ' . $e->getMessage());
+        }
+    }
+
+    public function obtenerEventos($boletaId) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT e.*, u.nombre_completo as usuario_nombre 
+                FROM boleteria_eventos e 
+                LEFT JOIN control_usuarios u ON u.id = e.usuario_id 
+                WHERE e.boleta_id = ? 
+                ORDER BY e.fecha DESC
+            ");
+            $stmt->execute([$boletaId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
     public function getResumenKpis() {
         try {
             $kpis = [];
@@ -156,8 +226,9 @@ class Boleta {
                         SUM(estado='disponible') disponibles,
                         SUM(estado='vendida') vendidas,
                         SUM(estado='anulada') anuladas,
-                        COALESCE(SUM(CASE WHEN estado='vendida' THEN precio_venta_snapshot END),0) as ingreso_bruto,
-                        COALESCE(SUM(CASE WHEN estado='vendida' THEN precio_compra_snapshot END),0) as costo_vendido
+                        SUM(estado='contabilizada') contabilizadas,
+                        COALESCE(SUM(CASE WHEN estado IN ('vendida', 'contabilizada') THEN precio_venta_snapshot END),0) as ingreso_bruto,
+                        COALESCE(SUM(CASE WHEN estado IN ('vendida', 'contabilizada') THEN precio_compra_snapshot END),0) as costo_vendido
                     FROM boleteria_boletas";
             $kpis = $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
 
