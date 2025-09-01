@@ -22,33 +22,102 @@ include '../../../views/layouts/header.php';
       <?php $boletaModel = new Boleta(); $data = $boletaModel->getResumenKpis(); $k = $data['kpis'] ?? []; ?>
       <div class="row g-3">
         <div class="col-sm-6 col-xl-3">
-          <div class="card text-bg-light"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="small text-muted">Total boletas</div><div class="h4 mb-0"><?php echo (int)($k['total'] ?? 0); ?></div></div><i class="fas fa-ticket-alt fa-lg text-primary"></i></div></div>
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Boletas creadas</div><div class="h3 mb-0"><?php echo (int)($k['creadas'] ?? 0); ?></div></div></div>
         </div>
         <div class="col-sm-6 col-xl-3">
-          <div class="card text-bg-light"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="small text-muted">Disponibles</div><div class="h4 mb-0"><?php echo (int)($k['disponibles'] ?? 0); ?></div></div><i class="fas fa-check-circle fa-lg text-success"></i></div></div>
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Boletas contabilizadas</div><div class="h3 mb-0"><?php echo (int)($k['contabilizadas'] ?? 0); ?></div></div></div>
         </div>
         <div class="col-sm-6 col-xl-3">
-          <div class="card text-bg-light"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="small text-muted">Vendidas</div><div class="h4 mb-0"><?php echo (int)($k['vendidas'] ?? 0); ?></div></div><i class="fas fa-shopping-cart fa-lg text-primary"></i></div></div>
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Boletas disponibles</div><div class="h3 mb-0"><?php echo (int)($k['disponibles'] ?? 0); ?></div></div></div>
         </div>
         <div class="col-sm-6 col-xl-3">
-          <div class="card text-bg-light"><div class="card-body d-flex justify-content-between align-items-center"><div><div class="small text-muted">Anuladas</div><div class="h4 mb-0"><?php echo (int)($k['anuladas'] ?? 0); ?></div></div><i class="fas fa-ban fa-lg text-secondary"></i></div></div>
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Boletas anuladas</div><div class="h3 mb-0"><?php echo (int)($k['anuladas'] ?? 0); ?></div></div></div>
         </div>
       </div>
 
       <div class="row g-3 mt-1">
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header"><strong>Boletas por categoría (Top 10)</strong></div>
+            <div class="card-header"><strong>Distribución por categoría (Disponibles)</strong></div>
             <div class="card-body">
-              <canvas id="chartCategorias" height="160"></canvas>
+              <div class="row align-items-center">
+                <div class="col-8">
+                  <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead class="table-light"><tr><th>Categoría</th><th class="text-end">Boletas</th></tr></thead>
+                      <tbody>
+                        <?php foreach (($data['disponibles_cat'] ?? []) as $r): ?>
+                        <tr><td><?php echo htmlspecialchars($r['categoria']); ?></td><td class="text-end"><?php echo (int)$r['cantidad']; ?></td></tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <canvas id="miniChartDisp" height="110"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </div>
         <div class="col-lg-6">
           <div class="card h-100">
-            <div class="card-header"><strong>Boletas vendidas por día (14 días)</strong></div>
+            <div class="card-header"><strong>Distribución por categoría (Vendidas + Contabilizadas)</strong></div>
             <div class="card-body">
-              <canvas id="chartVendidasDia" height="160"></canvas>
+              <div class="row align-items-center">
+                <div class="col-8">
+                  <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead class="table-light"><tr><th>Categoría</th><th class="text-end">Boletas</th></tr></thead>
+                      <tbody>
+                        <?php foreach (($data['vendidas_cat'] ?? []) as $r): ?>
+                        <tr><td><?php echo htmlspecialchars($r['categoria']); ?></td><td class="text-end"><?php echo (int)$r['cantidad']; ?></td></tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <canvas id="miniChartVend" height="110"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header"><strong>Asociados con más compra de boletas (1 año)</strong></div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead class="table-light"><tr><th>Asociado</th><th class="text-end">Boletas</th></tr></thead>
+                  <tbody>
+                    <?php foreach (($data['top_1y'] ?? []) as $u): ?>
+                    <tr><td><?php echo htmlspecialchars(($u['nombre'] ?? '').' ('.$u['cedula'].')'); ?></td><td class="text-end"><?php echo (int)$u['cantidad']; ?></td></tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header"><strong>Asociados con más compra de boletas (histórico)</strong></div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead class="table-light"><tr><th>Asociado</th><th class="text-end">Boletas</th></tr></thead>
+                  <tbody>
+                    <?php foreach (($data['top_all'] ?? []) as $u): ?>
+                    <tr><td><?php echo htmlspecialchars(($u['nombre'] ?? '').' ('.$u['cedula'].')'); ?></td><td class="text-end"><?php echo (int)$u['cantidad']; ?></td></tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -62,31 +131,17 @@ include '../../../views/layouts/header.php';
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const cat = <?php echo json_encode($data['por_categoria'] ?? []); ?>;
-  const vd = <?php echo json_encode($data['vendidas_dia'] ?? []); ?>;
-
-  // Categorías: barras
-  const ctx1 = document.getElementById('chartCategorias');
-  if (ctx1 && cat && cat.length) {
-    new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: cat.map(x => x.categoria || '—'),
-        datasets: [{ label: 'Total', data: cat.map(x => Number(x.total||0)), backgroundColor: 'rgba(54, 162, 235, 0.5)' },
-                   { label: 'Vendidas', data: cat.map(x => Number(x.vendidas||0)), backgroundColor: 'rgba(75, 192, 192, 0.5)' }]
-      },
-      options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
-    });
+  const disp = <?php echo json_encode($data['disponibles_cat'] ?? []); ?>;
+  const vend = <?php echo json_encode($data['vendidas_cat'] ?? []); ?>;
+  const ctxD = document.getElementById('miniChartDisp');
+  if (ctxD && disp && disp.length){
+    const labels = disp.map(r=>r.categoria); const values = disp.map(r=>Number(r.cantidad||0));
+    new Chart(ctxD, { type:'doughnut', data:{ labels, datasets:[{ data: values, backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6c757d','#0dcaf0'] }] }, options:{ plugins:{ legend:{ display:false } }, cutout:'70%' } });
   }
-
-  // Vendidas por día: línea
-  const ctx2 = document.getElementById('chartVendidasDia');
-  if (ctx2 && vd && vd.length) {
-    new Chart(ctx2, {
-      type: 'line',
-      data: { labels: vd.map(x => x.fecha), datasets: [{ label: 'Vendidas', data: vd.map(x => Number(x.cantidad||0)), fill: false, borderColor: '#198754', tension: 0.2 }] },
-      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
+  const ctxV = document.getElementById('miniChartVend');
+  if (ctxV && vend && vend.length){
+    const labels = vend.map(r=>r.categoria); const values = vend.map(r=>Number(r.cantidad||0));
+    new Chart(ctxV, { type:'doughnut', data:{ labels, datasets:[{ data: values, backgroundColor: ['#198754','#0d6efd','#ffc107','#dc3545','#6c757d','#0dcaf0'] }] }, options:{ plugins:{ legend:{ display:false } }, cutout:'70%' } });
   }
 });
 </script>

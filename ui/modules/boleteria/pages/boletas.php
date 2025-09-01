@@ -81,14 +81,6 @@ include '../../../views/layouts/header.php';
             </div>
             <div class="col-12"></div>
             <div class="col-6 col-md-3">
-              <label class="form-label">F. creación (desde - hasta)</label>
-              <div class="input-group">
-                <input type="date" class="form-control" id="fcDesde">
-                <span class="input-group-text">a</span>
-                <input type="date" class="form-control" id="fcHasta">
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
               <label class="form-label">F. vendida (desde - hasta)</label>
               <div class="input-group">
                 <input type="date" class="form-control" id="fvDesde">
@@ -133,10 +125,9 @@ include '../../../views/layouts/header.php';
                   <th data-sort="estado" class="sortable">Estado</th>
                   <th data-sort="">Asociado</th>
                   <th>Método</th>
-                  <th data-sort="fecha_creacion" class="sortable">F. creación</th>
+                  
                   <th data-sort="fecha_vendida" class="sortable">F. vendida</th>
                   <th data-sort="fecha_vencimiento" class="sortable">F. vencimiento</th>
-                  <th>Auditoría</th>
                   <th class="text-end">Acciones</th>
                 </tr>
               </thead>
@@ -341,33 +332,31 @@ async function poblarCategoriasSelects() {
 
 async function cargarBoletas() {
   const tbody = document.getElementById('boletasBody');
-  tbody.innerHTML = '<tr><td colspan="11" class="text-muted">Cargando…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Cargando…</td></tr>';
   const categoria_id = document.getElementById('filtroCategoria').value;
   const estado = document.getElementById('filtroEstado').value;
   const serial = document.getElementById('filtroSerial').value;
   const cedula = document.getElementById('filtroCedula').value;
-  const fc_desde = document.getElementById('fcDesde').value;
-  const fc_hasta = document.getElementById('fcHasta').value;
   const fv_desde = document.getElementById('fvDesde').value;
   const fv_hasta = document.getElementById('fvHasta').value;
   const fven_desde = document.getElementById('fvenDesde').value;
   const fven_hasta = document.getElementById('fvenHasta').value;
   
   // Debug: mostrar filtros en consola
-  console.log('Filtros aplicados:', { categoria_id, estado, serial, cedula, fc_desde, fc_hasta, fv_desde, fv_hasta, fven_desde, fven_hasta });
+  console.log('Filtros aplicados:', { categoria_id, estado, serial, cedula, fv_desde, fv_hasta, fven_desde, fven_hasta });
   
-  const params = new URLSearchParams({ categoria_id, estado, serial, cedula, fc_desde, fc_hasta, fv_desde, fv_hasta, fven_desde, fven_hasta, page: bolPage, limit: 10, sort_by: bolSortBy, sort_dir: bolSortDir });
+  const params = new URLSearchParams({ categoria_id, estado, serial, cedula, fv_desde, fv_hasta, fven_desde, fven_hasta, page: bolPage, limit: 10, sort_by: bolSortBy, sort_dir: bolSortDir });
   const url = '../../boleteria/api/boletas_listar.php?' + params.toString();
   try {
     const res = await fetch(url);
     if (!res.ok) {
       const txt = await res.text();
-      tbody.innerHTML = `<tr><td colspan="11" class="text-danger">Error ${res.status}: ${escapeHtml(txt)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-danger">Error ${res.status}: ${escapeHtml(txt)}</td></tr>`;
       return;
     }
     const json = await res.json();
     if (!json || json.success === false) {
-      tbody.innerHTML = `<tr><td colspan="11" class="text-danger">${escapeHtml(json && json.message ? json.message : 'Error desconocido')}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-danger">${escapeHtml(json && json.message ? json.message : 'Error desconocido')}</td></tr>`;
       return;
     }
     const data = json.data || {};
@@ -375,7 +364,7 @@ async function cargarBoletas() {
     bolPages = data.pages || 1;
     document.getElementById('bolResumen').textContent = `Página ${data.current_page || bolPage} de ${bolPages} · Total: ${data.total || items.length}`;
     if (!items.length) { 
-      tbody.innerHTML = '<tr><td colspan="11" class="text-muted">Sin datos.</td></tr>'; 
+      tbody.innerHTML = '<tr><td colspan="9" class="text-muted">Sin datos.</td></tr>'; 
       return; 
     }
     tbody.innerHTML = items.map(item => {
@@ -384,24 +373,32 @@ async function cargarBoletas() {
                           (item.estado === 'contabilizada' ? '<span class="badge bg-info">Contabilizada</span>' : 
                           '<span class="badge bg-secondary">Anulada</span>'));
       
-      let acciones = '<span class="text-muted small">—</span>';
-      if (item.estado === 'disponible') {
-        acciones = `<div class="btn-group btn-group-sm">
-             <button class="btn btn-outline-success" onclick="abrirVender(${item.id})" title="Vender"><i class="fas fa-shopping-cart"></i></button>
-             <button class="btn btn-outline-secondary" onclick="anularBoleta(${item.id})" title="Anular"><i class="fas fa-ban"></i></button>
-           </div>`;
-      } else if (item.estado === 'vendida') {
-        acciones = `<div class="btn-group btn-group-sm">
-             <button class="btn btn-outline-warning" onclick="deshacerVenta(${item.id})" title="Deshacer venta"><i class="fas fa-undo"></i></button>
-             <button class="btn btn-outline-info" onclick="abrirContabilizar(${item.id})" title="Contabilizar"><i class="fas fa-calculator"></i></button>
-           </div>`;
-      } else if (item.estado === 'anulada') {
-        acciones = `<div class="btn-group btn-group-sm">
-             <button class="btn btn-outline-primary" onclick="desanularBoleta(${item.id})" title="Desanular"><i class="fas fa-redo"></i></button>
-           </div>`;
-      }
+      // Acciones reorganizadas: arriba (detalle, ver boleta, descargar), abajo (vender/contabilizar, anular)
       const base = '<?php echo getBaseUrl(); ?>';
-      const fileLink = item.archivo_ruta ? `<div class=\"btn-group btn-group-sm\"><a href=\"${escapeHtml(base + item.archivo_ruta)}\" target=\"_blank\" class=\"btn btn-outline-primary\" title=\"Ver\"><i class=\"fas fa-eye\"></i></a><a href=\"${escapeHtml(base + item.archivo_ruta)}\" download class=\"btn btn-outline-secondary\" title=\"Descargar\"><i class=\"fas fa-download\"></i></a></div>` : '';
+      const fileBtns = item.archivo_ruta ? `
+        <a href="${escapeHtml(base + item.archivo_ruta)}" target="_blank" class="btn btn-outline-primary" title="Ver boleta"><i class="fas fa-eye"></i></a>
+        <a href="${escapeHtml(base + item.archivo_ruta)}" download class="btn btn-outline-secondary" title="Descargar factura"><i class="fas fa-download"></i></a>` : '';
+      const topRow = `<div class="btn-group btn-group-sm"> 
+        <button class="btn btn-outline-info" onclick="abrirDetalleBoleta(${item.id})" title="Ver detalle"><i class="fas fa-info-circle"></i></button>
+        ${fileBtns}
+      </div>`;
+      let bottomRow = '';
+      if (item.estado === 'disponible') {
+        bottomRow = `<div class=\"btn-group btn-group-sm\">
+          <button class=\"btn btn-outline-success\" onclick=\"abrirVender(${item.id})\" title=\"Vender\"><i class=\"fas fa-shopping-cart\"></i></button>
+          <button class=\"btn btn-outline-secondary\" onclick=\"anularBoleta(${item.id})\" title=\"Anular\"><i class=\"fas fa-ban\"></i></button>
+        </div>`;
+      } else if (item.estado === 'vendida') {
+        bottomRow = `<div class=\"btn-group btn-group-sm\">
+          <button class=\"btn btn-outline-info\" onclick=\"abrirContabilizar(${item.id})\" title=\"Contabilizar\"><i class=\"fas fa-calculator\"></i></button>
+          <button class=\"btn btn-outline-secondary\" onclick=\"anularBoleta(${item.id})\" title=\"Anular\"><i class=\"fas fa-ban\"></i></button>
+        </div>`;
+      } else if (item.estado === 'anulada') {
+        bottomRow = `<div class=\"btn-group btn-group-sm\">
+          <button class=\"btn btn-outline-primary\" onclick=\"desanularBoleta(${item.id})\" title=\"Desanular\"><i class=\"fas fa-redo\"></i></button>
+        </div>`;
+      }
+      const acciones = `<div class=\"d-flex flex-column gap-1\">${topRow}${bottomRow?('<div>'+bottomRow+'</div>'):''}</div>`;
       const metodoHtml = item.metodo_venta ? `${escapeHtml(item.metodo_venta === 'credito' ? 'Crédito' : 'Regalo Cooperativa')}${item.comprobante ? `<br><small class=\"text-muted\">${escapeHtml(item.comprobante)}</small>` : ''}` : '<span class="text-muted small">—</span>';
       return `<tr>
         <td>${escapeHtml(item.serial)}</td>
@@ -410,24 +407,9 @@ async function cargarBoletas() {
         <td>${estadoBadge}</td>
         <td>${escapeHtml(item.asociado_cedula || '')}${item.asociado_nombre ? `<br><small class=\"text-muted\">${escapeHtml(item.asociado_nombre)}</small>` : ''}</td>
         <td>${metodoHtml}</td>
-        <td><small>${escapeHtml(sinSegundos(item.fecha_creacion) || '')}</small></td>
         <td><small>${escapeHtml(sinSegundos(item.fecha_vendida) || '')}</small></td>
         <td><small>${item.fecha_vencimiento ? new Date(item.fecha_vencimiento).toLocaleDateString('es-CO') : '-'}</small></td>
-        <td>
-          <div class="small">
-            <div><strong>Creado:</strong> ${item.creado_por_nombre || 'N/A'}</div>
-            ${item.vendido_por_nombre ? `<div><strong>Vendido:</strong> ${item.vendido_por_nombre}</div>` : ''}
-            ${item.contabilizado_por_nombre ? `<div><strong>Contabilizado:</strong> ${item.contabilizado_por_nombre}</div>` : ''}
-          </div>
-        </td>
-        <td class="text-end" style="white-space: nowrap; width:1%">
-          <div class="d-inline-flex align-items-center gap-1">
-            <button class="btn btn-sm btn-outline-info" onclick="abrirDetalleBoleta(${item.id})" title="Ver detalle">
-              <i class="fas fa-info-circle"></i>
-            </button>
-            ${fileLink}${acciones}
-          </div>
-        </td>
+        <td class="text-end" style="white-space: nowrap; width:1%">${acciones}</td>
       </tr>`;
     }).join('');
   } catch (e) {

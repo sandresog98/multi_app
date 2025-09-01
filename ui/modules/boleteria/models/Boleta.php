@@ -220,40 +220,60 @@ class Boleta {
 
     public function getResumenKpis() {
         try {
-            $kpis = [];
-            $sql = "SELECT 
-                        COUNT(*) total,
-                        SUM(estado='disponible') disponibles,
-                        SUM(estado='vendida') vendidas,
-                        SUM(estado='anulada') anuladas,
-                        SUM(estado='contabilizada') contabilizadas,
-                        COALESCE(SUM(CASE WHEN estado IN ('vendida', 'contabilizada') THEN precio_venta_snapshot END),0) as ingreso_bruto,
-                        COALESCE(SUM(CASE WHEN estado IN ('vendida', 'contabilizada') THEN precio_compra_snapshot END),0) as costo_vendido
-                    FROM boleteria_boletas";
-            $kpis = $this->conn->query($sql)->fetch(PDO::FETCH_ASSOC);
+            $kpis = $this->conn->query("SELECT 
+                        COUNT(*) AS creadas,
+                        SUM(estado='contabilizada') AS contabilizadas,
+                        SUM(estado='disponible') AS disponibles,
+                        SUM(estado='anulada') AS anuladas
+                    FROM boleteria_boletas")->fetch(PDO::FETCH_ASSOC);
 
-            $porCategoria = $this->conn->query("SELECT c.nombre AS categoria, 
-                                                      COUNT(*) total,
-                                                      SUM(b.estado='vendida') vendidas
-                                               FROM boleteria_boletas b 
-                                               LEFT JOIN boleteria_categoria c ON c.id=b.categoria_id
-                                               GROUP BY c.nombre
-                                               ORDER BY total DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+            $disponiblesCat = $this->conn->query("SELECT COALESCE(c.nombre,'Sin categoría') AS categoria, COUNT(*) AS cantidad
+                FROM boleteria_boletas b
+                LEFT JOIN boleteria_categoria c ON c.id=b.categoria_id
+                WHERE b.estado='disponible'
+                GROUP BY c.nombre
+                ORDER BY cantidad DESC")->fetchAll(PDO::FETCH_ASSOC);
 
-            $vendidasDia = $this->conn->query("SELECT DATE(fecha_vendida) fecha, COUNT(*) cantidad
-                                               FROM boleteria_boletas
-                                               WHERE estado='vendida' AND fecha_vendida IS NOT NULL
-                                               GROUP BY DATE(fecha_vendida)
-                                               ORDER BY fecha DESC LIMIT 14")->fetchAll(PDO::FETCH_ASSOC);
+            $vendidasCat = $this->conn->query("SELECT COALESCE(c.nombre,'Sin categoría') AS categoria, COUNT(*) AS cantidad
+                FROM boleteria_boletas b
+                LEFT JOIN boleteria_categoria c ON c.id=b.categoria_id
+                WHERE b.estado IN ('vendida','contabilizada')
+                GROUP BY c.nombre
+                ORDER BY cantidad DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+            $topCompras1y = $this->topAsociadosCompras(365, 10);
+            $topComprasAll = $this->topAsociadosCompras(null, 10);
 
             return [
                 'kpis' => $kpis,
-                'por_categoria' => $porCategoria,
-                'vendidas_dia' => array_reverse($vendidasDia)
+                'disponibles_cat' => $disponiblesCat,
+                'vendidas_cat' => $vendidasCat,
+                'top_1y' => $topCompras1y,
+                'top_all' => $topComprasAll,
             ];
         } catch (Exception $e) {
-            return [ 'kpis' => [], 'por_categoria' => [], 'vendidas_dia' => [] ];
+            return [ 'kpis' => [], 'disponibles_cat' => [], 'vendidas_cat' => [], 'top_1y' => [], 'top_all' => [] ];
         }
+    }
+
+    public function topAsociadosCompras($dias = null, $limit = 10) {
+        $limit = max(1, (int)$limit);
+        $params = [];
+        $where = "WHERE b.estado IN ('vendida','contabilizada') AND b.asociado_cedula IS NOT NULL";
+        if ($dias !== null) {
+            $where .= " AND b.fecha_vendida >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            $params[] = (int)$dias;
+        }
+        $sql = "SELECT b.asociado_cedula AS cedula, COALESCE(sa.nombre, b.asociado_cedula) AS nombre, COUNT(*) AS cantidad
+                FROM boleteria_boletas b
+                LEFT JOIN sifone_asociados sa ON sa.cedula = b.asociado_cedula
+                $where
+                GROUP BY b.asociado_cedula, sa.nombre
+                ORDER BY cantidad DESC
+                LIMIT $limit";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 
