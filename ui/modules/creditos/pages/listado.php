@@ -10,6 +10,14 @@ $currentPage = 'creditos_listado';
 include '../../../views/layouts/header.php';
 ?>
 
+<style>
+.timeline { position: relative; padding-left: 20px; }
+.timeline-item { position: relative; }
+.timeline-marker { position: absolute; left: -25px; top: 5px; }
+.timeline-marker i { font-size: 12px; }
+.timeline-item:not(:last-child)::after { content: ''; position: absolute; left: -19px; top: 20px; bottom: -20px; width: 2px; background-color: #e9ecef; }
+</style>
+
 <div class="container-fluid">
   <div class="row">
     <?php include '../../../views/layouts/sidebar.php'; ?>
@@ -187,18 +195,60 @@ async function abrirDetalle(id){
       return `<tr><th class=\"w-25\">${labels[k1]}</th><td>${escapeHtml(v1)}</td>${right}</tr>`;
     }).join('');
 
-    const fileLabels = {
+    // Sección Archivos ordenada según flujo
+    const grupos = [
+      { titulo: 'Datacrédito', campos: ['archivo_datacredito'] },
+      { titulo: 'Estudio', campos: ['archivo_estudio'] },
+      { titulo: 'Pagaré y Amortización', campos: ['archivo_pagare_pdf','archivo_amortizacion'] },
+      { titulo: 'Dependiente', campos: ['dep_nomina_1','dep_nomina_2','dep_cert_laboral','dep_simulacion_pdf'] },
+      { titulo: 'Independiente', campos: ['ind_decl_renta','ind_simulacion_pdf','ind_codeudor_nomina_1','ind_codeudor_nomina_2','ind_codeudor_cert_laboral'] }
+    ];
+    const nombresCampo = {
       archivo_datacredito:'Datacrédito (PDF)', archivo_estudio:'Estudio (PDF)', archivo_pagare_pdf:'Pagaré (PDF)', archivo_amortizacion:'Amortización (PDF)',
       dep_nomina_1:'Desprendible nómina (1)', dep_nomina_2:'Desprendible nómina (2)', dep_cert_laboral:'Certificación laboral', dep_simulacion_pdf:'Simulación pagos (PDF)',
       ind_decl_renta:'Declaración de renta', ind_simulacion_pdf:'Simulación pagos (PDF)', ind_codeudor_nomina_1:'Nómina codeudor (1)', ind_codeudor_nomina_2:'Nómina codeudor (2)', ind_codeudor_cert_laboral:'Certificación codeudor'
     };
-    const fileRows = Object.keys(fileLabels)
-      .filter(k=>it[k])
-      .map(k=>`<tr><td>${fileLabels[k]}</td><td><a href=\"${escapeHtml(it[k])}\" target=\"_blank\">Abrir</a></td></tr>`).join('') || '<tr><td colspan="2" class="text-muted">Sin archivos</td></tr>';
-    const histHtml = hist.length? `<ul class=\"list-group\">${hist.map(h=>`<li class=\"list-group-item\"><div class=\"small text-muted\">${escapeHtml(h.fecha)}</div><div><strong>${escapeHtml(h.usuario||'')}</strong> · ${escapeHtml(h.accion)} (${escapeHtml(h.estado_anterior||'-')} → ${escapeHtml(h.estado_nuevo||'-')}) ${h.archivo_ruta?`- <a href=\"${escapeHtml(h.archivo_ruta)}\" target=\"_blank\">${escapeHtml(h.archivo_campo)}</a>`:''}</div></li>`).join('')}</ul>` : '<div class=\"text-muted\">Sin historial</div>';
+    const bloquesArchivos = grupos.map(g=>{
+      const items = g.campos.filter(k=>it[k]).map(k=>{
+        const href = escapeHtml(it[k]);
+        const label = nombresCampo[k];
+        return `<div class=\"d-flex align-items-center\"><a class=\"btn btn-sm btn-outline-primary me-2\" href=\"${href}\" target=\"_blank\" title=\"Ver\"><i class=\"fas fa-eye\"></i></a><span>${label}</span></div>`;
+      });
+      if(!items.length) return '';
+      // construir tabla de dos columnas
+      const filas = [];
+      for (let i=0; i<items.length; i+=2) {
+        const left = items[i];
+        const right = items[i+1] || '';
+        filas.push(`<tr><td class=\"w-50\">${left}</td><td class=\"w-50\">${right}</td></tr>`);
+      }
+      return `<div class=\"mb-2\"><h6 class=\"mb-1\">${g.titulo}</h6><div class=\"table-responsive\"><table class=\"table table-sm\"><tbody>${filas.join('')}</tbody></table></div></div>`;
+    }).join('') || '<div class=\"text-muted\">Sin archivos</div>';
+
+    // Historial como timeline (igual que Boletería)
+    const histHtml = hist.length ? (`<div class=\"timeline\">${hist.map(h=>{
+      const fecha = escapeHtml(h.fecha||'');
+      const usuario = escapeHtml(h.usuario||'N/A');
+      const accion = escapeHtml(h.accion||'');
+      const ea = escapeHtml(h.estado_anterior||'-');
+      const en = escapeHtml(h.estado_nuevo||'-');
+      const archivo = (h.archivo_ruta?`<a href=\"${escapeHtml(h.archivo_ruta)}\" target=\"_blank\">${escapeHtml(h.archivo_campo||'archivo')}</a>`:'');
+      return `
+        <div class=\"timeline-item mb-3\">
+          <div class=\"d-flex align-items-start\">
+            <div class=\"timeline-marker me-3\"><i class=\"fas fa-circle text-primary\"></i></div>
+            <div class=\"flex-grow-1\">
+              <div class=\"d-flex justify-content-between align-items-start\"><h6 class=\"mb-1\">${accion}</h6><small class=\"text-muted\">${fecha}</small></div>
+              <div class=\"small text-muted mb-1\">Por: ${usuario}</div>
+              <div class=\"small\">${ea} → ${en} ${archivo?('· '+archivo):''}</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}</div>`) : '<div class=\"text-muted\">Sin historial</div>';
+
     const html = `<div class=\"modal fade\" id=\"mDetalle\" tabindex=\"-1\"><div class=\"modal-dialog modal-lg\"><div class=\"modal-content\"><div class=\"modal-header\"><h5 class=\"modal-title\">Detalle solicitud #${it.id}</h5><button class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div><div class=\"modal-body\">`+
       `<h6>Información</h6><div class=\"table-responsive\"><table class=\"table table-sm\"><tbody>${infoRows}</tbody></table></div>`+
-      `<h6>Archivos</h6><div class=\"table-responsive\"><table class=\"table table-sm\"><thead><tr><th>Documento</th><th>Enlace</th></tr></thead><tbody>${fileRows}</tbody></table></div>`+
+      `<h6>Archivos</h6>${bloquesArchivos}`+
       `<hr><h6>Historial</h6>${histHtml}`+
       `</div><div class=\"modal-footer\"><button class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cerrar</button></div></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
