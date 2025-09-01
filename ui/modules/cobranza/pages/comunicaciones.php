@@ -151,6 +151,52 @@ function tiempoRelativo($fecha) {
 				</div>
 			</div>
 
+			<div class="modal fade" id="modalEditarCom" tabindex="-1" aria-hidden="true">
+				<div class="modal-dialog modal-lg">
+					<form class="modal-content" id="formEditarCom">
+						<div class="modal-header">
+							<h5 class="modal-title">Editar comunicación</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<input type="hidden" name="id" id="editId">
+							<div class="row g-3">
+								<div class="col-md-4">
+									<label class="form-label">Tipo de comunicación</label>
+									<select class="form-select" name="tipo" id="editTipo" required>
+										<option value="Llamada">Llamada</option>
+										<option value="Mensaje de Texto">Mensaje de Texto</option>
+										<option value="Whatsapp">Whatsapp</option>
+										<option value="Email">Email</option>
+									</select>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">Estado</label>
+									<select class="form-select" name="estado" id="editEstado" required>
+										<option value="Sin comunicación">Sin comunicación</option>
+										<option value="Informa de pago realizado">Informa de pago realizado</option>
+										<option value="Comprometido a realizar el pago">Comprometido a realizar el pago</option>
+										<option value="Sin respuesta">Sin respuesta</option>
+									</select>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">Fecha comunicación</label>
+									<input type="datetime-local" class="form-control" name="fecha" id="editFecha" required>
+								</div>
+								<div class="col-12">
+									<label class="form-label">Comentario</label>
+									<textarea class="form-control" name="comentario" id="editComentario" rows="3" placeholder="Detalle de la comunicación"></textarea>
+								</div>
+							</div>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+							<button type="submit" class="btn btn-primary">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</div>
+
 			<div class="modal fade" id="modalComunicacion" tabindex="-1" aria-hidden="true">
 				<div class="modal-dialog modal-lg">
 					<form class="modal-content" id="formComunicacion">
@@ -289,9 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 					
 					html += `
-												</tbody>
-											</table>
-										</div>
+											</tbody>
+										</table>
 									</div>
 								</div>
 							</div>
@@ -338,9 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 					
 					html += `
-												</tbody>
-											</table>
-										</div>
+											</tbody>
+										</table>
 									</div>
 								</div>
 							</div>
@@ -385,71 +429,65 @@ document.addEventListener('DOMContentLoaded', () => {
 					const dataEstado = String(it.estado||'').replace(/\"/g,'&quot;');
 					const dataComentario = String(it.comentario||'').replace(/\"/g,'&quot;').replace(/</g,'&lt;');
 					const dataFecha = String(it.fecha_comunicacion||'');
-					html += `<div class=\"list-group-item\" data-id=\"${it.id}\" data-tipo=\"${dataTipo}\" data-estado=\"${dataEstado}\" data-comentario=\"${dataComentario}\" data-fecha=\"${dataFecha}\">\n\	\t\t\t<div class=\"d-flex justify-content-between\">\n\	\t\t\t\t<div>\n\	\t\t\t\t\t<strong>${it.tipo_comunicacion}</strong> · ${it.estado}\n\	\t\t\t\t\t<div class=\"small text-muted\">por ${(it.usuario_nombre||'—').replace(/</g,'&lt;')}</div>\n\	\t\t\t\t</div>\n\	\t\t\t\t<div class=\"text-end\">\n\	\t\t\t\t\t<small class=\"text-muted\">${(it.fecha_comunicacion||'').replace('T',' ')}</small>\n\	\t\t\t\t\t${canEdit ? (`\n\	\t\t\t\t\t<button type=\"button\" class=\"btn btn-sm btn-outline-secondary ms-2\" data-action=\"edit\" data-id=\"${it.id}\" title=\"Editar\"><i class=\"fas fa-pen\"></i></button>\n\	\t\t\t\t\t<button type=\"button\" class=\"btn btn-sm btn-outline-danger ms-1\" data-action=\"delete\" data-id=\"${it.id}\" title=\"Eliminar\"><i class=\"fas fa-trash\"></i></button>\n\	\t\t\t\t\t`) : ''}\n\	\t\t\t\t</div>\n\	\t\t\t</div>\n\	\t\t\t<div class=\"small\">${safeComentario}</div>\n\	\t\t</div>`;
+					html += `<div class="list-group-item" data-id="${it.id}" data-tipo="${dataTipo}" data-estado="${dataEstado}" data-comentario="${dataComentario}" data-fecha="${dataFecha}">
+						<div class="d-flex justify-content-between">
+							<div>
+								<strong>${it.tipo_comunicacion}</strong> · ${it.estado}
+								<div class="small text-muted">por ${(it.usuario_nombre||'—').replace(/</g,'&lt;')}</div>
+							</div>
+							<div class="text-end">
+								<small class="text-muted">${(it.fecha_comunicacion||'').replace('T',' ')}</small>
+								${canEdit ? (`
+								<button type="button" class="btn btn-sm btn-outline-secondary ms-1" data-action="edit" data-id="${it.id}" title="Editar"><i class="fas fa-pen"></i></button>
+								<button type="button" class="btn btn-sm btn-outline-danger ms-1" data-action="delete" data-id="${it.id}" title="Eliminar"><i class="fas fa-trash"></i></button>
+								`) : ''}
+							</div>
+						</div>
+						<div class="small">${safeComentario}</div>
+					</div>`;
 				}
 				html += '</div>';
 				document.getElementById('histContenido').innerHTML = html;
+				// Cargar el snapshot y renderizarlo debajo de cada comunicación
+				const histContEl = document.getElementById('histContenido');
+				histContEl.querySelectorAll('.list-group-item').forEach((itemEl) => {
+					const commId = itemEl.getAttribute('data-id');
+					const snapWrap = document.createElement('div');
+					snapWrap.className = 'mt-2 border-top pt-2 small';
+					snapWrap.innerHTML = '<div class="text-muted">Cargando detalle…</div>';
+					itemEl.appendChild(snapWrap);
+					fetch(`../api/cobranza_detalle_snapshot.php?id=${encodeURIComponent(commId)}`)
+						.then(r=>r.json()).then(data => {
+							if (!(data && data.success)) { snapWrap.innerHTML = ''; return; }
+							const d = data.data||{}; const det = d.detalle; const crs = d.creditos||[];
+							if (!det) { snapWrap.innerHTML = ''; return; }
+							let shtml = '<div class="mb-1"><strong>Detalle al momento de la comunicación</strong></div>';
+							shtml += `<div class="mb-2">Aportes: $${Number(det.aportes_monto||0).toLocaleString('es-CO')} · Total créditos: ${Number(det.total_creditos||0)} · Fecha: ${String(det.fecha||'')}</div>`;
+							if (crs.length) {
+								shtml += '<div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th>Crédito</th><th>Deuda capital</th><th>Deuda mora</th><th>Días mora</th><th>Fecha pago</th></tr></thead><tbody>';
+								shtml += crs.map(c=>`<tr><td>${(c.numero_credito||'').replace(/</g,'&lt;')}</td><td>$${Number(c.deuda_capital||0).toLocaleString('es-CO')}</td><td>$${Number(c.deuda_mora||0).toLocaleString('es-CO')}</td><td>${Number(c.dias_mora||0)}</td><td>${c.fecha_pago?new Date(c.fecha_pago).toLocaleDateString('es-CO'):'-'}</td></tr>`).join('');
+								shtml += '</tbody></table></div>';
+							}
+							snapWrap.innerHTML = shtml;
+						}).catch(()=>{ snapWrap.innerHTML = ''; });
+				});
 			}).catch(() => {
 				document.getElementById('histContenido').innerHTML = '<div class="text-danger small">Error al cargar el historial.</div>';
 			});
 	}
 
-	document.addEventListener('click', (e) => {
-		const btn = e.target.closest('button[data-bs-target="#offHistorial"]');
+	// Cuando se abre el offcanvas desde el botón de la tabla, cargar historial con sus datos
+	const offHistEl = document.getElementById('offHistorial');
+	if (offHistEl) {
+		offHistEl.addEventListener('show.bs.offcanvas', (ev) => {
+			const btn = ev.relatedTarget;
 		if (!btn) return;
-		cargarHistorialDesdeBoton(btn);
-	});
+			const ced = btn.getAttribute('data-cedula') || '';
+			const nom = btn.getAttribute('data-nombre') || '';
+			cargarHistorial(ced, nom);
+		});
+	}
 
-	// Modal edición
-	const editModalHtml = `
-<div class="modal fade" id="modalEditarCom" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form class="modal-content" id="formEditarCom">
-      <div class="modal-header">
-        <h5 class="modal-title">Editar comunicación</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" name="id" id="editId">
-        <div class="mb-2">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" name="tipo" id="editTipo" required>
-            <option value="Llamada">Llamada</option>
-            <option value="Mensaje de Texto">Mensaje de Texto</option>
-            <option value="Whatsapp">Whatsapp</option>
-            <option value="Email">Email</option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Estado</label>
-          <select class="form-select" name="estado" id="editEstado" required>
-            <option value="Sin comunicación">Sin comunicación</option>
-            <option value="Informa de pago realizado">Informa de pago realizado</option>
-            <option value="Comprometido a realizar el pago">Comprometido a realizar el pago</option>
-            <option value="Sin respuesta">Sin respuesta</option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Fecha comunicación</label>
-          <input type="datetime-local" class="form-control" name="fecha" id="editFecha" required>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Comentario</label>
-          <textarea class="form-control" name="comentario" id="editComentario" rows="3"></textarea>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Guardar cambios</button>
-      </div>
-    </form>
-  </div>
-</div>`;
-	const tempWrap = document.createElement('div');
-	tempWrap.innerHTML = editModalHtml;
-	document.body.appendChild(tempWrap.firstElementChild);
-
-	// Delegación de clicks en historial para editar/eliminar
 	document.getElementById('offHistorial').addEventListener('click', (ev) => {
 		const btn = ev.target.closest('button[data-action]');
 		if (!btn) return;
@@ -485,13 +523,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	});
 
-	document.getElementById('formEditarCom').addEventListener('submit', (ev) => {
+	const editFormEl = document.getElementById('formEditarCom');
+	if (editFormEl) {
+		editFormEl.addEventListener('submit', (ev) => {
 		ev.preventDefault();
 		const fd = new FormData(ev.target);
 		fetch('../api/cobranza_editar_comunicacion.php', { method: 'POST', body: fd })
 			.then(r=>r.json()).then(data => {
 				if (data.success) {
-					bootstrap.Modal.getInstance(document.getElementById('modalEditarCom')).hide();
+						const modalEl = document.getElementById('modalEditarCom');
+						if (modalEl) { const mdl = bootstrap.Modal.getInstance(modalEl); if (mdl) mdl.hide(); }
 					const oc = bootstrap.Offcanvas.getInstance(document.getElementById('offHistorial'));
 					if (oc) oc.hide();
 					mostrarToast('Comunicación actualizada');
@@ -499,6 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				} else { alert(data.message||'Error'); }
 			}).catch(()=>alert('Error solicitud'));
 	});
+	}
 
 	const modalCom = document.getElementById('modalComunicacion');
 	modalCom.addEventListener('show.bs.modal', (ev) => {
@@ -572,6 +614,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		try {
 			const res = await fetch('../api/cobranza_listar_paginado.php?' + params.toString());
 			const json = await res.json();
+			console.log('cobranza_listar_paginado response:', json);
+			if (!(json && json.success)) {
+				tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${(json && json.message) ? json.message : 'Error en la API'}</td></tr>`;
+				return;
+			}
 			const data = json && json.data ? json.data : {};
 			const items = data.items || [];
 			window.comPages = data.pages || 1;
@@ -610,7 +657,7 @@ function mostrarToast(mensaje) {
 	let cont = document.getElementById('toastContainer');
 	if (!cont) { cont = document.createElement('div'); cont.id = 'toastContainer'; cont.className = 'toast-container position-fixed top-0 end-0 p-3'; document.body.appendChild(cont); }
 	const el = document.createElement('div'); el.className = 'toast align-items-center text-bg-success border-0'; el.role = 'alert'; el.ariaLive = 'assertive'; el.ariaAtomic = 'true';
-	el.innerHTML = `<div class=\"d-flex\"><div class=\"toast-body\">${mensaje.replace(/</g,'&lt;')}</div><button type=\"button\" class=\"btn-close btn-close-white me-2 m-auto\" data-bs-dismiss=\"toast\" aria-label=\"Close\"></button></div>`;
+	el.innerHTML = `<div class="d-flex"><div class="toast-body">${mensaje.replace(/</g,'&lt;')}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>`;
 	cont.appendChild(el); const toast = new bootstrap.Toast(el, { delay: 3000 }); toast.show(); el.addEventListener('hidden.bs.toast', () => el.remove());
 }
 </script>

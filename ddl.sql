@@ -272,6 +272,31 @@ CREATE TABLE IF NOT EXISTS cobranza_comunicaciones (
     KEY idx_fecha (fecha_comunicacion)
 );
 
+-- Cobranza: snapshot de detalle de mora al crear comunicación
+CREATE TABLE IF NOT EXISTS cobranza_detalle_mora (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comunicacion_id INT NOT NULL,
+    asociado_cedula VARCHAR(20) NOT NULL,
+    aportes_monto DECIMAL(12,2) NULL,
+    total_creditos INT NOT NULL DEFAULT 0,
+    creado_por INT NULL,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_comunicacion (comunicacion_id),
+    INDEX idx_cedula (asociado_cedula),
+    INDEX idx_fecha (fecha)
+);
+CREATE TABLE IF NOT EXISTS cobranza_detalle_mora_credito (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    detalle_id INT NOT NULL,
+    numero_credito VARCHAR(50) NOT NULL,
+    deuda_capital DECIMAL(12,2) NOT NULL DEFAULT 0,
+    deuda_mora DECIMAL(12,2) NOT NULL DEFAULT 0,
+    dias_mora INT NOT NULL DEFAULT 0,
+    fecha_pago DATE NULL,
+    INDEX idx_detalle (detalle_id),
+    INDEX idx_numero (numero_credito)
+);
+
 -- Tablas de pagos bancarios
 CREATE TABLE IF NOT EXISTS banco_pse (
     pse_id VARCHAR(50) PRIMARY KEY,

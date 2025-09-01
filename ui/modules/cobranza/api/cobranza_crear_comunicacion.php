@@ -2,6 +2,8 @@
 require_once '../../../controllers/AuthController.php';
 require_once '../../../models/Logger.php';
 require_once '../models/Comunicacion.php';
+require_once '../models/Cobranza.php';
+require_once '../../../config/database.php';
 
 header('Content-Type: application/json');
 
@@ -20,6 +22,36 @@ try {
 
 	$model = new Comunicacion();
 	$id = $model->crear($cedula, $tipo, $estado, $comentario, $fecha, (int)($user['id'] ?? null));
+
+	// Snapshot de detalle de mora (best-effort)
+	try {
+		$db = getConnection();
+		$db->beginTransaction();
+		$co = new Cobranza();
+		$detalle = $co->obtenerDetalleCompletoAsociado($cedula);
+		$aportesMonto = (float)($detalle['asociado']['aporte'] ?? 0);
+		$creditos = $detalle['creditos'] ?? [];
+		$stmtDM = $db->prepare("INSERT INTO cobranza_detalle_mora (comunicacion_id, asociado_cedula, aportes_monto, total_creditos, creado_por) VALUES (?, ?, ?, ?, ?)");
+		$stmtDM->execute([$id, $cedula, $aportesMonto, count($creditos), (int)($user['id'] ?? null)]);
+		$detalleId = (int)$db->lastInsertId();
+		if (!empty($creditos)){
+			$insC = $db->prepare("INSERT INTO cobranza_detalle_mora_credito (detalle_id, numero_credito, deuda_capital, deuda_mora, dias_mora, fecha_pago) VALUES (?, ?, ?, ?, ?, ?)");
+			foreach ($creditos as $cr){
+				$insC->execute([
+					$detalleId,
+					(string)($cr['numero_credito'] ?? ''),
+					(float)($cr['deuda_capital'] ?? 0),
+					(float)($cr['saldo_mora'] ?? 0),
+					(int)($cr['dias_mora'] ?? 0),
+					($cr['fecha_pago'] ?? null)
+				]);
+			}
+		}
+		$db->commit();
+	} catch (Throwable $se) {
+		try { $db->rollBack(); } catch (Throwable $ignored) {}
+		(new Logger())->logEditar('cobranza', 'Snapshot detalle mora falló', null, ['error'=>$se->getMessage(), 'cedula'=>$cedula, 'comunicacion_id'=>$id]);
+	}
 
 	// Log creación
 	(new Logger())->logCrear('cobranza', 'Registrar comunicación', [
