@@ -74,6 +74,25 @@
             <?php endif; ?>
         </div>
 
+        <?php $isTicketOpen = in_array(($currentPage ?? ''), ['ticketera_resumen','ticketera_tickets','ticketera_categorias']); ?>
+        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuTicketera" role="button" aria-expanded="<?php echo $isTicketOpen ? 'true' : 'false'; ?>" aria-controls="menuTicketera">
+            <span><i class="fas fa-project-diagram me-2"></i>Ticketera</span>
+            <i class="fas fa-chevron-<?php echo $isTicketOpen ? 'up' : 'down'; ?>"></i>
+        </a>
+        <div class="collapse <?php echo $isTicketOpen ? 'show' : ''; ?> ms-3" id="menuTicketera">
+            <?php if (canAccess('ticketera')): ?>
+            <a class="nav-link <?php echo $currentPage === 'ticketera_resumen' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/ticketera/pages/index.php">
+                <i class="fas fa-circle-notch small me-2"></i>Resumen
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'ticketera_tickets' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/ticketera/pages/tickets.php">
+                <i class="fas fa-tasks small me-2"></i>Tickets
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'ticketera_categorias' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/ticketera/pages/categorias.php">
+                <i class="fas fa-tags small me-2"></i>Categorías
+            </a>
+            <?php endif; ?>
+        </div>
+
         <?php $isBoleteriaOpen = in_array(($currentPage ?? ''), ['boleteria','boleteria_categorias','boleteria_boletas']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuBoleteria" role="button" aria-expanded="<?php echo $isBoleteriaOpen ? 'true' : 'false'; ?>" aria-controls="menuBoleteria">
             <span><i class="fas fa-ticket-alt me-2"></i>Boletería</span>

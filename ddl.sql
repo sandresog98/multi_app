@@ -408,6 +408,22 @@ DROP TRIGGER IF EXISTS boleteria_boletas_bi;
 CREATE TRIGGER boleteria_boletas_bi BEFORE INSERT ON boleteria_boletas
 FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
 
+-- Boletería: historial de eventos
+CREATE TABLE IF NOT EXISTS boleteria_eventos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    boleta_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    accion ENUM('crear','vender','contabilizar','anular','desanular') NOT NULL,
+    estado_anterior ENUM('disponible','vendida','anulada','contabilizada') NULL,
+    estado_nuevo ENUM('disponible','vendida','anulada','contabilizada') NULL,
+    detalle TEXT NULL,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_boleta (boleta_id),
+    INDEX idx_usuario (usuario_id),
+    INDEX idx_accion (accion),
+    INDEX idx_fecha (fecha)
+);
+
 -- Gestión Créditos: solicitudes
 CREATE TABLE IF NOT EXISTS creditos_solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -463,18 +479,59 @@ CREATE TABLE IF NOT EXISTS creditos_historial (
     INDEX idx_fecha (fecha)
 );
 
--- Boletería: historial de eventos
-CREATE TABLE IF NOT EXISTS boleteria_eventos (
+-- Ticketera: categorías
+CREATE TABLE IF NOT EXISTS ticketera_categoria (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    boleta_id INT NOT NULL,
+    nombre VARCHAR(120) NOT NULL,
+    descripcion VARCHAR(500) NULL,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_ticket_cat_nombre (nombre),
+    KEY idx_ticket_cat_estado (estado_activo)
+);
+DROP TRIGGER IF EXISTS ticketera_categoria_bu;
+CREATE TRIGGER ticketera_categoria_bu BEFORE UPDATE ON ticketera_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS ticketera_categoria_bi;
+CREATE TRIGGER ticketera_categoria_bi BEFORE INSERT ON ticketera_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Ticketera: tickets
+CREATE TABLE IF NOT EXISTS ticketera_tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    creador_id INT NOT NULL,
+    solicitante_id INT NOT NULL,
+    responsable_id INT NOT NULL,
+    categoria_id INT NULL,
+    resumen VARCHAR(200) NOT NULL,
+    descripcion TEXT NULL,
+    estado ENUM('Backlog','En Curso','En Espera','Resuelto','Aceptado','Rechazado') DEFAULT 'Backlog',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    KEY idx_ticket_estado (estado),
+    KEY idx_ticket_responsable (responsable_id),
+    KEY idx_ticket_solicitante (solicitante_id),
+    KEY idx_ticket_categoria (categoria_id)
+);
+DROP TRIGGER IF EXISTS ticketera_tickets_bu;
+CREATE TRIGGER ticketera_tickets_bu BEFORE UPDATE ON ticketera_tickets
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS ticketera_tickets_bi;
+CREATE TRIGGER ticketera_tickets_bi BEFORE INSERT ON ticketera_tickets
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Ticketera: eventos / comentarios
+CREATE TABLE IF NOT EXISTS ticketera_eventos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
     usuario_id INT NOT NULL,
-    accion ENUM('crear','vender','contabilizar','anular','desanular') NOT NULL,
-    estado_anterior ENUM('disponible','vendida','anulada','contabilizada') NULL,
-    estado_nuevo ENUM('disponible','vendida','anulada','contabilizada') NULL,
-    detalle TEXT NULL,
+    tipo ENUM('comentario','cambio_estado') NOT NULL DEFAULT 'comentario',
+    estado_anterior ENUM('Backlog','En Curso','En Espera','Resuelto','Aceptado','Rechazado') NULL,
+    estado_nuevo ENUM('Backlog','En Curso','En Espera','Resuelto','Aceptado','Rechazado') NULL,
+    comentario TEXT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_boleta (boleta_id),
-    INDEX idx_usuario (usuario_id),
-    INDEX idx_accion (accion),
-    INDEX idx_fecha (fecha)
+    KEY idx_ticket (ticket_id),
+    KEY idx_usuario (usuario_id),
+    KEY idx_fecha (fecha)
 );
