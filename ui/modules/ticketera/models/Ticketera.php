@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../models/Logger.php';
 
 class Ticketera {
     private $conn;
@@ -44,6 +45,15 @@ class Ticketera {
         $ticketId = (int)$this->conn->lastInsertId();
         $ev = $this->conn->prepare("INSERT INTO ticketera_eventos (ticket_id, usuario_id, tipo, estado_nuevo, comentario) VALUES (?, ?, 'cambio_estado', 'Backlog', 'Ticket creado')");
         $ev->execute([$ticketId, $creadorId]);
+        // Log
+        try { (new Logger())->logCrear('ticketera.tickets', "Ticket creado #$ticketId", [
+            'ticket_id'=>$ticketId,
+            'creador_id'=>$creadorId,
+            'solicitante_id'=>$solicitanteId,
+            'responsable_id'=>$responsableId,
+            'categoria_id'=>$categoriaId,
+            'resumen'=>$resumen
+        ]); } catch (Throwable $e) { /* ignore */ }
         return ['success'=>true,'id'=>$ticketId];
     }
 
@@ -77,6 +87,12 @@ class Ticketera {
         $stmt = $this->conn->prepare("INSERT INTO ticketera_eventos (ticket_id, usuario_id, tipo, comentario) VALUES (?, ?, 'comentario', ?)");
         $ok = $stmt->execute([$ticketId, $usuarioId, $comentario]);
         if (!$ok) return ['success'=>false,'message'=>'No se pudo comentar'];
+        // Log
+        try { (new Logger())->logCrear('ticketera.tickets', "Comentario en ticket #$ticketId", [
+            'ticket_id'=>$ticketId,
+            'usuario_id'=>$usuarioId,
+            'comentario'=>$comentario
+        ]); } catch (Throwable $e) { /* ignore */ }
         return ['success'=>true];
     }
 
@@ -108,7 +124,110 @@ class Ticketera {
         if (!$ok) return ['success'=>false,'message'=>'No se pudo cambiar estado'];
         $ins = $this->conn->prepare("INSERT INTO ticketera_eventos (ticket_id, usuario_id, tipo, estado_anterior, estado_nuevo, comentario) VALUES (?, ?, 'cambio_estado', ?, ?, ?)");
         $ins->execute([$ticketId, $usuarioId, $actual, $nuevo, $comentario]);
+        // Log
+        try { (new Logger())->logEditar('ticketera.tickets', "Cambio de estado ticket #$ticketId: $actual → $nuevo", [ 'estado'=>$actual ], [ 'estado'=>$nuevo, 'comentario'=>$comentario ]); } catch (Throwable $e) { /* ignore */ }
         return ['success'=>true];
+    }
+
+    // Resumen/KPIs
+    public function obtenerKpisResumen(){
+        $kpis = [
+            'tickets_creados' => 0,
+            'tickets_abiertos' => 0,
+            'promedio_horas_abierto' => 0.0,
+            'aceptados_semana' => 0,
+        ];
+        // Total creados
+        $q1 = $this->conn->query("SELECT COUNT(*) AS c FROM ticketera_tickets");
+        $kpis['tickets_creados'] = (int)($q1->fetch()['c'] ?? 0);
+        // Abiertos (no aceptados)
+        $q2 = $this->conn->query("SELECT COUNT(*) AS c FROM ticketera_tickets WHERE estado <> 'Aceptado'");
+        $kpis['tickets_abiertos'] = (int)($q2->fetch()['c'] ?? 0);
+        // Promedio horas abierto: desde creación hasta Aceptado, sólo tickets aceptados
+        $sqlAvg = "SELECT AVG(TIMESTAMPDIFF(HOUR, t.fecha_creacion, e.fecha)) AS avg_hours
+                   FROM ticketera_tickets t
+                   INNER JOIN (
+                       SELECT ticket_id, MIN(fecha) AS fecha
+                       FROM ticketera_eventos
+                       WHERE tipo='cambio_estado' AND estado_nuevo='Aceptado'
+                       GROUP BY ticket_id
+                   ) e ON e.ticket_id = t.id";
+        $rowAvg = $this->conn->query($sqlAvg)->fetch();
+        $kpis['promedio_horas_abierto'] = round((float)($rowAvg['avg_hours'] ?? 0), 1);
+        // Aceptados en últimos 7 días
+        $stmt = $this->conn->prepare("SELECT COUNT(*) AS c
+            FROM ticketera_eventos e
+            WHERE e.tipo='cambio_estado' AND e.estado_nuevo='Aceptado' AND e.fecha >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+        $stmt->execute();
+        $kpis['aceptados_semana'] = (int)($stmt->fetch()['c'] ?? 0);
+        return $kpis;
+    }
+
+    public function distribucionPorEstado(){
+        $stmt = $this->conn->query("SELECT estado, COUNT(*) AS cantidad
+            FROM ticketera_tickets
+            WHERE estado <> 'Aceptado'
+            GROUP BY estado
+            ORDER BY cantidad DESC");
+        return $stmt->fetchAll();
+    }
+
+    public function abiertosPorUsuario(){
+        $stmt = $this->conn->query("SELECT t.responsable_id AS id, COALESCE(u.nombre_completo,'Sin asignar') AS nombre, COUNT(*) AS cantidad
+            FROM ticketera_tickets t
+            LEFT JOIN control_usuarios u ON u.id = t.responsable_id
+            WHERE t.estado <> 'Aceptado'
+            GROUP BY t.responsable_id, u.nombre_completo
+            ORDER BY cantidad DESC");
+        return $stmt->fetchAll();
+    }
+
+    public function cerradosPorUsuario($dias, $limit){
+        $dias = max(1, (int)$dias); $limit = max(1, (int)$limit);
+        $sql = "SELECT t.responsable_id AS id, COALESCE(u.nombre_completo,'Sin asignar') AS nombre, COUNT(*) AS cantidad
+                FROM ticketera_eventos e
+                INNER JOIN ticketera_tickets t ON t.id = e.ticket_id
+                LEFT JOIN control_usuarios u ON u.id = t.responsable_id
+                WHERE e.tipo='cambio_estado' AND e.estado_nuevo='Aceptado' AND e.fecha >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                GROUP BY t.responsable_id, u.nombre_completo
+                ORDER BY cantidad DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$dias, $limit]);
+        return $stmt->fetchAll();
+    }
+
+    public function creadosPorUsuario($dias, $limit){
+        $dias = max(1, (int)$dias); $limit = max(1, (int)$limit);
+        $sql = "SELECT t.creador_id AS id, cu.nombre_completo AS creador_nombre, COUNT(*) AS cantidad,
+                       MIN(su.nombre_completo) AS solicitante_ejemplo
+                FROM ticketera_tickets t
+                LEFT JOIN control_usuarios cu ON cu.id = t.creador_id
+                LEFT JOIN control_usuarios su ON su.id = t.solicitante_id
+                WHERE t.fecha_creacion >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                GROUP BY t.creador_id, cu.nombre_completo
+                ORDER BY cantidad DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$dias, $limit]);
+        return $stmt->fetchAll();
+    }
+
+    public function solicitadosPorUsuario($dias, $limit){
+        $dias = max(1, (int)$dias); $limit = max(1, (int)$limit);
+        $sql = "SELECT t.solicitante_id AS id, su.nombre_completo AS solicitante_nombre, COUNT(*) AS cantidad,
+                       MIN(cu.nombre_completo) AS creador_ejemplo
+                FROM ticketera_tickets t
+                LEFT JOIN control_usuarios su ON su.id = t.solicitante_id
+                LEFT JOIN control_usuarios cu ON cu.id = t.creador_id
+                WHERE t.fecha_creacion >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                  AND t.solicitante_id <> t.creador_id
+                GROUP BY t.solicitante_id, su.nombre_completo
+                ORDER BY cantidad DESC
+                LIMIT ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$dias, $limit]);
+        return $stmt->fetchAll();
     }
 }
 
