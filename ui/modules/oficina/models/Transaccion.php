@@ -114,7 +114,7 @@ class Transaccion {
         return ['pse' => $pse, 'cash_qr' => $cash];
     }
 
-    public function crearTransaccion(string $cedula, string $origen, ?string $pseId, ?string $confiarId, float $valorPago, array $detalles, ?int $usuarioId = null): array {
+    public function crearTransaccion(string $cedula, string $origen, ?string $pseId, ?string $confiarId, float $valorPago, array $detalles, ?int $usuarioId = null, ?string $reciboCajaSifone = null): array {
         try {
             $this->conn->beginTransaction();
             // Validación simple: suma de asignado no debe superar el pago
@@ -136,8 +136,8 @@ class Transaccion {
             }
 
             // Insert cabecera
-            $stmtH = $this->conn->prepare("INSERT INTO control_transaccion (cedula, origen_pago, pse_id, confiar_id, valor_pago_total, usuario_id) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtH->execute([$cedula, $origen, $pseId, $confiarId, $valorPago, $usuarioId]);
+            $stmtH = $this->conn->prepare("INSERT INTO control_transaccion (cedula, origen_pago, pse_id, confiar_id, recibo_caja_sifone, valor_pago_total, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmtH->execute([$cedula, $origen, $pseId, $confiarId, $reciboCajaSifone, $valorPago, $usuarioId]);
             $transaccionId = (int)$this->conn->lastInsertId();
 
             // Insert detalles

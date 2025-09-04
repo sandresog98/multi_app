@@ -232,6 +232,7 @@ CREATE TABLE IF NOT EXISTS control_transaccion (
     origen_pago ENUM('pse','cash_qr') NOT NULL,
     pse_id VARCHAR(50) NULL,
     confiar_id VARCHAR(50) NULL,
+    recibo_caja_sifone VARCHAR(50) NOT NULL,
     valor_pago_total DECIMAL(12,2) NOT NULL,
     usuario_id INT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

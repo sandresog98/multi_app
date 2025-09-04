@@ -40,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $confiarId = $_POST['confiar_id'] ?? null;
       $valorPago = (float)($_POST['valor_pago'] ?? 0);
       $detalles = json_decode($_POST['detalles'] ?? '[]', true) ?: [];
-      $res = $model->crearTransaccion($ced, $origen, $pseId, $confiarId, $valorPago, $detalles, (int)($currentUser['id'] ?? null));
+      $reciboCaja = trim($_POST['recibo_caja_sifone'] ?? '');
+      if ($reciboCaja === '') { throw new Exception('El campo Recibo de caja Sifone es obligatorio'); }
+      $res = $model->crearTransaccion($ced, $origen, $pseId, $confiarId, $valorPago, $detalles, (int)($currentUser['id'] ?? null), $reciboCaja);
       if ($res['success']) { $message = 'Transacción creada'; $logger->logCrear('transacciones','Crear transacción', null, ['id'=>$res['id'],'cedula'=>$ced]); }
       else { $error = $res['message'] ?? 'No se pudo crear'; }
       // Recalcular vista si persiste en la misma página
@@ -170,6 +172,7 @@ include '../../../views/layouts/header.php';
               </select>
             </div>
             <div class="mt-2"><label class="form-label">Valor pago</label><input id="valorPago" class="form-control form-control-sm" readonly></div>
+            <div class="mt-2"><label class="form-label">Recibo de caja Sifone</label><input id="reciboCaja" class="form-control form-control-sm" placeholder="Obligatorio"></div>
             <div class="mt-2"><label class="form-label">Total asignado</label><input id="totalAsignado" class="form-control form-control-sm" readonly></div>
             <div class="mt-3 d-grid">
               <button class="btn btn-primary btn-sm" onclick="guardarTransaccion()"><i class="fas fa-save me-1"></i>Guardar</button>
@@ -354,11 +357,13 @@ document.getElementById('pseId')?.addEventListener('change', function(){
   const opt = this.selectedOptions[0];
   const val = opt ? Number(opt.dataset.valor||0) : 0;
   document.getElementById('valorPago').value = val.toLocaleString();
+  autofillAsignaciones();
 });
 document.getElementById('confiarId')?.addEventListener('change', function(){
   const opt = this.selectedOptions[0];
   const val = opt ? Number(opt.dataset.valor||0) : 0;
   document.getElementById('valorPago').value = val.toLocaleString();
+  autofillAsignaciones();
 });
 
 function seleccionarPse(id, valor){
@@ -367,6 +372,7 @@ function seleccionarPse(id, valor){
   document.getElementById('origen').value = 'pse';
   updatePagoBox();
   document.getElementById('valorPago').value = Number(valor||0).toLocaleString();
+  autofillAsignaciones();
 }
 function seleccionarCash(id, valor){
   const sel = document.getElementById('confiarId');
@@ -374,6 +380,7 @@ function seleccionarCash(id, valor){
   document.getElementById('origen').value = 'cash_qr';
   updatePagoBox();
   document.getElementById('valorPago').value = Number(valor||0).toLocaleString();
+  autofillAsignaciones();
 }
 
 // Cargar listas en modales con filtros en cliente
@@ -461,6 +468,8 @@ async function guardarTransaccion(){
     valorPago = Number((document.getElementById('valorPago').value||'0').replace(/[^\d.-]/g,''));
   }
   const detalles = [];
+  const reciboCaja = (document.getElementById('reciboCaja').value||'').trim();
+  if (!reciboCaja) { alert('El campo "Recibo de caja Sifone" es obligatorio.'); return; }
   document.querySelectorAll('#rubroBody tr').forEach(tr => {
     const tipo = tr.dataset.tipo;
     const ref = tr.dataset.ref || null;
@@ -490,12 +499,56 @@ async function guardarTransaccion(){
   form.append('confiar_id', confiarId||'');
   form.append('valor_pago', String(valorPago));
   form.append('detalles', JSON.stringify(detalles));
+  form.append('recibo_caja_sifone', reciboCaja);
   const res = await fetch('', { method:'POST', body:form });
   location.reload();
 }
 
 updatePagoBox();
 updateTotal();
+
+function parseMoneda(text){
+  if (!text) return 0;
+  const num = Number(String(text).replace(/[^\d.-]/g,''));
+  return isNaN(num) ? 0 : num;
+}
+
+function obtenerRecomendadoDeFila(tr){
+  const el = tr.querySelector('.col-recomendado');
+  if (!el) return 0;
+  return parseMoneda(el.textContent);
+}
+
+function autofillAsignaciones(){
+  // Obtiene el valor del pago directamente del option seleccionado (evita formato local)
+  let pago = 0;
+  const origen = document.getElementById('origen').value;
+  if (origen === 'pse') {
+    const opt = document.getElementById('pseId').selectedOptions[0];
+    pago = Number(opt ? (opt.dataset.valor||0) : 0);
+  } else if (origen === 'cash_qr') {
+    const opt = document.getElementById('confiarId').selectedOptions[0];
+    pago = Number(opt ? (opt.dataset.valor||0) : 0);
+  } else {
+    pago = parseMoneda(document.getElementById('valorPago').value||'0');
+  }
+  if (pago <= 0) return;
+  let restante = pago;
+  const filas = Array.from(document.querySelectorAll('#rubroBody tr'));
+  // Resetear valores antes de asignar
+  filas.forEach(tr => { const inp = tr.querySelector('.rubro-asignar'); if (inp) inp.value = 0; });
+  // Asignar en orden por filas: hasta el recomendado o hasta agotar el pago
+  for (const tr of filas){
+    const recomendado = obtenerRecomendadoDeFila(tr);
+    if (recomendado <= 0) continue;
+    const asignar = Math.min(recomendado, restante);
+    const inp = tr.querySelector('.rubro-asignar');
+    if (inp){ inp.value = asignar.toFixed(2); }
+    restante -= asignar;
+    if (restante <= 0) break;
+  }
+  updateTotal();
+}
 </script>
 
 <?php include '../../../views/layouts/footer.php'; ?>
