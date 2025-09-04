@@ -355,10 +355,16 @@ CREATE TABLE IF NOT EXISTS banco_asignacion_pse (
 CREATE TABLE IF NOT EXISTS banco_confirmacion_confiar (
     id INT AUTO_INCREMENT PRIMARY KEY,
     confiar_id VARCHAR(50) NOT NULL UNIQUE,
-    cedula VARCHAR(20) NOT NULL,
-    link_validacion VARCHAR(255) NOT NULL,
+    cedula VARCHAR(20) NULL,
+    link_validacion VARCHAR(255) NULL,
     comentario TEXT NULL,
-    fecha_validacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    estado ENUM('pendiente','asignado','conciliado','no_valido') NOT NULL DEFAULT 'pendiente',
+    motivo_no_valido TEXT NULL,
+    no_valido_por INT NULL,
+    no_valido_fecha TIMESTAMP NULL,
+    fecha_validacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_estado (estado),
+    KEY idx_no_valido_fecha (no_valido_fecha)
 );
 
 -- Orquestación de cargas de archivos (jobs)

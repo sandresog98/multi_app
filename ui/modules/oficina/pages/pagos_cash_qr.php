@@ -58,6 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $res = $model->removeAssignment($confiar_id);
       if ($res['success']) { $message = 'Asignación eliminada'; $logger->logEliminar('pagos_cashqr','Eliminar asignación', ['confiar_id'=>$confiar_id]); }
       else { $error = $res['message'] ?? 'No se pudo eliminar'; }
+    } elseif ($action === 'no_valida') {
+      $confiar_id = trim($_POST['confiar_id'] ?? '');
+      $motivo = trim($_POST['motivo'] ?? '');
+      if ($motivo==='') throw new Exception('Motivo requerido');
+      $res = $model->markInvalid($confiar_id, $motivo, (int)($currentUser['id']??0));
+      if ($res['success']) { $message = 'Marcada como no válida'; $logger->logEditar('pagos_cashqr','Marcar no válida', null, compact('confiar_id','motivo')); }
+      else { $error = $res['message'] ?? 'No se pudo marcar'; }
     }
   } catch (Exception $e) { $error = $e->getMessage(); }
 }
@@ -147,13 +154,19 @@ include '../../../views/layouts/header.php';
                     <?php endif; ?>
                     <?php if (!empty($row['asignado_comentario'])): ?><div class="small text-muted"><?php echo htmlspecialchars($row['asignado_comentario']); ?></div><?php endif; ?>
                   <?php else: ?>
-                    <span class="badge bg-secondary">Sin asignar</span>
+                    <?php if (($row['asignado_estado'] ?? '')==='no_valido'): ?>
+                      <span class="badge bg-dark">No válida</span>
+                      <?php if (!empty($row['motivo_no_valido'])): ?><div class="small text-muted"><?php echo htmlspecialchars($row['motivo_no_valido']); ?></div><?php endif; ?>
+                    <?php else: ?>
+                      <span class="badge bg-secondary">Sin asignar</span>
+                    <?php endif; ?>
                   <?php endif; ?>
                 </td>
                 <td>
                   <div class="btn-group">
-                    <?php if (empty($row['asignado_cedula'])): ?>
+                    <?php if (empty($row['asignado_cedula']) && (($row['asignado_estado'] ?? '')!=='no_valido')): ?>
                       <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#asignarModal<?php echo $row['confiar_id']; ?>" title="Asignar"><i class="fas fa-link"></i></button>
+                      <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#noValidaModal<?php echo $row['confiar_id']; ?>" title="Marcar no válida"><i class="fas fa-ban"></i></button>
                     <?php else: ?>
                       <form method="POST" class="d-inline">
                         <input type="hidden" name="action" value="eliminar">
@@ -165,7 +178,7 @@ include '../../../views/layouts/header.php';
                 </td>
               </tr>
 
-              <?php if (empty($row['asignado_cedula'])): ?>
+              <?php if (empty($row['asignado_cedula']) && (($row['asignado_estado'] ?? '')!=='no_valido')): ?>
               <div class="modal fade" id="asignarModal<?php echo $row['confiar_id']; ?>" tabindex="-1">
                 <div class="modal-dialog"><div class="modal-content">
                   <div class="modal-header"><h5 class="modal-title"><i class="fas fa-link me-2"></i>Asignar comprobante y usuario</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -189,6 +202,24 @@ include '../../../views/layouts/header.php';
                       <div class="small text-muted">Confiar: <?php echo htmlspecialchars($row['confiar_id']); ?> | Fecha: <?php echo htmlspecialchars($row['fecha']); ?> | Valor: <?php echo '$' . number_format((float)$row['valor_consignacion'], 0); ?></div>
                     </div>
                     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+                  </form>
+                </div></div>
+              </div>
+              <?php endif; ?>
+
+              <!-- Modal No Válida -->
+              <?php if (($row['asignado_estado'] ?? '')!=='no_valido'): ?>
+              <div class="modal fade" id="noValidaModal<?php echo $row['confiar_id']; ?>" tabindex="-1">
+                <div class="modal-dialog"><div class="modal-content">
+                  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-ban me-2"></i>Marcar como no válida</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <form method="POST">
+                    <div class="modal-body">
+                      <input type="hidden" name="action" value="no_valida">
+                      <input type="hidden" name="confiar_id" value="<?php echo htmlspecialchars($row['confiar_id']); ?>">
+                      <label class="form-label">Motivo</label>
+                      <textarea class="form-control" name="motivo" rows="3" required placeholder="Explica por qué no es válido"></textarea>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-dark">Marcar</button></div>
                   </form>
                 </div></div>
               </div>

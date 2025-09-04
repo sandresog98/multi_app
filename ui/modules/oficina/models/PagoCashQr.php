@@ -48,7 +48,11 @@ class PagoCashQr {
                     sa.nombre AS asignado_nombre,
                     a.link_validacion AS asignado_link,
                     a.comentario AS asignado_comentario,
-                    a.fecha_validacion AS asignado_fecha
+                    a.fecha_validacion AS asignado_fecha,
+                    a.estado AS asignado_estado,
+                    a.motivo_no_valido,
+                    a.no_valido_por,
+                    a.no_valido_fecha
                 FROM banco_confiar c
                 LEFT JOIN banco_confirmacion_confiar a ON a.confiar_id = c.confiar_id
                 LEFT JOIN sifone_asociados sa ON sa.cedula = a.cedula
@@ -83,9 +87,10 @@ class PagoCashQr {
                 $ins = $this->conn->prepare("INSERT INTO control_asociados (cedula, estado_activo) VALUES (?, 1) ON DUPLICATE KEY UPDATE cedula = VALUES(cedula)");
                 $ins->execute([$cedula]);
             }
+            // Upsert en confirmación, dejando estado en 'asignado'
             $del = $this->conn->prepare("DELETE FROM banco_confirmacion_confiar WHERE confiar_id = ?");
             $del->execute([$confiarId]);
-            $ins = $this->conn->prepare("INSERT INTO banco_confirmacion_confiar (confiar_id, cedula, link_validacion, comentario) VALUES (?, ?, ?, ?)");
+            $ins = $this->conn->prepare("INSERT INTO banco_confirmacion_confiar (confiar_id, cedula, link_validacion, comentario, estado) VALUES (?, ?, ?, ?, 'asignado')");
             $ok = $ins->execute([$confiarId, $cedula, $link, $comentario]);
             return ['success' => (bool)$ok];
         } catch (Exception $e) {
@@ -95,11 +100,27 @@ class PagoCashQr {
 
     public function removeAssignment($confiarId) {
         try {
-            $stmt = $this->conn->prepare("DELETE FROM banco_confirmacion_confiar WHERE confiar_id = ?");
+            $stmt = $this->conn->prepare("UPDATE banco_confirmacion_confiar SET cedula=NULL, link_validacion=NULL, comentario=NULL, estado='pendiente' WHERE confiar_id = ?");
             $ok = $stmt->execute([$confiarId]);
             return ['success' => (bool)$ok];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function markInvalid($confiarId, $motivo, $userId){
+        if (empty($confiarId) || trim($motivo)==='') return ['success'=>false,'message'=>'Motivo requerido'];
+        try{
+            // No permitir si ya conciliado
+            $st = $this->conn->prepare("SELECT estado FROM banco_confirmacion_confiar WHERE confiar_id=? LIMIT 1");
+            $st->execute([$confiarId]);
+            $row = $st->fetch();
+            if ($row && $row['estado']==='conciliado') return ['success'=>false,'message'=>'Ya conciliado'];
+            $up = $this->conn->prepare("INSERT INTO banco_confirmacion_confiar (confiar_id, estado, motivo_no_valido, no_valido_por, no_valido_fecha) VALUES (?, 'no_valido', ?, ?, NOW()) ON DUPLICATE KEY UPDATE estado='no_valido', motivo_no_valido=VALUES(motivo_no_valido), no_valido_por=VALUES(no_valido_por), no_valido_fecha=VALUES(no_valido_fecha)");
+            $ok = $up->execute([$confiarId, $motivo, (int)$userId]);
+            return ['success'=>(bool)$ok];
+        }catch(Exception $e){
+            return ['success'=>false,'message'=>$e->getMessage()];
         }
     }
 }
