@@ -84,7 +84,7 @@ include '../../../views/layouts/header.php';
         <div class="card-body">
           <div class="table-responsive">
             <table class="table table-sm table-hover align-middle">
-              <thead class="table-light"><tr><th>ID</th><th>Tipo</th><th>Archivo</th><th>Estado</th><th>Mensaje</th><th>Fecha carga</th><th>Última actualización</th></tr></thead>
+              <thead class="table-light"><tr><th>ID</th><th>Tipo</th><th>Archivo</th><th>Estado</th><th>Mensaje</th><th>Fecha carga</th></tr></thead>
               <tbody id="cargasTbl"></tbody>
             </table>
           </div>
@@ -145,8 +145,7 @@ async function cargarListado(){
                     <td class="text-truncate" style="max-width:260px" title="${r.archivo_ruta}">${String(r.archivo_ruta||'').split(/[\\\/]/).pop()}</td>
                     <td>${estadoBadge(r.estado)}</td>
                     <td class="text-truncate" style="max-width:320px">${r.mensaje_log||''}</td>
-                    <td><small>${r.fecha_creacion}</small></td>
-                    <td><small>${r.fecha_actualizacion||''}</small></td>`;
+                    <td><small>${r.fecha_creacion}</small></td>`;
     body.appendChild(tr);
   });
 }
