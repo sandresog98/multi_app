@@ -551,12 +551,16 @@ CREATE TABLE IF NOT EXISTS ticketera_eventos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ticket_id INT NOT NULL,
     usuario_id INT NOT NULL,
-    tipo ENUM('comentario','cambio_estado') NOT NULL DEFAULT 'comentario',
+    tipo ENUM('comentario','cambio_estado','reasignacion') NOT NULL DEFAULT 'comentario',
     estado_anterior ENUM('Backlog','En Curso','En Espera','Resuelto','Aceptado','Rechazado') NULL,
     estado_nuevo ENUM('Backlog','En Curso','En Espera','Resuelto','Aceptado','Rechazado') NULL,
+    responsable_anterior_id INT NULL,
+    responsable_nuevo_id INT NULL,
     comentario TEXT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     KEY idx_ticket (ticket_id),
     KEY idx_usuario (usuario_id),
+    KEY idx_resp_ant (responsable_anterior_id),
+    KEY idx_resp_nuevo (responsable_nuevo_id),
     KEY idx_fecha (fecha)
 );

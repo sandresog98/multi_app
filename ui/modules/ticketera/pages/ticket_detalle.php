@@ -92,19 +92,24 @@ function buildHistHtml(eventos){
     const fecha = String(e.fecha||'');
     const usuario = String(e.usuario_nombre||'N/A');
     const tipo = String(e.tipo||'');
+    const comentario = String(e.comentario||'');
+    const isReas = (tipo === 'reasignacion') || /reasign/i.test(comentario);
     const before = e.estado_anterior ? estadoBadge(e.estado_anterior) : '';
     const after  = e.estado_nuevo ? estadoBadge(e.estado_nuevo) : '';
     const trans = (before||after)? `${before} → ${after}` : '';
-    const comentario = String(e.comentario||'');
-    const title = tipo==='cambio_estado' ? 'Cambio de estado' : 'Comentario';
+    // comentario ya definido arriba
+    const title = (tipo==='cambio_estado') ? 'Cambio de estado' : (isReas ? 'Reasignación' : 'Comentario');
+    const titleNode = isReas ? '<span class="badge" style="background-color:#6f42c1;">Reasignación</span>' : escapeHtml(title);
+    const markerIcon = isReas ? '<i class="fas fa-circle" style="color:#6f42c1"></i>' : '<i class="fas fa-circle text-primary"></i>';
     return `
       <div class="timeline-item mb-3">
         <div class="d-flex align-items-start">
-          <div class="timeline-marker me-3"><i class="fas fa-circle text-primary"></i></div>
+          <div class="timeline-marker me-3">${markerIcon}</div>
           <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-start"><h6 class="mb-1">${escapeHtml(title)}</h6><small class="text-muted">${escapeHtml(fecha)}</small></div>
+            <div class="d-flex justify-content-between align-items-start"><h6 class="mb-1">${titleNode}</h6><small class="text-muted">${escapeHtml(fecha)}</small></div>
             <div class="small text-muted mb-1">Por: ${escapeHtml(usuario)}</div>
-            ${trans?(`<div class="small mb-1">${trans}</div>`):''}
+            ${(isReas && (e.responsable_anterior_nombre || e.responsable_nuevo_nombre)) ? (`<div class=\"small mb-1\"><strong>De:</strong> ${escapeHtml(String(e.responsable_anterior_nombre||'N/A'))} <span class=\"mx-1\">→</span> <strong>A:</strong> ${escapeHtml(String(e.responsable_nuevo_nombre||'N/A'))}</div>`) : ''}
+            ${trans?(`<div class=\"small mb-1\">${trans}</div>`):''}
             ${comentario?(`<div class="small">${escapeHtml(comentario)}</div>`):''}
           </div>
         </div>
@@ -119,28 +124,58 @@ function buildTransitionControls(it){
   const estado = String(it.estado||'');
   if (estado==='Aceptado') { return '<div class="text-muted">Ticket finalizado</div>'; }
   const isResp = uid===responsable; const isSol = uid===solicitante;
-  let buttons = '';
-  if (estado==='Backlog' && isResp){ buttons = ctlBtns(['En Curso','Rechazado']); }
-  else if (estado==='En Curso' && isResp){ buttons = ctlBtns(['En Espera','Resuelto']); }
-  else if (estado==='En Espera' && isResp){ buttons = ctlBtns(['En Curso','Resuelto']); }
-  else if (estado==='Resuelto' && isSol){ buttons = ctlBtns(['Aceptado','Rechazado']); }
+  let buttonsHtml = '';
+  if (estado==='Backlog' && isResp){ buttonsHtml = ctlBtns(['En Curso','Rechazado']); }
+  else if (estado==='En Curso' && isResp){ buttonsHtml = ctlBtns(['En Espera','Resuelto']); }
+  else if (estado==='En Espera' && isResp){ buttonsHtml = ctlBtns(['En Curso','Resuelto']); }
+  else if (estado==='Resuelto' && isSol){ buttonsHtml = ctlBtns(['Aceptado','Rechazado']); }
+  if (isResp && !['Aceptado','Rechazado','Resuelto'].includes(estado)) { buttonsHtml += `<button class="btn btn-outline-secondary btn-sm" id="btnReasignar"><i class="fas fa-user-tag me-1"></i>Reasignar</button>`; }
   const commentBox = `<div class="input-group mb-2"><span class="input-group-text"><i class="fas fa-comment"></i></span><input id="transitionComment" class="form-control" placeholder="Comentario para la transición (obligatorio)"></div>`;
   const helpText = `<div class="text-muted small mb-2">Selecciona a qué estado cambiar.</div>`;
-  return `${buttons?commentBox+helpText:''}<div class="mb-2">${buttons||'<span class="text-muted">No hay acciones disponibles para tu usuario en este estado.</span>'}</div>`;
+  const group = buttonsHtml ? `<div class="d-flex flex-wrap align-items-center gap-2 mb-2">${buttonsHtml}</div>` : '<div class="mb-2"><span class="text-muted">No hay acciones disponibles para tu usuario en este estado.</span></div>';
+  return `${buttonsHtml?commentBox+helpText:''}${group}`;
 }
 function ctlBtns(names){
-  return `<div class="btn-group btn-group-sm" role="group">${names.map(n=>{
+  return names.map(n=>{
     let cls = 'btn btn-primary';
-    if (n==='Rechazado') cls = 'btn btn-danger';
-    else if (n==='En Espera') cls = 'btn btn-secondary';
-    else if (n==='Resuelto') cls = 'btn btn-success';
-    return `<button class=\"${cls}\" data-action=\"setState\" data-state=\"${n}\">${n}</button>`;
-  }).join('')}</div>`;
+    let icon = 'fa-play';
+    if (n==='Rechazado') { cls = 'btn btn-danger'; icon = 'fa-times'; }
+    else if (n==='En Espera') { cls = 'btn btn-secondary'; icon = 'fa-clock'; }
+    else if (n==='Resuelto') { cls = 'btn btn-success'; icon = 'fa-check'; }
+    else if (n==='Aceptado') { cls = 'btn btn-success'; icon = 'fa-check-circle'; }
+    else if (n==='En Curso') { cls = 'btn btn-primary'; icon = 'fa-play'; }
+    return `<button class=\"${cls} btn-sm\" data-action=\"setState\" data-state=\"${n}\"><i class=\"fas ${icon} me-1\"></i>${n}</button>`;
+  }).join('');
 }
 
 async function postJSON(url, body){
   const res = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   try { return await res.json(); } catch { return {success:false,message:'Respuesta inválida'}; }
+}
+
+async function buscarUsuarios(q){
+  const res = await fetch('../api/usuarios_buscar.php?q='+encodeURIComponent(q));
+  try { const j = await res.json(); return (j && j.items) ? j.items : []; } catch { return []; }
+}
+
+function abrirReasignar(it){
+  const html = `<div class=\"modal fade\" id=\"mReasignar\" tabindex=\"-1\"><div class=\"modal-dialog\"><div class=\"modal-content\">\n    <div class=\"modal-header\"><h5 class=\"modal-title\">Reasignar ticket #${it.id}</h5><button class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div>\n    <div class=\"modal-body\">\n      <div class=\"mb-2\">Responsable actual: <strong>${escapeHtml(it.responsable_nombre||'')}</strong></div>\n      <label class=\"form-label\">Nuevo responsable</label>\n      <div class=\"position-relative\">\n        <input id=\"r_usuario\" class=\"form-control\" placeholder=\"Buscar usuario\" autocomplete=\"off\">\n        <div id=\"r_usuario_rs\" class=\"list-group position-absolute w-100\" style=\"z-index:1070; max-height:220px; overflow:auto;\"></div>\n      </div>\n      <label class=\"form-label mt-3\">Comentario</label>\n      <textarea id=\"r_coment\" class=\"form-control\" rows=\"3\" placeholder=\"Motivo de la reasignación (opcional)\"></textarea>\n    </div>\n    <div class=\"modal-footer\"><button class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancelar</button><button class=\"btn btn-primary\" id=\"btnDoReasignar\">Guardar</button></div>\n  </div></div></div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  const el = document.getElementById('mReasignar'); const modal = new bootstrap.Modal(el); modal.show();
+  el.addEventListener('hidden.bs.modal', ()=>el.remove());
+  let selUser = null;
+  const inp = el.querySelector('#r_usuario'); const rs = el.querySelector('#r_usuario_rs');
+  async function fill(q){ const items = await buscarUsuarios(q); rs.innerHTML = items.length? items.map(u=>`<a href=\"#\" class=\"list-group-item list-group-item-action\" data-id=\"${u.id}\" data-name=\"${u.nombre_completo}\">${u.nombre_completo} <small class=\"text-muted\">(${u.usuario})</small></a>`).join('') : '<div class=\"list-group-item text-muted\">Sin resultados</div>'; rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); selUser={id:Number(a.dataset.id)}; inp.value=a.dataset.name; rs.innerHTML=''; })); }
+  inp.addEventListener('input', ()=>fill(inp.value.trim())); inp.addEventListener('focus', ()=>fill('')); inp.addEventListener('blur', ()=>setTimeout(()=>{ rs.innerHTML=''; },200));
+  el.querySelector('#btnDoReasignar').addEventListener('click', async ()=>{
+    const nuevoId = Number((selUser&&selUser.id)||0);
+    if(!nuevoId){ alert('Selecciona el nuevo responsable'); return; }
+    const comentario = (el.querySelector('#r_coment').value||'').trim();
+    if(!comentario){ alert('Debes ingresar un comentario para reasignar.'); return; }
+    const r = await postJSON('../api/tickets_reasignar.php', { ticket_id: it.id, nuevo_responsable_id: nuevoId, comentario });
+    if(!(r&&r.success)){ alert((r&&r.message)||'No se pudo reasignar'); return; }
+    modal.hide(); loadDetail();
+  });
 }
 
 async function loadDetail(){
@@ -194,6 +229,8 @@ async function loadDetail(){
         loadDetail();
       });
     });
+    const btnReas = document.getElementById('btnReasignar');
+    if (btnReas) { btnReas.addEventListener('click', ()=> abrirReasignar(it)); }
   }catch(e){ document.getElementById('content').innerHTML = `<div class=\"alert alert-danger\">Error: ${escapeHtml(String(e))}</div>`; }
 }
 

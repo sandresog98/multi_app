@@ -73,9 +73,13 @@ class Ticketera {
         $stmt->execute([$id]);
         $item = $stmt->fetch();
         if (!$item) return null;
-        $ev = $this->conn->prepare("SELECT e.*, u.nombre_completo AS usuario_nombre 
+        $ev = $this->conn->prepare("SELECT e.*, u.nombre_completo AS usuario_nombre,
+                                        ra.nombre_completo AS responsable_anterior_nombre,
+                                        rn.nombre_completo AS responsable_nuevo_nombre
                                     FROM ticketera_eventos e 
                                     LEFT JOIN control_usuarios u ON u.id = e.usuario_id 
+                                    LEFT JOIN control_usuarios ra ON ra.id = e.responsable_anterior_id
+                                    LEFT JOIN control_usuarios rn ON rn.id = e.responsable_nuevo_id
                                     WHERE e.ticket_id = ? ORDER BY e.fecha ASC");
         $ev->execute([$id]);
         $eventos = $ev->fetchAll();
@@ -97,6 +101,9 @@ class Ticketera {
     }
 
     public function cambiarEstado($ticketId, $usuarioId, $nuevoEstado, $comentario){
+        if (trim($comentario) === '') {
+            return ['success'=>false,'message'=>'Comentario requerido'];
+        }
         $ticket = $this->conn->prepare("SELECT id, estado, responsable_id, solicitante_id FROM ticketera_tickets WHERE id = ?");
         $ticket->execute([$ticketId]);
         $t = $ticket->fetch();
@@ -126,6 +133,37 @@ class Ticketera {
         $ins->execute([$ticketId, $usuarioId, $actual, $nuevo, $comentario]);
         // Log
         try { (new Logger())->logEditar('ticketera.tickets', "Cambio de estado ticket #$ticketId: $actual → $nuevo", [ 'estado'=>$actual ], [ 'estado'=>$nuevo, 'comentario'=>$comentario ]); } catch (Throwable $e) { /* ignore */ }
+        return ['success'=>true];
+    }
+
+    public function reasignar($ticketId, $usuarioId, $nuevoResponsableId, $comentario){
+        if (trim($comentario) === '') {
+            return ['success'=>false,'message'=>'Comentario requerido'];
+        }
+        $stmt = $this->conn->prepare("SELECT id, responsable_id, estado FROM ticketera_tickets WHERE id = ?");
+        $stmt->execute([$ticketId]);
+        $t = $stmt->fetch();
+        if(!$t) return ['success'=>false,'message'=>'Ticket no encontrado'];
+        $anterior = (int)$t['responsable_id'];
+        $estadoActual = (string)$t['estado'];
+        if (in_array($estadoActual, ['Aceptado','Rechazado','Resuelto'], true)) {
+            return ['success'=>false,'message'=>'No se puede reasignar en este estado'];
+        }
+        if ($anterior === (int)$nuevoResponsableId) return ['success'=>false,'message'=>'El responsable ya es ese usuario'];
+        // Solo el responsable actual puede reasignar
+        if ($anterior !== (int)$usuarioId) return ['success'=>false,'message'=>'No autorizado'];
+        // Actualizar responsable y enviar a Backlog
+        $up = $this->conn->prepare("UPDATE ticketera_tickets SET responsable_id = ?, estado = 'Backlog', fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?");
+        $ok = $up->execute([(int)$nuevoResponsableId, $ticketId]);
+        if(!$ok) return ['success'=>false,'message'=>'No se pudo reasignar'];
+        // Registrar evento de reasignación
+        $ins = $this->conn->prepare("INSERT INTO ticketera_eventos (ticket_id, usuario_id, tipo, responsable_anterior_id, responsable_nuevo_id, comentario) VALUES (?, ?, 'reasignacion', ?, ?, ?)");
+        $ins->execute([$ticketId, $usuarioId, $anterior, (int)$nuevoResponsableId, $comentario]);
+        // Registrar evento de cambio de estado a Backlog
+        $evEstado = $this->conn->prepare("INSERT INTO ticketera_eventos (ticket_id, usuario_id, tipo, estado_anterior, estado_nuevo, comentario) VALUES (?, ?, 'cambio_estado', ?, 'Backlog', ?)");
+        $evEstado->execute([$ticketId, $usuarioId, $estadoActual, 'Reasignación']);
+        // Log auditoría
+        try { (new Logger())->logEditar('ticketera.tickets', "Reasignación de ticket #$ticketId", [ 'responsable_id'=>$anterior, 'estado'=>$estadoActual ], [ 'responsable_id'=>(int)$nuevoResponsableId, 'estado'=>'Backlog', 'comentario'=>$comentario ]); } catch (Throwable $e) { /* ignore */ }
         return ['success'=>true];
     }
 

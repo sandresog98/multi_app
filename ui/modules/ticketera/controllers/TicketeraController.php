@@ -33,6 +33,15 @@ class TicketeraController {
       trim($data['descripcion'] ?? '')
     );
   }
+
+  public function tickets_reasignar($data){
+    $user = $this->auth->getCurrentUser();
+    $uid = (int)($user['id'] ?? 0);
+    $ticketId = (int)($data['ticket_id'] ?? 0);
+    $nuevoResp = (int)($data['nuevo_responsable_id'] ?? 0);
+    $comentario = trim($data['comentario'] ?? '');
+    return $this->model->reasignar($ticketId, $uid, $nuevoResp, $comentario);
+  }
 }
 ?>
 
