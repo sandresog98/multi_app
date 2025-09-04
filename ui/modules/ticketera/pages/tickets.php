@@ -111,13 +111,13 @@ document.getElementById('f_responsable').addEventListener('input', async (e)=>{
   const q=e.target.value.trim(); const rs = document.getElementById('f_responsable_rs'); rs.innerHTML='';
   const items = await buscarUsuarios(q); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
   rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-  rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_f_responsable={id:Number(a.dataset.id)}; document.getElementById('f_responsable').value=a.dataset.name; rs.innerHTML=''; }));
+  rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_f_responsable={id:Number(a.dataset.id)}; document.getElementById('f_responsable').value=a.dataset.name; rs.innerHTML=''; }));
 });
 document.getElementById('f_responsable').addEventListener('focus', async ()=>{
   const rs = document.getElementById('f_responsable_rs'); rs.innerHTML='';
   const items = await buscarUsuarios(''); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
   rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-  rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_f_responsable={id:Number(a.dataset.id)}; document.getElementById('f_responsable').value=a.dataset.name; rs.innerHTML=''; }));
+  rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_f_responsable={id:Number(a.dataset.id)}; document.getElementById('f_responsable').value=a.dataset.name; rs.innerHTML=''; }));
 });
 document.getElementById('f_responsable').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('f_responsable_rs'); if(rs) rs.innerHTML=''; }, 200); });
 
@@ -190,39 +190,39 @@ function abrirNuevo(){
     const q=e.target.value.trim(); const rs = document.getElementById('t_solicitante_rs'); rs.innerHTML='';
     const items = await buscarUsuarios(q); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_solicitante={id:Number(a.dataset.id)}; document.getElementById('t_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_solicitante={id:Number(a.dataset.id)}; document.getElementById('t_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_solicitante').addEventListener('focus', async ()=>{
     const rs = document.getElementById('t_solicitante_rs'); rs.innerHTML='';
     const items = await buscarUsuarios(''); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_solicitante={id:Number(a.dataset.id)}; document.getElementById('t_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_solicitante={id:Number(a.dataset.id)}; document.getElementById('t_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_solicitante').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('t_solicitante_rs'); if(rs) rs.innerHTML=''; }, 200); });
   document.getElementById('t_responsable').addEventListener('input', async (e)=>{
     const q=e.target.value.trim(); const rs = document.getElementById('t_responsable_rs'); rs.innerHTML='';
     const items = await buscarUsuarios(q); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_responsable={id:Number(a.dataset.id)}; document.getElementById('t_responsable').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_responsable={id:Number(a.dataset.id)}; document.getElementById('t_responsable').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_responsable').addEventListener('focus', async ()=>{
     const rs = document.getElementById('t_responsable_rs'); rs.innerHTML='';
     const items = await buscarUsuarios(''); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_responsable={id:Number(a.dataset.id)}; document.getElementById('t_responsable').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_responsable={id:Number(a.dataset.id)}; document.getElementById('t_responsable').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_responsable').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('t_responsable_rs'); if(rs) rs.innerHTML=''; }, 200); });
   document.getElementById('t_categoria').addEventListener('input', async (e)=>{
     const q=e.target.value.trim(); const rs = document.getElementById('t_categoria_rs'); rs.innerHTML='';
     const items = await buscarCategorias(q); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(c=>`<a href="#" class="list-group-item list-group-item-action" data-id="${c.id}" data-name="${c.nombre}">${c.nombre}</a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_categoria={id:Number(a.dataset.id)}; document.getElementById('t_categoria').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_categoria={id:Number(a.dataset.id)}; document.getElementById('t_categoria').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_categoria').addEventListener('focus', async ()=>{
     const rs = document.getElementById('t_categoria_rs'); rs.innerHTML='';
     const items = await buscarCategorias(''); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
     rs.innerHTML = items.map(c=>`<a href="#" class="list-group-item list-group-item-action" data-id="${c.id}" data-name="${c.nombre}">${c.nombre}</a>`).join('');
-    rs.querySelectorAll('a').forEach(a=>a.addEventListener('click',(ev)=>{ ev.preventDefault(); sel_categoria={id:Number(a.dataset.id)}; document.getElementById('t_categoria').value=a.dataset.name; rs.innerHTML=''; }));
+    rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_categoria={id:Number(a.dataset.id)}; document.getElementById('t_categoria').value=a.dataset.name; rs.innerHTML=''; }));
   });
   document.getElementById('t_categoria').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('t_categoria_rs'); if(rs) rs.innerHTML=''; }, 200); });
   document.getElementById('btnCrear').addEventListener('click', async ()=>{
