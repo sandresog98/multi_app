@@ -19,10 +19,12 @@ class Ticketera {
         $dir = strtoupper($sortDir)==='ASC'?'ASC':'DESC';
         $sql = "SELECT t.id, t.resumen, t.estado, t.fecha_creacion,
                        su.nombre_completo AS solicitante_nombre,
-                       ru.nombre_completo AS responsable_nombre
+                       ru.nombre_completo AS responsable_nombre,
+                       c.nombre AS categoria_nombre
                 FROM ticketera_tickets t
                 LEFT JOIN control_usuarios su ON su.id = t.solicitante_id
                 LEFT JOIN control_usuarios ru ON ru.id = t.responsable_id
+                LEFT JOIN ticketera_categoria c ON c.id = t.categoria_id
                 $whereClause
                 ORDER BY $col $dir
                 LIMIT ? OFFSET ?";
