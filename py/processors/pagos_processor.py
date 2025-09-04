@@ -102,12 +102,26 @@ class PagosProcessor(BaseProcessor):
                 drop_na_columns=['FECHA']
             )
             
+            # Orden estable y secuencial por fecha para evitar duplicados dependientes del índice de archivo
+            df = df.copy()
+            # Normalizaciones numéricas y de texto para un orden determinístico
+            df['__SALDO_NUM'] = pd.to_numeric(df['SALDO'], errors='coerce').fillna(0)
+            df['__VAL_CONS_NUM'] = pd.to_numeric(df['VALOR CONSIGNACION'], errors='coerce').fillna(0)
+            df['__VAL_RET_NUM'] = pd.to_numeric(df['VALOR RETIRO'], errors='coerce').fillna(0)
+            df['__DOC_STR'] = df['DOCUMENTO'].astype(str).fillna('')
+            df['__DESC_STR'] = df['DESCRIPCION'].astype(str).fillna('')
+            # Orden: por FECHA y campos claves para reproducibilidad
+            df = df.sort_values(by=['FECHA','__SALDO_NUM','__VAL_CONS_NUM','__VAL_RET_NUM','__DOC_STR','__DESC_STR']).reset_index(drop=True)
+            # Índice secuencial por FECHA
+            df['__SEQ_FECHA'] = df.groupby('FECHA').cumcount() + 1
+
             # Procesar cada registro con segmentación de tipo_pago
             processed_data = []
-            for index, row in df.iterrows():
+            for _, row in df.iterrows():
                 try:
                     # Generar confiar_id único
-                    confiar_id = self.generate_confiar_id(row, index)
+                    seq = int(row['__SEQ_FECHA']) if pd.notna(row['__SEQ_FECHA']) else 0
+                    confiar_id = self.generate_confiar_id(row, seq)
                     
                     tipo_pago = self.segmentar_tipo_pago(
                         descripcion=self.data_cleaner.clean_string_field(row['DESCRIPCION']),
@@ -154,9 +168,9 @@ class PagosProcessor(BaseProcessor):
                 return 'Pago Efectivo'
         return ''
     
-    def generate_confiar_id(self, row: pd.Series, index: int) -> str:
-        """Generar ID único para registro de Confiar"""
-        # Usar index + fecha + saldo sin decimales para generar ID único
+    def generate_confiar_id(self, row: pd.Series, seq_por_fecha: int) -> str:
+        """Generar ID único para registro de Confiar basado en fecha + secuencia por fecha + saldo"""
+        # Usar secuencia por fecha + fecha + saldo sin decimales para generar ID único
         fecha = str(row['FECHA']).split()[0]  # Solo la fecha, sin hora
         
         # Obtener saldo y convertirlo a entero (sin decimales)
@@ -165,8 +179,8 @@ class PagosProcessor(BaseProcessor):
         except (ValueError, TypeError):
             saldo = 0  # Valor por defecto si no se puede convertir
         
-        # Crear ID único incluyendo el index
-        confiar_id = f"CONF{fecha.replace('-', '')}{index}V{saldo}"
+        # Crear ID único incluyendo la secuencia por fecha
+        confiar_id = f"CONF{fecha.replace('-', '')}{seq_por_fecha}V{saldo}"
         
         return confiar_id
     
