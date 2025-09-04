@@ -186,13 +186,14 @@ include '../../../views/layouts/header.php';
       <div class="card mt-3"><div class="card-header"><strong>Transacciones creadas</strong></div><div class="card-body">
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle">
-            <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
+            <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
             <tbody>
             <?php foreach (($listado['items'] ?? []) as $tx): ?>
               <tr>
                 <td><?php echo (int)$tx['id']; ?></td>
                 <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
                 <td><?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?></td>
+                <td><?php echo htmlspecialchars($tx['recibo_caja_sifone'] ?? ''); ?></td>
                 <td><?php echo '$'.number_format((float)$tx['valor_pago_total'],0); ?></td>
                 <td><?php echo '$'.number_format((float)$tx['total_asignado'],0); ?></td>
                 <td><?php echo (int)$tx['items']; ?></td>

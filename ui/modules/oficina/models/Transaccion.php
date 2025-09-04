@@ -169,7 +169,7 @@ class Transaccion {
         if (!empty($cedula)) { $where[] = 't.cedula = ?'; $params[] = $cedula; }
         $whereClause = empty($where) ? '' : ('WHERE '.implode(' AND ', $where));
 
-        $sql = "SELECT t.id, t.cedula, t.origen_pago, t.pse_id, t.confiar_id, t.valor_pago_total, t.fecha_creacion,
+        $sql = "SELECT t.id, t.cedula, t.origen_pago, t.pse_id, t.confiar_id, t.recibo_caja_sifone, t.valor_pago_total, t.fecha_creacion,
                        COALESCE(SUM(d.valor_asignado),0) AS total_asignado,
                        COUNT(d.id) AS items
                 FROM control_transaccion t
