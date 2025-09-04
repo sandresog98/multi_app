@@ -100,7 +100,6 @@ class Transaccion {
                            GREATEST(b.valor_consignacion - COALESCE(u.utilizado,0), 0) AS restante
                     FROM banco_confirmacion_confiar c
                     JOIN banco_confiar b ON b.confiar_id = c.confiar_id
-                    WHERE c.estado <> 'no_valido'
                     LEFT JOIN (
                       SELECT ct.confiar_id, SUM(d.valor_asignado) AS utilizado
                       FROM control_transaccion ct
@@ -108,6 +107,7 @@ class Transaccion {
                       WHERE ct.confiar_id IS NOT NULL
                       GROUP BY ct.confiar_id
                     ) u ON u.confiar_id = c.confiar_id
+                    WHERE c.estado <> 'no_valido'
                     ORDER BY b.fecha DESC LIMIT 100";
         $stmt2 = $this->conn->query($sqlCash);
         $cash = $stmt2->fetchAll();
