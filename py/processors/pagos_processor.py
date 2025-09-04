@@ -169,24 +169,34 @@ class PagosProcessor(BaseProcessor):
         return ''
     
     def generate_confiar_id(self, row: pd.Series, seq_por_fecha: int) -> str:
-        """Generar ID único para Confiar usando fecha + secuencia por fecha + saldo (como string sin puntos)."""
-        # Usar secuencia por fecha + fecha + saldo sin puntos para generar ID único
+        """Generar ID único para Confiar usando fecha + secuencia por fecha + valor_consignacion y valor_retiro (como string sin puntos)."""
+        # Usar secuencia por fecha + fecha + valores sin puntos para generar ID único
         fecha = str(row['FECHA']).split()[0]  # Solo la fecha, sin hora
         
-        # Obtener saldo como string estable y eliminar puntos
-        saldo_raw = row.get('SALDO')
-        if pd.isna(saldo_raw):
-            saldo_str = '0'
+        # valor consignación como string estable y sin puntos
+        vc_raw = row.get('VALOR CONSIGNACION')
+        if pd.isna(vc_raw):
+            vc_str = '0'
         else:
-            if isinstance(saldo_raw, (int, float)):
-                # Formatear a 2 decimales para valores monetarios y evitar artefactos binarios
-                saldo_str = f"{saldo_raw:.2f}"
+            if isinstance(vc_raw, (int, float)):
+                vc_str = f"{vc_raw:.2f}"
             else:
-                saldo_str = str(saldo_raw)
-        saldo_str = saldo_str.replace('.', '')
+                vc_str = str(vc_raw)
+        vc_str = vc_str.replace('.', '')
+
+        # valor retiro como string estable y sin puntos
+        vr_raw = row.get('VALOR RETIRO')
+        if pd.isna(vr_raw):
+            vr_str = '0'
+        else:
+            if isinstance(vr_raw, (int, float)):
+                vr_str = f"{vr_raw:.2f}"
+            else:
+                vr_str = str(vr_raw)
+        vr_str = vr_str.replace('.', '')
         
         # Crear ID único incluyendo la secuencia por fecha
-        confiar_id = f"CONF{fecha.replace('-', '')}{seq_por_fecha}V{saldo_str}"
+        confiar_id = f"CONF{fecha.replace('-', '')}{seq_por_fecha}V{vc_str}R{vr_str}"
         
         return confiar_id
     
