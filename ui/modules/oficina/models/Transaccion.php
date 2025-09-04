@@ -90,7 +90,7 @@ class Transaccion {
                    ORDER BY p.fecha_hora_resolucion_de_la_transaccion DESC LIMIT 100";
         $stmt1 = $this->conn->query($sqlPse);
         $pse = $stmt1->fetchAll();
-        // Cash/QR confirmados
+        // Cash/QR confirmados (excluye no_válidos)
         $sqlCash = "SELECT c.confiar_id,
                            b.valor_consignacion AS valor,
                            b.fecha,
@@ -100,6 +100,7 @@ class Transaccion {
                            GREATEST(b.valor_consignacion - COALESCE(u.utilizado,0), 0) AS restante
                     FROM banco_confirmacion_confiar c
                     JOIN banco_confiar b ON b.confiar_id = c.confiar_id
+                    WHERE c.estado <> 'no_valido'
                     LEFT JOIN (
                       SELECT ct.confiar_id, SUM(d.valor_asignado) AS utilizado
                       FROM control_transaccion ct
