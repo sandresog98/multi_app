@@ -117,7 +117,7 @@ class PagosProcessor(BaseProcessor):
 
             # Procesar cada registro con segmentación de tipo_pago
             processed_data = []
-            for _, row in df.iterrows():
+            for i, row in df.iterrows():
                 try:
                     # Generar confiar_id único
                     seq = int(row['__SEQ_FECHA']) if pd.notna(row['__SEQ_FECHA']) else 0
@@ -141,7 +141,7 @@ class PagosProcessor(BaseProcessor):
                     })
                     
                 except Exception as e:
-                    logger.warning(f"⚠️ Error procesando fila {index + 1}: {e}")
+                    logger.warning(f"⚠️ Error procesando fila {i + 1}: {e}")
                     continue
             
             logger.info(f"✅ Procesados {len(processed_data)} registros de {file_path}")
@@ -169,18 +169,24 @@ class PagosProcessor(BaseProcessor):
         return ''
     
     def generate_confiar_id(self, row: pd.Series, seq_por_fecha: int) -> str:
-        """Generar ID único para registro de Confiar basado en fecha + secuencia por fecha + saldo"""
-        # Usar secuencia por fecha + fecha + saldo sin decimales para generar ID único
+        """Generar ID único para Confiar usando fecha + secuencia por fecha + saldo (como string sin puntos)."""
+        # Usar secuencia por fecha + fecha + saldo sin puntos para generar ID único
         fecha = str(row['FECHA']).split()[0]  # Solo la fecha, sin hora
         
-        # Obtener saldo y convertirlo a entero (sin decimales)
-        try:
-            saldo = int(float(row['SALDO']))
-        except (ValueError, TypeError):
-            saldo = 0  # Valor por defecto si no se puede convertir
+        # Obtener saldo como string estable y eliminar puntos
+        saldo_raw = row.get('SALDO')
+        if pd.isna(saldo_raw):
+            saldo_str = '0'
+        else:
+            if isinstance(saldo_raw, (int, float)):
+                # Formatear a 2 decimales para valores monetarios y evitar artefactos binarios
+                saldo_str = f"{saldo_raw:.2f}"
+            else:
+                saldo_str = str(saldo_raw)
+        saldo_str = saldo_str.replace('.', '')
         
         # Crear ID único incluyendo la secuencia por fecha
-        confiar_id = f"CONF{fecha.replace('-', '')}{seq_por_fecha}V{saldo}"
+        confiar_id = f"CONF{fecha.replace('-', '')}{seq_por_fecha}V{saldo_str}"
         
         return confiar_id
     
