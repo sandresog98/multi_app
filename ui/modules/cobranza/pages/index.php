@@ -18,6 +18,29 @@ try { $rangos = $model->distribucionUltimaComunicacion(); } catch (Throwable $e)
 try { $top7 = $model->comunicacionesPorUsuario(7, 10); } catch (Throwable $e) { $top7 = []; }
 try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) { $top30 = []; }
 try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch (Throwable $e) { $estadosPorAsociado = []; }
+
+// Mapas de color para alinear texto de tabla con colores de las tortas
+$colorBandas = [
+	'Persuasiva' => '#0d6efd',
+	'Prejurídico' => '#ffc107',
+	'Prejuridico' => '#ffc107',
+	'Jurídico' => '#dc3545',
+	'Juridico' => '#dc3545',
+];
+$colorRangos = [
+	'Sin comunicación' => '#dc3545',
+	'Muy reciente' => '#198754',
+	'Reciente' => '#0d6efd',
+	'Intermedia' => '#fd7e14',
+	'Lejana' => '#6c757d',
+	'Muy lejana' => '#000000',
+];
+$colorEstadosUlt = [
+	'Sin comunicación' => '#dc3545',
+	'Informa de pago realizado' => '#198754',
+	'Comprometido a realizar el pago' => '#0d6efd',
+	'Sin respuesta' => '#6c757d',
+];
 ?>
 
 <div class="container-fluid">
@@ -69,7 +92,7 @@ try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch
 												<tbody>
 													<?php foreach ($bandas as $b): ?>
 													<tr>
-														<td><?php echo htmlspecialchars($b['banda']); ?></td>
+														<td style="color: <?php echo $colorBandas[$b['banda']] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($b['banda']); ?></td>
 														<td class="text-end"><?php echo (int)$b['asociados']; ?></td>
 													</tr>
 													<?php endforeach; ?>
@@ -100,7 +123,7 @@ try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch
 												<tbody>
 													<?php foreach ($rangos as $r): ?>
 													<tr>
-														<td><?php echo htmlspecialchars($r['rango']); ?></td>
+														<td style="color: <?php echo $colorRangos[$r['rango']] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($r['rango']); ?></td>
 														<td class="text-end"><?php echo (int)$r['asociados']; ?></td>
 													</tr>
 													<?php endforeach; ?>
@@ -131,7 +154,7 @@ try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch
 												<tbody>
 													<?php foreach ($estadosPorAsociado as $e): ?>
 													<tr>
-														<td><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td>
+														<td style="color: <?php echo $colorEstadosUlt[$e['estado'] ?? 'Sin comunicación'] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td>
 														<td class="text-end"><?php echo (int)($e['asociados'] ?? 0); ?></td>
 													</tr>
 													<?php endforeach; ?>
@@ -202,7 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('miniChartBandas'); if (!ctx || !bandas?.length) return;
     const labels = bandas.map(b => b.banda);
     const data = bandas.map(b => Number(b.asociados||0));
-    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#0d6efd','#ffc107','#dc3545'] }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
+    const colorMap = {
+      'Persuasiva': '#0d6efd',
+      'Prejurídico': '#ffc107',
+      'Prejuridico': '#ffc107',
+      'Jurídico': '#dc3545',
+      'Juridico': '#dc3545'
+    };
+    const colors = labels.map(l => colorMap[l] || '#6c757d');
+    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
   })();
 
   (() => {
