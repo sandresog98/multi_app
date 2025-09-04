@@ -124,6 +124,7 @@ include '../../../views/layouts/header.php';
             <tbody>
             <?php foreach ($data['items'] as $row): ?>
               <tr>
+                <?php $linkPrev = $row['asignado_link'] ?? ''; $hasLinkPrev = !empty($linkPrev); ?>
                 <td>
                   <div class="fw-semibold"><?php echo htmlspecialchars($row['confiar_id']); ?></div>
                   <div class="small text-muted"><?php echo htmlspecialchars($row['descripcion']); ?></div>
@@ -135,23 +136,6 @@ include '../../../views/layouts/header.php';
                   <?php if (!empty($row['asignado_cedula'])): ?>
                     <div class="small"><?php echo htmlspecialchars($row['asignado_cedula']); ?></div>
                     <div class="small"><?php echo htmlspecialchars($row['asignado_nombre'] ?? ''); ?></div>
-                    <?php 
-                      $linkPrev = $row['asignado_link'] ?? '';
-                      $isImgPrev = false;
-                      if (!empty($linkPrev)) {
-                        $lowerPrev = strtolower(parse_url($linkPrev, PHP_URL_PATH) ?? '');
-                        $isImgPrev = (bool)preg_match('/\.(jpg|jpeg|png|webp|gif)$/', $lowerPrev);
-                      }
-                    ?>
-                    <?php if (!empty($linkPrev) && $isImgPrev): ?>
-                      <div class="small">
-                        <a href="<?php echo htmlspecialchars($linkPrev); ?>" target="_blank">
-                          <img src="<?php echo htmlspecialchars($linkPrev); ?>" alt="comprobante" class="img-thumbnail" style="max-width: 120px; max-height: 80px;">
-                        </a>
-                      </div>
-                    <?php elseif (!empty($linkPrev)): ?>
-                      <div class="small"><a href="<?php echo htmlspecialchars($linkPrev); ?>" target="_blank">LINK</a></div>
-                    <?php endif; ?>
                     <?php if (!empty($row['asignado_comentario'])): ?><div class="small text-muted"><?php echo htmlspecialchars($row['asignado_comentario']); ?></div><?php endif; ?>
                   <?php else: ?>
                     <?php if (($row['asignado_estado'] ?? '')==='no_valido'): ?>
@@ -164,6 +148,9 @@ include '../../../views/layouts/header.php';
                 </td>
                 <td>
                   <div class="btn-group">
+                    <?php if ($hasLinkPrev): ?>
+                      <a class="btn btn-sm btn-outline-info" href="<?php echo htmlspecialchars($linkPrev); ?>" target="_blank" title="Ver comprobante"><i class="fas fa-eye"></i></a>
+                    <?php endif; ?>
                     <?php if (empty($row['asignado_cedula']) && (($row['asignado_estado'] ?? '')!=='no_valido')): ?>
                       <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#asignarModal<?php echo $row['confiar_id']; ?>" title="Asignar"><i class="fas fa-link"></i></button>
                       <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#noValidaModal<?php echo $row['confiar_id']; ?>" title="Marcar no válida"><i class="fas fa-ban"></i></button>
