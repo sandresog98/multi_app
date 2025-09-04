@@ -331,6 +331,35 @@ class Cobranza {
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
+	public function estadoUltimaComunicacionPorUsuario() {
+		$sql = "SELECT u.id, COALESCE(u.nombre_completo, u.usuario, CONCAT('Usuario ', u.id)) AS nombre,
+				COALESCE(x.estado, 'Sin comunicación') AS estado
+			FROM control_usuarios u
+			LEFT JOIN (
+				SELECT c.id_usuario, SUBSTRING_INDEX(GROUP_CONCAT(c.estado ORDER BY c.fecha_comunicacion DESC SEPARATOR '\n'), '\n', 1) AS estado
+				FROM cobranza_comunicaciones c
+				WHERE c.id_usuario IS NOT NULL
+				GROUP BY c.id_usuario
+			) x ON x.id_usuario = u.id
+			WHERE u.estado_activo = 1
+			ORDER BY nombre";
+		$stmt = $this->conn->query($sql);
+		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	}
+
+	public function estadosUltimaComunicacionAsociado() {
+		$sql = "SELECT estado, COUNT(*) AS asociados FROM (
+			SELECT asociado_cedula,
+			       SUBSTRING_INDEX(GROUP_CONCAT(estado ORDER BY fecha_comunicacion DESC SEPARATOR '\n'), '\n', 1) AS estado
+			FROM cobranza_comunicaciones
+			GROUP BY asociado_cedula
+		) t
+		GROUP BY estado
+		ORDER BY asociados DESC";
+		$stmt = $this->conn->query($sql);
+		return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	}
+
 	public function topAsociadosMora($limit = 10) {
 		$limit = (int)$limit;
 		$sql = "SELECT m.cedula, MAX(m.nombre) AS nombre,

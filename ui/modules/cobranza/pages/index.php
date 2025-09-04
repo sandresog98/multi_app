@@ -17,6 +17,7 @@ try { $bandas = $model->distribucionMoraBandas(); } catch (Throwable $e) { $band
 try { $rangos = $model->distribucionUltimaComunicacion(); } catch (Throwable $e) { $rangos = []; }
 try { $top7 = $model->comunicacionesPorUsuario(7, 10); } catch (Throwable $e) { $top7 = []; }
 try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) { $top30 = []; }
+try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch (Throwable $e) { $estadosPorAsociado = []; }
 ?>
 
 <div class="container-fluid">
@@ -55,7 +56,7 @@ try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) 
 			</div>
 
 			<div class="row g-3 mt-1">
-				<div class="col-lg-6">
+				<div class="col-lg-4">
 					<div class="card h-100">
 						<div class="card-header"><strong>Distribución por estado de mora</strong></div>
 						<div class="card-body">
@@ -86,7 +87,7 @@ try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) 
 						</div>
 					</div>
 				</div>
-				<div class="col-lg-6">
+				<div class="col-lg-4">
 					<div class="card h-100">
 						<div class="card-header"><strong>Última comunicación</strong></div>
 						<div class="card-body">
@@ -109,6 +110,37 @@ try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) 
 									</div>
 									<div class="col-4">
 										<canvas id="miniChartRangos" height="110"></canvas>
+									</div>
+								</div>
+							<?php else: ?>
+								<div class="text-muted small">Sin datos.</div>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4">
+					<div class="card h-100">
+						<div class="card-header"><strong>Estados por usuario</strong></div>
+						<div class="card-body">
+							<?php if (!empty($estadosPorAsociado)): ?>
+								<div class="row align-items-center">
+									<div class="col-8">
+										<div class="table-responsive">
+											<table class="table table-sm align-middle mb-0">
+												<thead class="table-light"><tr><th>Estado</th><th class="text-end">Asociados</th></tr></thead>
+												<tbody>
+													<?php foreach ($estadosPorAsociado as $e): ?>
+													<tr>
+														<td><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td>
+														<td class="text-end"><?php echo (int)($e['asociados'] ?? 0); ?></td>
+													</tr>
+													<?php endforeach; ?>
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<div class="col-4">
+										<canvas id="miniChartEstadosUlt" height="110"></canvas>
 									</div>
 								</div>
 							<?php else: ?>
@@ -164,6 +196,7 @@ try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) 
 document.addEventListener('DOMContentLoaded', () => {
   const bandas = <?php echo json_encode($bandas, JSON_UNESCAPED_UNICODE); ?>;
   const rangos = <?php echo json_encode($rangos, JSON_UNESCAPED_UNICODE); ?>;
+  const estadosUlt = <?php echo json_encode($estadosPorAsociado, JSON_UNESCAPED_UNICODE); ?>;
 
   (() => {
     const ctx = document.getElementById('miniChartBandas'); if (!ctx || !bandas?.length) return;
@@ -183,6 +216,21 @@ document.addEventListener('DOMContentLoaded', () => {
       'Intermedia': '#fd7e14',
       'Lejana': '#6c757d',
       'Muy lejana': '#000000'
+    };
+    const colors = labels.map(l => colorMap[l] || '#6c757d');
+    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
+  })();
+
+  // Estados por usuario: pintar badges de color por estado común
+  (function(){
+    const ctx = document.getElementById('miniChartEstadosUlt'); if (!ctx || !estadosUlt?.length) return;
+    const labels = estadosUlt.map(e => e.estado || 'Sin comunicación');
+    const data = estadosUlt.map(e => Number(e.asociados||0));
+    const colorMap = {
+      'Sin comunicación': '#dc3545',
+      'Informa de pago realizado': '#198754',
+      'Comprometido a realizar el pago': '#0d6efd',
+      'Sin respuesta': '#6c757d'
     };
     const colors = labels.map(l => colorMap[l] || '#6c757d');
     new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
