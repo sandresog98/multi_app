@@ -37,19 +37,29 @@ include '../../../views/layouts/header.php';
             <div class="card-header d-flex justify-content-between align-items-center"><strong>PSE relacionados</strong></div>
             <div class="card-body">
               <form class="row g-2 mb-2" onsubmit="return false">
-                <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
-                <div class="col-md-3"><label class="form-label small">Referencia 2 (CC)</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="CC"></div>
-                <div class="col-md-3"><label class="form-label small">Referencia 3 (N)</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="N"></div>
-                <div class="col-md-3 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPseList()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
+                <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="Cédula"></div>
+                <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="Nombre"></div>
+                <div class="col-md-2"><label class="form-label small">Estado</label>
+                  <select class="form-select form-select-sm" id="pseFiltroEstado">
+                    <option value="no_completado" selected>Activas (sin asignar / parcial)</option>
+                    <option value="sin_asignar">Sin asignar</option>
+                    <option value="parcial">Parcial</option>
+                    <option value="completado">Completado</option>
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPseList()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
               </form>
-              <div class="small text-muted mb-1">CC/N corresponde a Referencia 2 / Referencia 3 del PSE.</div>
               <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
-                  <thead class="table-light"><tr><th>PSE</th><th>Fecha</th><th>Valor</th><th>Usado</th><th>Restante</th><th>Estado</th><th>CC</th><th>N</th></tr></thead>
+                  <thead class="table-light"><tr><th>PSE</th><th>Fecha</th><th>Valor</th><th>Usado</th><th>Restante</th><th>Estado</th><th>Cédula</th><th>Nombre</th></tr></thead>
                   <tbody id="pseListTbl">
                   <?php foreach (($pagos['pse'] ?? []) as $r): 
                     $valor = (float)($r['valor'] ?? 0); $usado = (float)($r['utilizado'] ?? 0);
                     $estado = ($usado <= 0) ? '<span class="badge bg-secondary">Sin asignar</span>' : (($usado < $valor) ? '<span class="badge bg-warning text-dark">Parcial</span>' : '<span class="badge bg-success">Completado</span>');
+                    // Por defecto ocultar Completado en render SSR si no viene filtro explícito (fallback; el filtro principal es en JS)
+                    if (!isset($_GET['pse_estado']) && $usado >= $valor) continue;
                   ?>
                     <tr>
                       <td><?php echo htmlspecialchars($r['pse_id'] ?? ''); ?></td>
@@ -74,9 +84,18 @@ include '../../../views/layouts/header.php';
             <div class="card-header d-flex justify-content-between align-items-center"><strong>Cash/QR confirmados</strong></div>
             <div class="card-body">
               <form class="row g-2 mb-2" onsubmit="return false">
-                <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
+                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
                 <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula"></div>
-                <div class="col-md-4"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
+                <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
+                <div class="col-md-2"><label class="form-label small">Estado</label>
+                  <select class="form-select form-select-sm" id="cashFiltroEstado">
+                    <option value="no_completado" selected>Activas (sin asignar / parcial)</option>
+                    <option value="sin_asignar">Sin asignar</option>
+                    <option value="parcial">Parcial</option>
+                    <option value="completado">Completado</option>
+                    <option value="">Todos</option>
+                  </select>
+                </div>
                 <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarCashList()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
               </form>
               <div class="table-responsive">
@@ -176,10 +195,15 @@ function filtrarPseList(){
   const f = document.getElementById('pseFiltroFecha').value;
   const ref2 = document.getElementById('pseFiltroRef2').value.trim();
   const ref3 = document.getElementById('pseFiltroRef3').value.trim();
+  const est = document.getElementById('pseFiltroEstado').value;
   let list = pagosPse.slice();
   if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
   if (ref2) list = list.filter(r => String(r.referencia_2||'').includes(ref2));
   if (ref3) list = list.filter(r => String(r.referencia_3||'').includes(ref3));
+  if (est === 'no_completado') list = list.filter(r => Number(r.utilizado||0) < Number(r.valor||0));
+  else if (est === 'sin_asignar') list = list.filter(r => Number(r.utilizado||0) <= 0);
+  else if (est === 'parcial') list = list.filter(r => { const v=Number(r.valor||0), u=Number(r.utilizado||0); return u>0 && u<v; });
+  else if (est === 'completado') list = list.filter(r => Number(r.utilizado||0) >= Number(r.valor||0));
   renderPse(list);
 }
 
@@ -187,16 +211,21 @@ function filtrarCashList(){
   const f = document.getElementById('cashFiltroFecha').value;
   const ced = document.getElementById('cashFiltroCedula').value.trim();
   const desc = document.getElementById('cashFiltroDesc').value.trim().toLowerCase();
+  const est = document.getElementById('cashFiltroEstado').value;
   let list = pagosCash.slice();
   if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
   if (ced) list = list.filter(r => String(r.cedula_asignada||'').includes(ced));
   if (desc) list = list.filter(r => String(r.descripcion||'').toLowerCase().includes(desc));
+  if (est === 'no_completado') list = list.filter(r => Number(r.utilizado||0) < Number(r.valor||0));
+  else if (est === 'sin_asignar') list = list.filter(r => Number(r.utilizado||0) <= 0);
+  else if (est === 'parcial') list = list.filter(r => { const v=Number(r.valor||0), u=Number(r.utilizado||0); return u>0 && u<v; });
+  else if (est === 'completado') list = list.filter(r => Number(r.utilizado||0) >= Number(r.valor||0));
   renderCash(list);
 }
 
 // Inicialización: si no hay server-side rows, usa client-side renderer
-if (document.getElementById('pseListTbl').children.length === 0) renderPse(pagosPse);
-if (document.getElementById('cashListTbl').children.length === 0) renderCash(pagosCash);
+if (document.getElementById('pseListTbl').children.length === 0) { filtrarPseList(); } else { filtrarPseList(); }
+if (document.getElementById('cashListTbl').children.length === 0) { filtrarCashList(); } else { filtrarCashList(); }
 </script>
 
 <?php include '../../../views/layouts/footer.php'; ?>
