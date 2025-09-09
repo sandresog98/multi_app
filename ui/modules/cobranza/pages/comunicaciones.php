@@ -173,7 +173,6 @@ function tiempoRelativo($fecha) {
 								<div class="col-md-4">
 									<label class="form-label">Estado</label>
 									<select class="form-select" name="estado" id="editEstado" required>
-										<option value="Sin comunicación">Sin comunicación</option>
 										<option value="Informa de pago realizado">Informa de pago realizado</option>
 										<option value="Comprometido a realizar el pago">Comprometido a realizar el pago</option>
 										<option value="Sin respuesta">Sin respuesta</option>
@@ -219,7 +218,6 @@ function tiempoRelativo($fecha) {
 								<div class="col-md-4">
 									<label class="form-label">Estado</label>
 									<select class="form-select" name="estado" required>
-										<option value="Sin comunicación">Sin comunicación</option>
 										<option value="Informa de pago realizado">Informa de pago realizado</option>
 										<option value="Comprometido a realizar el pago">Comprometido a realizar el pago</option>
 										<option value="Sin respuesta">Sin respuesta</option>

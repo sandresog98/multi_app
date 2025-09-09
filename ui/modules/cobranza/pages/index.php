@@ -19,6 +19,22 @@ try { $top7 = $model->comunicacionesPorUsuario(7, 10); } catch (Throwable $e) { 
 try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) { $top30 = []; }
 try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch (Throwable $e) { $estadosPorAsociado = []; }
 
+// Orden y etiquetas para "Última comunicación"
+$ordenRangos = [
+	'Muy reciente' => 1,
+	'Reciente' => 2,
+	'Intermedia' => 3,
+	'Lejana' => 4,
+	'Muy lejana' => 5,
+	'Sin comunicación' => 6,
+];
+usort($rangos, function($a, $b) use ($ordenRangos) {
+	$ra = $ordenRangos[$a['rango']] ?? 99;
+	$rb = $ordenRangos[$b['rango']] ?? 99;
+	if ($ra === $rb) return 0;
+	return ($ra < $rb) ? -1 : 1;
+});
+
 // Mapas de color para alinear texto de tabla con colores de las tortas
 $colorBandas = [
 	'Persuasiva' => '#0d6efd',
@@ -34,6 +50,23 @@ $colorRangos = [
 	'Intermedia' => '#fd7e14',
 	'Lejana' => '#6c757d',
 	'Muy lejana' => '#000000',
+];
+$labelRangos = [
+	'Sin comunicación' => 'Sin comunicación',
+	'Muy reciente' => 'Muy reciente (< 2 días)',
+	'Reciente' => 'Reciente (2–5 días)',
+	'Intermedia' => 'Intermedia (5–10 días)',
+	'Lejana' => 'Lejana (10–20 días)',
+	'Muy lejana' => 'Muy lejana (> 20 días)',
+];
+// Sufijos (en días) para mostrar en tamaño pequeño junto al rango
+$sufijoRangos = [
+	'Muy reciente' => '(< 2 días)',
+	'Reciente' => '(2–5 días)',
+	'Intermedia' => '(5–10 días)',
+	'Lejana' => '(10–20 días)',
+	'Muy lejana' => '(> 20 días)',
+	'Sin comunicación' => ''
 ];
 $colorEstadosUlt = [
 	'Sin comunicación' => '#dc3545',
@@ -123,7 +156,12 @@ $colorEstadosUlt = [
 												<tbody>
 													<?php foreach ($rangos as $r): ?>
 													<tr>
-														<td style="color: <?php echo $colorRangos[$r['rango']] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($r['rango']); ?></td>
+														<td style="color: <?php echo $colorRangos[$r['rango']] ?? '#6c757d'; ?>">
+															<?php echo htmlspecialchars($r['rango']); ?>
+															<?php if (!empty($sufijoRangos[$r['rango']])): ?>
+																<span class="text-muted small ms-1" style="font-size: .75em; line-height: 1; display: inline-block; vertical-align: baseline;"><?php echo htmlspecialchars($sufijoRangos[$r['rango']]); ?></span>
+															<?php endif; ?>
+														</td>
 														<td class="text-end"><?php echo (int)$r['asociados']; ?></td>
 													</tr>
 													<?php endforeach; ?>
@@ -238,7 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   (() => {
     const ctx = document.getElementById('miniChartRangos'); if (!ctx || !rangos?.length) return;
-    const labels = rangos.map(r => r.rango);
+    const labelMap = {
+      'Sin comunicación': 'Sin comunicación',
+      'Muy reciente': 'Muy reciente (< 2 días)',
+      'Reciente': 'Reciente (2–5 días)',
+      'Intermedia': 'Intermedia (5–10 días)',
+      'Lejana': 'Lejana (10–20 días)',
+      'Muy lejana': 'Muy lejana (> 20 días)'
+    };
+    const labels = rangos.map(r => labelMap[r.rango] || r.rango);
     const data = rangos.map(r => Number(r.asociados||0));
     const colorMap = {
       'Sin comunicación': '#dc3545',
@@ -248,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'Lejana': '#6c757d',
       'Muy lejana': '#000000'
     };
-    const colors = labels.map(l => colorMap[l] || '#6c757d');
+    const colors = rangos.map(r => colorMap[r.rango] || '#6c757d');
     new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
   })();
 

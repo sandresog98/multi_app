@@ -18,7 +18,10 @@ try {
 	$estado = trim($_POST['estado'] ?? '');
 	$comentario = trim($_POST['comentario'] ?? '');
 	$fecha = trim($_POST['fecha'] ?? '');
+	if ($estado === 'Sin comunicación') { $estado = 'Sin respuesta'; }
+	$allowedEstados = ['Informa de pago realizado', 'Comprometido a realizar el pago', 'Sin respuesta'];
 	if (!$cedula || !$tipo || !$estado || !$fecha) throw new Exception('Datos incompletos');
+	if (!in_array($estado, $allowedEstados, true)) throw new Exception('Estado inválido');
 
 	$model = new Comunicacion();
 	$id = $model->crear($cedula, $tipo, $estado, $comentario, $fecha, (int)($user['id'] ?? null));

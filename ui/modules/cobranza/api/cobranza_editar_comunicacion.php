@@ -16,7 +16,10 @@ try {
 	$estado = trim($_POST['estado'] ?? '');
 	$comentario = trim($_POST['comentario'] ?? '');
 	$fecha = trim($_POST['fecha'] ?? '');
+	if ($estado === 'Sin comunicación') { $estado = 'Sin respuesta'; }
+	$allowedEstados = ['Informa de pago realizado', 'Comprometido a realizar el pago', 'Sin respuesta'];
 	if (!$id || !$tipo || !$estado || !$fecha) throw new Exception('Datos incompletos');
+	if (!in_array($estado, $allowedEstados, true)) throw new Exception('Estado inválido');
 
 	$model = new Comunicacion();
 	$updated = $model->actualizar($id, (int)$user['id'], $tipo, $estado, $comentario, $fecha);
