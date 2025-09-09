@@ -74,3 +74,7 @@ tmp/
 *.backup
 *.old
 
+# Sifone: ignorar todo su contenido pero conservar .gitkeep
+py/data/sifone/*
+!py/data/sifone/.gitkeep
+
