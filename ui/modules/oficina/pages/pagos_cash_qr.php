@@ -102,9 +102,10 @@ include '../../../views/layouts/header.php';
         </div>
         <div class="col-md-3">
           <select name="asignacion" class="form-select">
-            <option value="">Asignados y no asignados</option>
-            <option value="asignados" <?php echo $asignacion==='asignados'?'selected':''; ?>>Solo asignados</option>
-            <option value="no_asignados" <?php echo $asignacion==='no_asignados'?'selected':''; ?>>Solo no asignados</option>
+            <option value="">Todos</option>
+            <option value="asignados" <?php echo $asignacion==='asignados'?'selected':''; ?>>Asignados</option>
+            <option value="no_asignados" <?php echo $asignacion==='no_asignados'?'selected':''; ?>>No asignados</option>
+            <option value="no_validas" <?php echo $asignacion==='no_validas'?'selected':''; ?>>No válidas</option>
           </select>
         </div>
         <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>Filtrar</button></div>

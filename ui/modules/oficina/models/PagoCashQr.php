@@ -26,7 +26,10 @@ class PagoCashQr {
         if ($asignacion === 'asignados') {
             $where[] = "a.cedula IS NOT NULL";
         } elseif ($asignacion === 'no_asignados') {
-            $where[] = "a.cedula IS NULL";
+            // No asignados: excluir 'no_valido'
+            $where[] = "(a.cedula IS NULL AND (a.estado IS NULL OR a.estado <> 'no_valido'))";
+        } elseif ($asignacion === 'no_validas') {
+            $where[] = "a.estado = 'no_valido'";
         }
         $whereClause = 'WHERE ' . implode(' AND ', $where);
 
