@@ -52,6 +52,9 @@ class AuthController {
             $_SESSION['nombre_completo'] = $user['nombre_completo'];
             $_SESSION['user_role'] = $user['rol'];
             $_SESSION['user_email'] = $user['email'];
+            // Marcas de tiempo para control de sesión por inactividad
+            $_SESSION['login_at'] = time();
+            $_SESSION['last_activity'] = time();
             // Log login exitoso
             (new Logger())->logLogin($username, true);
             
@@ -111,6 +114,22 @@ class AuthController {
                isset($_SESSION['nombre_completo']) && 
                isset($_SESSION['user_role']);
     }
+
+    /**
+     * Enforce idle session timeout. If exceeded, logout and redirect to login with timeout flag.
+     */
+    private function enforceIdleTimeout(int $idleSeconds = 3600): void {
+        $this->ensureSession();
+        if (!isset($_SESSION['user_id'])) { return; }
+        $now = time();
+        $last = (int)($_SESSION['last_activity'] ?? $now);
+        if (($now - $last) > $idleSeconds) {
+            $this->logout();
+            header("Location: " . getRedirectPath('login.php') . "?timeout=1");
+            exit();
+        }
+        $_SESSION['last_activity'] = $now;
+    }
     
     /**
      * Verificar rol del usuario
@@ -151,6 +170,8 @@ class AuthController {
      * Requerir autenticación
      */
     public function requireAuth() {
+        // Enforce 1-hour idle timeout on every protected request
+        $this->enforceIdleTimeout(3600);
         if (!$this->isAuthenticated()) {
             header("Location: " . getRedirectPath('login.php'));
             exit();
