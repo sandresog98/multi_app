@@ -192,7 +192,12 @@ include '../../../views/layouts/header.php';
               <tr>
                 <td><?php echo (int)$tx['id']; ?></td>
                 <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
-                <td><?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?></td>
+                <td>
+                  <?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?>
+                  <?php if (!empty($tx['ref_fecha'])): ?>
+                    <small class="text-muted"> — <?php echo htmlspecialchars($tx['ref_fecha']); ?></small>
+                  <?php endif; ?>
+                </td>
                 <td><?php echo htmlspecialchars($tx['recibo_caja_sifone'] ?? ''); ?></td>
                 <td><?php echo '$'.number_format((float)$tx['valor_pago_total'],0); ?></td>
                 <td><?php echo '$'.number_format((float)$tx['total_asignado'],0); ?></td>
