@@ -188,7 +188,7 @@ include '../../../views/layouts/header.php';
           <table class="table table-sm table-hover align-middle">
             <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
             <tbody>
-            <?php foreach (($listado['items'] ?? []) as $tx): ?>
+            <?php $txModals = []; foreach (($listado['items'] ?? []) as $tx): ?>
               <tr>
                 <td><?php echo (int)$tx['id']; ?></td>
                 <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
@@ -212,35 +212,65 @@ include '../../../views/layouts/header.php';
                   </form>
                 </td>
               </tr>
-              <div class="modal fade" id="modalTx<?php echo (int)$tx['id']; ?>" tabindex="-1">
-                <div class="modal-dialog modal-lg"><div class="modal-content">
-                  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Detalle transacción #<?php echo (int)$tx['id']; ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-                  <div class="modal-body">
-                    <?php $txh = $model->getTransaccion((int)$tx['id']); $txd = $model->getTransaccionDetalles((int)$tx['id']); ?>
-                    <div class="mb-2 small text-muted">Origen: <strong><?php echo htmlspecialchars($txh['origen_pago']); ?></strong> | Referencia: <strong><?php echo htmlspecialchars($txh['pse_id'] ?: $txh['confiar_id']); ?></strong> | Valor pago: <strong><?php echo '$'.number_format((float)$txh['valor_pago_total'],0); ?></strong></div>
-                    <div class="table-responsive">
-                      <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light"><tr><th>Tipo</th><th>Referencia</th><th>Descripción</th><th class="text-end">Recomendado</th><th class="text-end">Asignado</th></tr></thead>
-                        <tbody>
-                        <?php foreach ($txd as $d): ?>
+              <?php $txd_inline = $model->getTransaccionDetalles((int)$tx['id']); ?>
+              <tr class="table-light">
+                <td colspan="9">
+                  <div class="table-responsive">
+                    <table class="table table-sm mb-0 align-middle small">
+                      <thead class="table-light"><tr>
+                        <th style="width:120px;">Tipo</th>
+                        <th style="width:140px;">Referencia</th>
+                        <th>Descripción</th>
+                        <th class="text-end" style="width:140px;">Recomendado</th>
+                        <th class="text-end" style="width:140px;">Asignado</th>
+                      </tr></thead>
+                      <tbody>
+                        <?php foreach ($txd_inline as $d): ?>
                           <tr>
                             <td><?php echo htmlspecialchars($d['tipo_rubro']); ?></td>
                             <td><?php echo htmlspecialchars($d['referencia_credito'] ?: $d['producto_id']); ?></td>
-                            <td class="text-truncate" style="max-width:260px"><?php echo htmlspecialchars($d['descripcion'] ?? ''); ?></td>
+                            <td class="text-truncate" style="max-width:600px;">
+                              <?php echo htmlspecialchars($d['descripcion'] ?? ''); ?>
+                            </td>
                             <td class="text-end"><?php echo '$'.number_format((float)$d['valor_recomendado'],0); ?></td>
                             <td class="text-end"><?php echo '$'.number_format((float)$d['valor_asignado'],0); ?></td>
                           </tr>
                         <?php endforeach; ?>
-                        </tbody>
-                      </table>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-                </div></div>
-              </div>
+                </td>
+              </tr>
+              <?php ob_start(); ?>
+              <div class="modal fade" id="modalTx<?php echo (int)$tx['id']; ?>" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Detalle transacción #<?php echo (int)$tx['id']; ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                  <?php $txh = $model->getTransaccion((int)$tx['id']); $txd = $model->getTransaccionDetalles((int)$tx['id']); ?>
+                  <div class="mb-2 small text-muted">Origen: <strong><?php echo htmlspecialchars($txh['origen_pago']); ?></strong> | Referencia: <strong><?php echo htmlspecialchars($txh['pse_id'] ?: $txh['confiar_id']); ?></strong> | Valor pago: <strong><?php echo '$'.number_format((float)$txh['valor_pago_total'],0); ?></strong></div>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                      <thead class="table-light"><tr><th>Tipo</th><th>Referencia</th><th>Descripción</th><th class="text-end">Recomendado</th><th class="text-end">Asignado</th></tr></thead>
+                      <tbody>
+                      <?php foreach ($txd as $d): ?>
+                        <tr>
+                          <td><?php echo htmlspecialchars($d['tipo_rubro']); ?></td>
+                          <td><?php echo htmlspecialchars($d['referencia_credito'] ?: $d['producto_id']); ?></td>
+                          <td class="text-truncate" style="max-width:260px"><?php echo htmlspecialchars($d['descripcion'] ?? ''); ?></td>
+                          <td class="text-end"><?php echo '$'.number_format((float)$d['valor_recomendado'],0); ?></td>
+                          <td class="text-end"><?php echo '$'.number_format((float)$d['valor_asignado'],0); ?></td>
+                        </tr>
+                      <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div></div></div>
+              <?php $txModals[] = ob_get_clean(); ?>
             <?php endforeach; ?>
             </tbody>
           </table>
         </div>
+        <?php echo implode('', $txModals); ?>
         <?php if ((($listado['pages'] ?? 1)) > 1): $tp=(int)$listado['current_page']; $pgs=(int)$listado['pages']; ?>
           <nav><ul class="pagination pagination-sm justify-content-center">
             <?php for ($i=1;$i<=$pgs;$i++): ?>
