@@ -1,4 +1,6 @@
 <?php
+// Iniciar buffer muy temprano para capturar cualquier salida accidental (BOM/espacios en includes)
+if (!headers_sent()) { ob_start(); }
 require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../../../config/database.php';
@@ -29,7 +31,7 @@ if ($download) {
 SELECT
   sa.cedula AS cedula_src,
   sa.nombre AS customerid_type,
-  NULL AS optional1,
+  0 AS optional1,
   'APORTES' AS payment_description1,
   CAST(0 AS DECIMAL(12,2)) AS optional2,
   COALESCE(pf.monto, 0) AS optional3,
@@ -133,7 +135,7 @@ SQL;
   $stmt->execute();
 
   // Limpiar cualquier buffer previo para evitar líneas en blanco al inicio
-  while (ob_get_level() > 0) { ob_end_clean(); }
+  if (ob_get_length()) { @ob_end_clean(); }
 
   header('Content-Type: text/csv; charset=UTF-8');
   header('Content-Disposition: attachment; filename="pse.csv"');
@@ -144,6 +146,8 @@ SQL;
   // Mensaje visible en la UI no viaja en headers; dejamos el filename y mantenemos la UI con texto.
 
   $out = fopen('php://output', 'w');
+  // Escribir BOM UTF-8 para evitar que Excel agregue líneas/ruido con UTF-8
+  fwrite($out, "\xEF\xBB\xBF");
   // Encabezados
   fputcsv($out, [
     'customer_id','customerid_type','optional1','payment_description1','invoice_id',
