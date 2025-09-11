@@ -38,7 +38,7 @@ prod AS (
     END AS customer_id,
     sa.nombre AS customerid_type,
     CAST(NULL AS CHAR) AS optional1,
-    'Aportes' AS payment_description1,
+    'APORTES' AS payment_description1,
     CAST(0 AS DECIMAL(12,2)) AS optional2,
     COALESCE(pf.monto, 0) AS optional3,
     CAST(0 AS DECIMAL(12,2)) AS optional4,
@@ -225,6 +225,8 @@ include '../../../views/layouts/header.php';
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2"><i class="fas fa-download me-2"></i>Descargas</h1>
       </div>
+
+      <p class="text-muted">En esta sección podemos descargar los archivos requeridos para manejo externo.</p>
 
       <div class="card"><div class="card-body">
         <div class="mb-2 text-muted">Archivo requerido para cargar a PSE</div>
