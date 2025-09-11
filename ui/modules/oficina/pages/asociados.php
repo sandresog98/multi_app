@@ -56,7 +56,7 @@ include '../../../views/layouts/header.php';
           <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Inactivos</div><div class="h4 mb-0"><?php echo (int)($kpis['inactivos']??0); ?></div></div></div>
         </div>
         <div class="col-sm-6 col-xl-2">
-          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Sin productos</div><div class="h4 mb-0"><?php echo (int)($kpis['sin_productos']??0); ?></div></div></div>
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Sin productos/créditos</div><div class="h4 mb-0"><?php echo (int)($kpis['sin_productos']??0); ?></div></div></div>
         </div>
         <div class="col-sm-6 col-xl-2">
           <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Con productos</div><div class="h4 mb-0"><?php echo (int)($kpis['con_productos']??0); ?></div></div></div>
@@ -81,7 +81,7 @@ include '../../../views/layouts/header.php';
         <div class="col-md-3">
           <select name="productos" class="form-select">
             <option value="">Todos (productos/créditos)</option>
-            <option value="sin_productos" <?php echo $productos==='sin_productos'?'selected':''; ?>>Sin productos</option>
+            <option value="sin_productos" <?php echo $productos==='sin_productos'?'selected':''; ?>>Sin productos/créditos</option>
             <option value="con_productos" <?php echo $productos==='con_productos'?'selected':''; ?>>Con productos</option>
             <option value="con_creditos" <?php echo $productos==='con_creditos'?'selected':''; ?>>Con créditos</option>
             <option value="con_ambos" <?php echo $productos==='con_ambos'?'selected':''; ?>>Con productos y crédito</option>
