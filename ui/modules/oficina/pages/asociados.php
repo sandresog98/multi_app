@@ -88,6 +88,7 @@ include '../../../views/layouts/header.php';
           </select>
         </div>
         <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>Filtrar</button></div>
+        <div class="col-md-2"><a class="btn btn-outline-secondary w-100" href="asociados.php"><i class="fas fa-eraser me-1"></i>Borrar filtros</a></div>
       </form>
 
       <div class="card"><div class="card-body">
