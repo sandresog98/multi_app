@@ -13,6 +13,7 @@ class Ticketera {
         if (!empty($filters['q'])) { $where[] = '(t.resumen LIKE ? OR t.descripcion LIKE ?)'; $params[] = '%'.$filters['q'].'%'; $params[] = '%'.$filters['q'].'%'; }
         if (!empty($filters['estado'])) { $where[] = 't.estado = ?'; $params[] = $filters['estado']; }
         if (!empty($filters['responsable'])) { $where[] = 't.responsable_id = ?'; $params[] = (int)$filters['responsable']; }
+        if (!empty($filters['solicitante'])) { $where[] = 't.solicitante_id = ?'; $params[] = (int)$filters['solicitante']; }
         $whereClause = $where? ('WHERE '.implode(' AND ',$where)) : '';
         $allowedSort = [ 'fecha_creacion'=>'t.fecha_creacion', 'id'=>'t.id' ];
         $col = $allowedSort[$sortBy] ?? 't.fecha_creacion';

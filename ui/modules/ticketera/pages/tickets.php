@@ -33,6 +33,10 @@ include '../../../views/layouts/header.php';
             <input id="f_responsable" class="form-control" placeholder="Responsable" autocomplete="off">
             <div id="f_responsable_rs" class="list-group position-absolute w-100" style="z-index:1070; max-height:220px; overflow:auto;"></div>
           </div>
+          <div class="col-md-3 position-relative">
+            <input id="f_solicitante" class="form-control" placeholder="Solicitante" autocomplete="off">
+            <div id="f_solicitante_rs" class="list-group position-absolute w-100" style="z-index:1070; max-height:220px; overflow:auto;"></div>
+          </div>
           <div class="col-md-2 d-grid"><button id="btnBuscar" class="btn btn-outline-primary">Buscar</button></div>
           <div class="col-md-2 d-grid"><button id="btnClear" class="btn btn-outline-secondary">Borrar filtros</button></div>
         </form>
@@ -95,12 +99,15 @@ window.CURRENT_USER_ID = <?php echo (int)($currentUser['id'] ?? 0); ?>;
 })();
 let page = 1, pages = 1;
 let sel_f_responsable = null;
+let sel_f_solicitante = null;
 document.getElementById('btnBuscar').addEventListener('click', ()=>{ page=1; load(); });
 document.getElementById('btnClear').addEventListener('click', ()=>{
   document.getElementById('q').value = '';
   document.getElementById('estado').value = '';
   document.getElementById('f_responsable').value = '';
+  document.getElementById('f_solicitante').value = '';
   sel_f_responsable = null;
+  sel_f_solicitante = null;
   page = 1; load();
 });
 document.getElementById('prev').addEventListener('click', ()=>{ if(page>1){ page--; load(); } });
@@ -122,6 +129,21 @@ document.getElementById('f_responsable').addEventListener('focus', async ()=>{
 });
 document.getElementById('f_responsable').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('f_responsable_rs'); if(rs) rs.innerHTML=''; }, 200); });
 
+// Autocomplete Solicitante (filtros)
+document.getElementById('f_solicitante').addEventListener('input', async (e)=>{
+  const q=e.target.value.trim(); const rs = document.getElementById('f_solicitante_rs'); rs.innerHTML='';
+  const items = await buscarUsuarios(q); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
+  rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
+  rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_f_solicitante={id:Number(a.dataset.id)}; document.getElementById('f_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
+});
+document.getElementById('f_solicitante').addEventListener('focus', async ()=>{
+  const rs = document.getElementById('f_solicitante_rs'); rs.innerHTML='';
+  const items = await buscarUsuarios(''); if(!items.length){ rs.innerHTML='<div class="list-group-item text-muted">Sin resultados</div>'; return; }
+  rs.innerHTML = items.map(u=>`<a href="#" class="list-group-item list-group-item-action" data-id="${u.id}" data-name="${u.nombre_completo}">${u.nombre_completo} <small class="text-muted">(${u.usuario})</small></a>`).join('');
+  rs.querySelectorAll('a').forEach(a=>a.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); sel_f_solicitante={id:Number(a.dataset.id)}; document.getElementById('f_solicitante').value=a.dataset.name; rs.innerHTML=''; }));
+});
+document.getElementById('f_solicitante').addEventListener('blur', ()=>{ setTimeout(()=>{ const rs=document.getElementById('f_solicitante_rs'); if(rs) rs.innerHTML=''; }, 200); });
+
 function estadoBadge(e){
   const map = { 'Backlog':'secondary','En Curso':'primary','En Espera':'warning','Resuelto':'info','Aceptado':'success','Rechazado':'danger' };
   const c = map[e] || 'secondary';
@@ -132,7 +154,8 @@ async function load(){
   const q = document.getElementById('q').value;
   const estado = document.getElementById('estado').value;
   const responsable = Number((sel_f_responsable&&sel_f_responsable.id)||0) || '';
-  const params = new URLSearchParams({ q, estado, responsable, page, limit: 10, sort_by: 'fecha_creacion', sort_dir: 'DESC' });
+  const solicitante = Number((sel_f_solicitante&&sel_f_solicitante.id)||0) || '';
+  const params = new URLSearchParams({ q, estado, responsable, solicitante, page, limit: 10, sort_by: 'fecha_creacion', sort_dir: 'DESC' });
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '<tr><td colspan="8" class="text-muted">Cargando…</td></tr>';
   try {
@@ -379,12 +402,16 @@ async function postJSON(url, body){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{
-  // Default responsible to current user
+  // Por defecto mostrar tickets donde soy responsable o solicitante
   const uid = Number(window.CURRENT_USER_ID||0);
   if(uid){
     sel_f_responsable = { id: uid };
-    const inp = document.getElementById('f_responsable');
-    if (inp) { inp.value = '<?php echo htmlspecialchars(($currentUser['nombre_completo']??''), ENT_QUOTES); ?>'; }
+    sel_f_solicitante = { id: uid };
+    const inpr = document.getElementById('f_responsable');
+    const inps = document.getElementById('f_solicitante');
+    const name = '<?php echo htmlspecialchars(($currentUser['nombre_completo']??''), ENT_QUOTES); ?>';
+    if (inpr) inpr.value = name;
+    if (inps) inps.value = name;
   }
   load();
 });

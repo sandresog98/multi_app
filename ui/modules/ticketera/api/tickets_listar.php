@@ -12,7 +12,8 @@ try{
     $filters = [
         'q' => $_GET['q'] ?? '',
         'estado' => $_GET['estado'] ?? '',
-        'responsable' => $_GET['responsable'] ?? ''
+        'responsable' => $_GET['responsable'] ?? '',
+        'solicitante' => $_GET['solicitante'] ?? ''
     ];
     $sortBy = $_GET['sort_by'] ?? 'fecha_creacion';
     $sortDir = $_GET['sort_dir'] ?? 'DESC';
