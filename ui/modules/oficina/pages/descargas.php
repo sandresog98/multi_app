@@ -177,6 +177,8 @@ SQL;
   header('Content-Disposition: attachment; filename="pse.csv"');
   header('Pragma: no-cache');
   header('Expires: 0');
+  header('Content-Description: File Transfer');
+  header('Content-Transfer-Encoding: binary');
   // Mensaje visible en la UI no viaja en headers; dejamos el filename y mantenemos la UI con texto.
 
   $out = fopen('php://output', 'w');
@@ -230,7 +232,7 @@ include '../../../views/layouts/header.php';
 
       <div class="card"><div class="card-body">
         <div class="mb-2 text-muted">Archivo requerido para cargar a PSE</div>
-        <form class="row g-2" method="GET">
+        <form class="row g-2" method="GET" target="_blank" rel="noopener">
           <div class="col-md-4">
             <label class="form-label">Consecutivo inicial para invoice_id</label>
             <input type="number" class="form-control" name="start" value="<?php echo (int)$start; ?>" min="1" required>
