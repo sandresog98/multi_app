@@ -76,10 +76,10 @@ class Asociado {
         $sql = "SELECT 
                   SUM(CASE WHEN ca.estado_activo = TRUE THEN 1 ELSE 0 END) AS activos,
                   SUM(CASE WHEN ca.estado_activo = FALSE THEN 1 ELSE 0 END) AS inactivos,
-                  SUM(CASE WHEN COALESCE(ap.cant_prod,0)=0 AND COALESCE(cr.cant_cred,0)=0 THEN 1 ELSE 0 END) AS sin_productos,
-                  SUM(CASE WHEN COALESCE(ap.cant_prod,0)>0 AND COALESCE(cr.cant_cred,0)=0 THEN 1 ELSE 0 END) AS con_productos,
-                  SUM(CASE WHEN COALESCE(ap.cant_prod,0)=0 AND COALESCE(cr.cant_cred,0)>0 THEN 1 ELSE 0 END) AS con_creditos,
-                  SUM(CASE WHEN COALESCE(ap.cant_prod,0)>0 AND COALESCE(cr.cant_cred,0)>0 THEN 1 ELSE 0 END) AS con_ambos
+                  SUM(CASE WHEN ca.estado_activo = TRUE AND COALESCE(ap.cant_prod,0)=0 AND COALESCE(cr.cant_cred,0)=0 THEN 1 ELSE 0 END) AS sin_productos,
+                  SUM(CASE WHEN ca.estado_activo = TRUE AND COALESCE(ap.cant_prod,0)>0 AND COALESCE(cr.cant_cred,0)=0 THEN 1 ELSE 0 END) AS con_productos,
+                  SUM(CASE WHEN ca.estado_activo = TRUE AND COALESCE(ap.cant_prod,0)=0 AND COALESCE(cr.cant_cred,0)>0 THEN 1 ELSE 0 END) AS con_creditos,
+                  SUM(CASE WHEN ca.estado_activo = TRUE AND COALESCE(ap.cant_prod,0)>0 AND COALESCE(cr.cant_cred,0)>0 THEN 1 ELSE 0 END) AS con_ambos
                 FROM sifone_asociados a
                 LEFT JOIN control_asociados ca ON ca.cedula = a.cedula
                 LEFT JOIN (
