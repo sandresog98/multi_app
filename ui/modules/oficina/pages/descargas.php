@@ -26,145 +26,107 @@ if ($download) {
   $stmtSet->execute([':start' => $start]);
 
   $sql = <<<SQL
-WITH base AS (
-  SELECT LAST_DAY(CURDATE()) AS ld
-),
-prod AS (
-  SELECT
-    CASE
-      WHEN sa.cedula REGEXP '^[0-9]+$' THEN CAST(sa.cedula AS UNSIGNED)
-      WHEN REGEXP_REPLACE(sa.cedula, '[^0-9]', '') REGEXP '^[0-9]+$' THEN CAST(REGEXP_REPLACE(sa.cedula, '[^0-9]', '') AS UNSIGNED)
-      ELSE NULL
-    END AS customer_id,
-    sa.nombre AS customerid_type,
-    CAST(NULL AS CHAR) AS optional1,
-    'APORTES' AS payment_description1,
-    CAST(0 AS DECIMAL(12,2)) AS optional2,
-    COALESCE(pf.monto, 0) AS optional3,
-    CAST(0 AS DECIMAL(12,2)) AS optional4,
-    COALESCE(bol.monto, 0) AS optional5,
-    CAST(0 AS DECIMAL(12,2)) AS optional6,
-    COALESCE(fb.monto, 0) AS optional7,
-    CAST(0 AS DECIMAL(12,2)) AS optional8,
-    DATE_FORMAT(base.ld, '%M %e de %Y') AS optional9,
-    (COALESCE(pf.monto,0)+COALESCE(bol.monto,0)+COALESCE(fb.monto,0)+COALESCE(ap.monto,0)) AS amount1,
-    DATE_FORMAT(base.ld, '%d/%m/%Y') AS date1,
-    CAST(0 AS DECIMAL(12,2)) AS optional10,
-    CAST(0 AS DECIMAL(12,2)) AS vatAmount1,
-    COALESCE(ap.monto, 0) AS optional11
-  FROM control_asociados ca
-  JOIN sifone_asociados sa ON sa.cedula = ca.cedula
-  CROSS JOIN base
-  LEFT JOIN (
-    SELECT ap.cedula, SUM(ap.monto_pago) AS monto
-    FROM control_asignacion_asociado_producto ap
-    JOIN control_productos p ON p.id = ap.producto_id
-    WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Plan Futuro'
-    GROUP BY ap.cedula
-  ) pf ON pf.cedula = sa.cedula
-  LEFT JOIN (
-    SELECT ap.cedula, SUM(ap.monto_pago) AS monto
-    FROM control_asignacion_asociado_producto ap
-    JOIN control_productos p ON p.id = ap.producto_id
-    WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Bolsillo'
-    GROUP BY ap.cedula
-  ) bol ON bol.cedula = sa.cedula
-  LEFT JOIN (
-    SELECT ap.cedula, SUM(ap.monto_pago) AS monto
-    FROM control_asignacion_asociado_producto ap
-    JOIN control_productos p ON p.id = ap.producto_id
-    WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Fondo Bienestar'
-    GROUP BY ap.cedula
-  ) fb ON fb.cedula = sa.cedula
-  LEFT JOIN (
-    SELECT ap.cedula, SUM(ap.monto_pago) AS monto
-    FROM control_asignacion_asociado_producto ap
-    JOIN control_productos p ON p.id = ap.producto_id
-    WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Aportes'
-    GROUP BY ap.cedula
-  ) ap ON ap.cedula = sa.cedula
-  WHERE ca.estado_activo = TRUE
-),
-cred AS (
-  SELECT
-    CASE
-      WHEN sa.cedula REGEXP '^[0-9]+$' THEN CAST(sa.cedula AS UNSIGNED)
-      WHEN REGEXP_REPLACE(sa.cedula, '[^0-9]', '') REGEXP '^[0-9]+$' THEN CAST(REGEXP_REPLACE(sa.cedula, '[^0-9]', '') AS UNSIGNED)
-      ELSE NULL
-    END AS customer_id,
-    sa.nombre AS customerid_type,
-    a.numero AS optional1,
-    a.tipopr AS payment_description1,
-    CAST(a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END AS DECIMAL(12,2)) AS optional2,
-    CAST(0 AS DECIMAL(12,2)) AS optional3,
-    CAST(0 AS DECIMAL(12,2)) AS optional4,
-    CAST(0 AS DECIMAL(12,2)) AS optional5,
-    CAST(0 AS DECIMAL(12,2)) AS optional6,
-    CAST(0 AS DECIMAL(12,2)) AS optional7,
-    CAST(ROUND(a.valorc * (
-      CASE
-        WHEN m.diav > 60 THEN 0.08
-        WHEN m.diav > 50 THEN 0.06
-        WHEN m.diav > 40 THEN 0.05
-        WHEN m.diav > 30 THEN 0.04
-        WHEN m.diav > 20 THEN 0.03
-        WHEN m.diav > 11 THEN 0.02
-        ELSE 0
-      END
-    ), 2) AS DECIMAL(12,2)) AS optional8,
-    DATE_FORMAT(base.ld, '%M %e de %Y') AS optional9,
-    CAST(
-      (a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END)
-      + ROUND(a.valorc * (
-          CASE
-            WHEN m.diav > 60 THEN 0.08
-            WHEN m.diav > 50 THEN 0.06
-            WHEN m.diav > 40 THEN 0.05
-            WHEN m.diav > 30 THEN 0.04
-            WHEN m.diav > 20 THEN 0.03
-            WHEN m.diav > 11 THEN 0.02
-            ELSE 0
-          END
-        ), 2)
-      AS DECIMAL(12,2)
-    ) AS amount1,
-    DATE_FORMAT(base.ld, '%d/%m/%Y') AS date1,
-    CAST(0 AS DECIMAL(12,2)) AS optional10,
-    CAST(0 AS DECIMAL(12,2)) AS vatAmount1,
-    CAST(0 AS DECIMAL(12,2)) AS optional11
-  FROM control_asociados ca
-  JOIN sifone_asociados sa ON sa.cedula = ca.cedula
-  JOIN sifone_cartera_aseguradora a ON a.cedula = sa.cedula
-  LEFT JOIN sifone_cartera_mora m ON m.cedula = a.cedula AND m.presta = a.numero
-  CROSS JOIN base
-  WHERE ca.estado_activo = TRUE
-),
-unioned AS (
-  SELECT * FROM prod
-  UNION ALL
-  SELECT * FROM cred
-)
 SELECT
-  u.customer_id,
-  u.customerid_type,
-  COALESCE(u.optional1, 0) AS optional1,
-  u.payment_description1,
-  ROW_NUMBER() OVER (ORDER BY u.customer_id, u.payment_description1, u.optional1) + @invoice_start AS invoice_id,
-  u.optional2,
-  u.optional3,
-  u.optional4,
-  u.optional5,
-  u.optional6,
-  u.optional7,
-  u.optional8,
-  u.optional9,
-  u.amount1,
-  u.date1,
-  u.optional10,
-  u.vatAmount1,
-  u.optional11
-FROM unioned u
-ORDER BY u.customer_id, u.payment_description1, u.optional1
+  sa.cedula AS cedula_src,
+  sa.nombre AS customerid_type,
+  NULL AS optional1,
+  'APORTES' AS payment_description1,
+  CAST(0 AS DECIMAL(12,2)) AS optional2,
+  COALESCE(pf.monto, 0) AS optional3,
+  CAST(0 AS DECIMAL(12,2)) AS optional4,
+  COALESCE(bol.monto, 0) AS optional5,
+  CAST(0 AS DECIMAL(12,2)) AS optional6,
+  COALESCE(fb.monto, 0) AS optional7,
+  CAST(0 AS DECIMAL(12,2)) AS optional8,
+  DATE_FORMAT(LAST_DAY(CURDATE()), '%M %e de %Y') AS optional9,
+  (COALESCE(pf.monto,0)+COALESCE(bol.monto,0)+COALESCE(fb.monto,0)+COALESCE(ap.monto,0)) AS amount1,
+  DATE_FORMAT(LAST_DAY(CURDATE()), '%d/%m/%Y') AS date1,
+  CAST(0 AS DECIMAL(12,2)) AS optional10,
+  CAST(0 AS DECIMAL(12,2)) AS vatAmount1,
+  COALESCE(ap.monto, 0) AS optional11
+FROM control_asociados ca
+JOIN sifone_asociados sa ON sa.cedula = ca.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Plan Futuro'
+  GROUP BY ap.cedula
+) pf ON pf.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Bolsillo'
+  GROUP BY ap.cedula
+) bol ON bol.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Fondo Bienestar'
+  GROUP BY ap.cedula
+) fb ON fb.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Aportes'
+  GROUP BY ap.cedula
+) ap ON ap.cedula = sa.cedula
+WHERE ca.estado_activo = TRUE
+
+UNION ALL
+
+SELECT
+  sa.cedula AS cedula_src,
+  sa.nombre AS customerid_type,
+  a.numero AS optional1,
+  a.tipopr AS payment_description1,
+  CAST(a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END AS DECIMAL(12,2)) AS optional2,
+  CAST(0 AS DECIMAL(12,2)) AS optional3,
+  CAST(0 AS DECIMAL(12,2)) AS optional4,
+  CAST(0 AS DECIMAL(12,2)) AS optional5,
+  CAST(0 AS DECIMAL(12,2)) AS optional6,
+  CAST(0 AS DECIMAL(12,2)) AS optional7,
+  CAST(ROUND(a.valorc * (
+    CASE
+      WHEN m.diav > 60 THEN 0.08
+      WHEN m.diav > 50 THEN 0.06
+      WHEN m.diav > 40 THEN 0.05
+      WHEN m.diav > 30 THEN 0.04
+      WHEN m.diav > 20 THEN 0.03
+      WHEN m.diav > 11 THEN 0.02
+      ELSE 0
+    END
+  ), 2) AS DECIMAL(12,2)) AS optional8,
+  DATE_FORMAT(LAST_DAY(CURDATE()), '%M %e de %Y') AS optional9,
+  CAST(
+    (a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END)
+    + ROUND(a.valorc * (
+        CASE
+          WHEN m.diav > 60 THEN 0.08
+          WHEN m.diav > 50 THEN 0.06
+          WHEN m.diav > 40 THEN 0.05
+          WHEN m.diav > 30 THEN 0.04
+          WHEN m.diav > 20 THEN 0.03
+          WHEN m.diav > 11 THEN 0.02
+          ELSE 0
+        END
+      ), 2)
+    AS DECIMAL(12,2)
+  ) AS amount1,
+  DATE_FORMAT(LAST_DAY(CURDATE()), '%d/%m/%Y') AS date1,
+  CAST(0 AS DECIMAL(12,2)) AS optional10,
+  CAST(0 AS DECIMAL(12,2)) AS vatAmount1,
+  CAST(0 AS DECIMAL(12,2)) AS optional11
+FROM control_asociados ca
+JOIN sifone_asociados sa ON sa.cedula = ca.cedula
+JOIN sifone_cartera_aseguradora a ON a.cedula = sa.cedula
+LEFT JOIN sifone_cartera_mora m ON m.cedula = a.cedula AND m.presta = a.numero
+WHERE ca.estado_activo = TRUE
+
+ORDER BY 1, 4, 3
 SQL;
 
   $stmt = $conn->prepare($sql);
@@ -189,14 +151,17 @@ SQL;
     'optional9','amount1','date1','optional10','vatAmount1','optional11'
   ]);
 
+  $invoice = (int)$start;
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    // Asegurar orden de columnas
+    $digits = preg_replace('/\D+/', '', (string)($row['cedula_src'] ?? ''));
+    $customerId = ($digits !== '' ? (int)$digits : null);
+    $invoice++;
     $csvRow = [
-      $row['customer_id'],
+      $customerId,
       $row['customerid_type'],
-      $row['optional1'],
+      ($row['optional1'] !== null ? $row['optional1'] : 0),
       $row['payment_description1'],
-      $row['invoice_id'],
+      $invoice,
       $row['optional2'],
       $row['optional3'],
       $row['optional4'],
