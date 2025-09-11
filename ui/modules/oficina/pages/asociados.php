@@ -28,7 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cambi
 $page = (int)($_GET['page'] ?? 1);
 $search = trim($_GET['search'] ?? '');
 $estado = isset($_GET['estado']) ? trim($_GET['estado']) : 'activo';
-$data = $asociadoModel->getAsociados($page, 20, $search, $estado);
+$productos = isset($_GET['productos']) ? trim($_GET['productos']) : '';
+$data = $asociadoModel->getAsociados($page, 20, $search, $estado, $productos);
+$kpis = $asociadoModel->getKpisProductosEstados();
 
 $pageTitle = 'Asociados - Oficina';
 $currentPage = 'asociados';
@@ -46,6 +48,27 @@ include '../../../views/layouts/header.php';
       <?php if ($message): ?><div class="alert alert-success alert-dismissible fade show"><i class="fas fa-check me-2"></i><?php echo htmlspecialchars($message); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
       <?php if ($error): ?><div class="alert alert-danger alert-dismissible fade show"><i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error); ?><button class="btn-close" data-bs-dismiss="alert"></button></div><?php endif; ?>
 
+      <div class="row g-3 mb-2">
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Activos</div><div class="h4 mb-0"><?php echo (int)($kpis['activos']??0); ?></div></div></div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Inactivos</div><div class="h4 mb-0"><?php echo (int)($kpis['inactivos']??0); ?></div></div></div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Sin productos</div><div class="h4 mb-0"><?php echo (int)($kpis['sin_productos']??0); ?></div></div></div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Con productos</div><div class="h4 mb-0"><?php echo (int)($kpis['con_productos']??0); ?></div></div></div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Con créditos</div><div class="h4 mb-0"><?php echo (int)($kpis['con_creditos']??0); ?></div></div></div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+          <div class="card text-bg-light"><div class="card-body"><div class="small text-muted">Con productos y crédito</div><div class="h4 mb-0"><?php echo (int)($kpis['con_ambos']??0); ?></div></div></div>
+        </div>
+      </div>
+
       <form class="row g-2 mb-3" method="GET">
         <div class="col-md-6"><input class="form-control" name="search" placeholder="Buscar por cédula, nombre, email o teléfono" value="<?php echo htmlspecialchars($search); ?>"></div>
         <div class="col-md-3">
@@ -53,6 +76,15 @@ include '../../../views/layouts/header.php';
             <option value="">Todos</option>
             <option value="activo" <?php echo $estado==='activo'?'selected':''; ?>>Activos</option>
             <option value="inactivo" <?php echo $estado==='inactivo'?'selected':''; ?>>Inactivos</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="productos" class="form-select">
+            <option value="">Todos (productos/créditos)</option>
+            <option value="sin_productos" <?php echo $productos==='sin_productos'?'selected':''; ?>>Sin productos</option>
+            <option value="con_productos" <?php echo $productos==='con_productos'?'selected':''; ?>>Con productos</option>
+            <option value="con_creditos" <?php echo $productos==='con_creditos'?'selected':''; ?>>Con créditos</option>
+            <option value="con_ambos" <?php echo $productos==='con_ambos'?'selected':''; ?>>Con productos y crédito</option>
           </select>
         </div>
         <div class="col-md-2"><button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>Filtrar</button></div>
