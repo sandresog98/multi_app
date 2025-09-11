@@ -215,10 +215,22 @@ SQL;
   for ($r = 0; $r < count($xlsxRows); $r++) {
     $rowXml = '<row r="'.($r+1).'">';
     $row = $xlsxRows[$r];
+    // Columnas que deben forzarse como texto con coma decimal
+    $commaCols = [5,6,7,8,9,10,11,13,15,16,17]; // índices 0-based en $xlsxRows
+    // Columnas siempre string
+    $stringCols = [1,3,12,14];
     for ($c = 0; $c < count($row); $c++) {
       $cellRef = $colLetter($c).($r+1);
       $val = $row[$c];
-      if (is_numeric($val) && $c !== 1 && $c !== 13 && $c !== 14) { // strings: customerid_type (1), optional9 (13), date1 (14)
+      if (in_array($c, $commaCols, true)) {
+        // Formatear con coma decimal y forzar como texto
+        $textVal = number_format((float)$val, 2, ',', '');
+        $safe = htmlspecialchars($textVal, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+        $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+      } elseif (in_array($c, $stringCols, true)) {
+        $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+        $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+      } elseif (is_numeric($val)) {
         $rowXml .= '<c r="'.$cellRef.'"><v>'.(0+$val).'</v></c>';
       } else {
         $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
