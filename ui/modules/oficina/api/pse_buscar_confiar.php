@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 try {
     $auth = new AuthController();
-    $auth->requireAnyRole(['admin','oficina']);
+    $auth->requireModule('oficina.transacciones');
 
     $pseId = $_GET['pse_id'] ?? '';
     $q = trim($_GET['q'] ?? '');

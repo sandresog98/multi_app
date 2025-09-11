@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 
 try {
     $auth = new AuthController();
-    $auth->requireAnyRole(['admin','oficina']);
+    $auth->requireModule('oficina.cargas');
 
     $m = new Cargas();
     $items = $m->listar(100);

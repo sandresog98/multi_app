@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 try {
   $auth = new AuthController();
-  $auth->requireAnyRole(['admin','oficina']);
+  $auth->requireModule('oficina.asociados');
   $q = trim($_GET['q'] ?? '');
   if (strlen($q) < 2) { echo json_encode(['success'=>true,'items'=>[]]); exit; }
   $m = new Asociado();

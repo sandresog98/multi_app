@@ -3,6 +3,11 @@
         "lider" : {
             "modulos" : [
                 "oficina",
+                "oficina.asociados",
+                "oficina.trx_list",
+                "oficina.transacciones",
+                "oficina.pagos_cash_qr",
+                "oficina.cargas",
                 "boleteria",
                 "cobranza",
                 "usuarios",
@@ -14,6 +19,11 @@
         "oficina" : {
             "modulos" : [
                 "oficina",
+                "oficina.asociados",
+                "oficina.transacciones",
+                "oficina.trx_list",
+                "oficina.pagos_cash_qr",
+                "oficina.cargas",
                 "boleteria",
                 "cobranza",
                 "creditos",
