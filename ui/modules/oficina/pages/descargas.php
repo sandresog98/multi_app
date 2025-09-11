@@ -137,23 +137,22 @@ SQL;
   // Limpiar cualquier buffer previo para evitar líneas en blanco al inicio
   if (ob_get_length()) { @ob_end_clean(); }
 
-  header('Content-Type: text/csv; charset=UTF-8');
-  header('Content-Disposition: attachment; filename="pse.csv"');
+  header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+  header('Content-Disposition: attachment; filename="pse.xls"');
   header('Pragma: no-cache');
   header('Expires: 0');
   header('Content-Description: File Transfer');
   header('Content-Transfer-Encoding: binary');
   // Mensaje visible en la UI no viaja en headers; dejamos el filename y mantenemos la UI con texto.
 
-  $out = fopen('php://output', 'w');
-  // Escribir BOM UTF-8 para evitar que Excel agregue líneas/ruido con UTF-8
-  fwrite($out, "\xEF\xBB\xBF");
-  // Encabezados
-  fputcsv($out, [
-    'customer_id','customerid_type','optional1','payment_description1','invoice_id',
-    'optional2','optional3','optional4','optional5','optional6','optional7','optional8',
-    'optional9','amount1','date1','optional10','vatAmount1','optional11'
-  ]);
+  // Comenzar documento XLS (HTML compatible con Excel)
+  echo "<html><head><meta charset='UTF-8'></head><body>";
+  echo "<table border='1'>";
+  echo "<thead><tr>"
+     ."<th>customer_id</th><th>customerid_type</th><th>optional1</th><th>payment_description1</th><th>invoice_id</th>"
+     ."<th>optional2</th><th>optional3</th><th>optional4</th><th>optional5</th><th>optional6</th><th>optional7</th><th>optional8</th>"
+     ."<th>optional9</th><th>amount1</th><th>date1</th><th>optional10</th><th>vatAmount1</th><th>optional11</th>"
+     ."</tr></thead><tbody>";
 
   $invoice = (int)$start;
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -164,29 +163,28 @@ SQL;
     $digits = preg_replace('/\D+/', '', (string)($row['cedula_src'] ?? ''));
     $customerId = ($digits !== '' ? (int)$digits : null);
     $invoice++;
-    $csvRow = [
-      $customerId,
-      $row['customerid_type'],
-      ($row['optional1'] !== null ? $row['optional1'] : 0),
-      $row['payment_description1'],
-      $invoice,
-      $row['optional2'],
-      $row['optional3'],
-      $row['optional4'],
-      $row['optional5'],
-      $row['optional6'],
-      $row['optional7'],
-      $row['optional8'],
-      $row['optional9'],
-      $row['amount1'],
-      $row['date1'],
-      $row['optional10'],
-      $row['vatAmount1'],
-      $row['optional11'],
-    ];
-    fputcsv($out, $csvRow);
+    echo '<tr>'
+      .'<td>'.htmlspecialchars((string)$customerId, ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['customerid_type'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)(($row['optional1'] !== null ? $row['optional1'] : 0)), ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['payment_description1'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$invoice, ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional2'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional3'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional4'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional5'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional6'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional7'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional8'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional9'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['amount1'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['date1'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional10'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['vatAmount1'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'<td>'.htmlspecialchars((string)$row['optional11'], ENT_QUOTES, 'UTF-8').'</td>'
+      .'</tr>';
   }
-  fclose($out);
+  echo '</tbody></table></body></html>';
   exit;
 }
 
