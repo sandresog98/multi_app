@@ -16,7 +16,7 @@ $start = isset($_GET['start']) ? (int)$_GET['start'] : 300000;
 $download = isset($_GET['download']) && $_GET['download'] === '1';
 
 if ($download) {
-  // Generar CSV y forzar descarga
+  // Generar XLS y forzar descarga
   $conn = getConnection();
   try {
     // Asegurar nombres de mes en español
@@ -210,7 +210,7 @@ include '../../../views/layouts/header.php';
           </div>
           <div class="col-md-3 align-self-end">
             <input type="hidden" name="download" value="1">
-            <button class="btn btn-primary w-100"><i class="fas fa-file-csv me-1"></i>Descargar CSV (pse.csv)</button>
+            <button class="btn btn-primary w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLS (pse.xls)</button>
           </div>
         </form>
       </div></div>
