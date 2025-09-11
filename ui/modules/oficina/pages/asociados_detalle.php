@@ -2,6 +2,7 @@
 require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../models/DetalleAsociado.php';
+require_once '../models/Transaccion.php';
 require_once '../../../models/Logger.php';
 require_once '../../../utils/dictionary.php';
 
@@ -9,6 +10,7 @@ $auth = new AuthController();
 $auth->requireAnyRole(['admin','oficina']);
 $currentUser = $auth->getCurrentUser();
 $detalleModel = new DetalleAsociado();
+$txModel = new Transaccion();
 $logger = new Logger();
 
 $cedula = $_GET['cedula'] ?? '';
@@ -18,6 +20,10 @@ $info = $detalleModel->getAsociadoInfo($cedula) ?: [];
 $creditos = $detalleModel->getCreditos($cedula);
 $asignaciones = $detalleModel->getAsignaciones($cedula);
 $productosActivos = $detalleModel->getActiveProducts();
+
+// Transacciones del asociado
+$tpage = (int)($_GET['tpage'] ?? 1);
+$txListado = $txModel->listTransacciones($cedula, $tpage, 10);
 
 $message = '';
 $error = '';
@@ -168,6 +174,67 @@ include '../../../views/layouts/header.php';
                 </tbody>
               </table>
             </div>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1" id="txlist">
+        <div class="col-12">
+          <div class="card"><div class="card-header"><strong>Transacciones creadas</strong></div><div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle">
+                <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach (($txListado['items'] ?? []) as $tx): ?>
+                  <tr>
+                    <td><?php echo (int)$tx['id']; ?></td>
+                    <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
+                    <td><?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?></td>
+                    <td><?php echo htmlspecialchars($tx['recibo_caja_sifone'] ?? ''); ?></td>
+                    <td><?php echo '$'.number_format((float)$tx['valor_pago_total'],0); ?></td>
+                    <td><?php echo '$'.number_format((float)$tx['total_asignado'],0); ?></td>
+                    <td><?php echo (int)$tx['items']; ?></td>
+                    <td><small><?php echo htmlspecialchars($tx['fecha_creacion']); ?></small></td>
+                    <td class="text-end">
+                      <a href="#modalTx<?php echo (int)$tx['id']; ?>" data-bs-toggle="modal" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
+                    </td>
+                  </tr>
+                  <div class="modal fade" id="modalTx<?php echo (int)$tx['id']; ?>" tabindex="-1">
+                    <div class="modal-dialog modal-lg"><div class="modal-content">
+                      <div class="modal-header"><h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Detalle transacción #<?php echo (int)$tx['id']; ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                      <div class="modal-body">
+                        <?php $txh = $txModel->getTransaccion((int)$tx['id']); $txd = $txModel->getTransaccionDetalles((int)$tx['id']); ?>
+                        <div class="mb-2 small text-muted">Origen: <strong><?php echo htmlspecialchars($txh['origen_pago']); ?></strong> | Referencia: <strong><?php echo htmlspecialchars($txh['pse_id'] ?: $txh['confiar_id']); ?></strong> | Valor pago: <strong><?php echo '$'.number_format((float)$txh['valor_pago_total'],0); ?></strong></div>
+                        <div class="table-responsive">
+                          <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light"><tr><th>Tipo</th><th>Referencia</th><th>Descripción</th><th class="text-end">Recomendado</th><th class="text-end">Asignado</th></tr></thead>
+                            <tbody>
+                            <?php foreach ($txd as $d): ?>
+                              <tr>
+                                <td><?php echo htmlspecialchars($d['tipo_rubro']); ?></td>
+                                <td><?php echo htmlspecialchars($d['referencia_credito'] ?: $d['producto_id']); ?></td>
+                                <td class="text-truncate" style="max-width:260px"><?php echo htmlspecialchars($d['descripcion'] ?? ''); ?></td>
+                                <td class="text-end"><?php echo '$'.number_format((float)$d['valor_recomendado'],0); ?></td>
+                                <td class="text-end"><?php echo '$'.number_format((float)$d['valor_asignado'],0); ?></td>
+                              </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div></div>
+                  </div>
+                <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <?php if ((($txListado['pages'] ?? 1)) > 1): $tp=(int)$txListado['current_page']; $pgs=(int)$txListado['pages']; ?>
+              <nav><ul class="pagination pagination-sm justify-content-center">
+                <?php for ($i=1;$i<=$pgs;$i++): ?>
+                  <li class="page-item <?php echo $i==$tp?'active':''; ?>"><a class="page-link" href="?cedula=<?php echo urlencode($cedula); ?>&tpage=<?php echo $i; ?>#txlist"><?php echo $i; ?></a></li>
+                <?php endfor; ?>
+              </ul></nav>
+            <?php endif; ?>
           </div></div>
         </div>
       </div>
