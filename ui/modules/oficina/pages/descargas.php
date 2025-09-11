@@ -210,8 +210,14 @@ SQL;
     .'</Relationships>';
   $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
 
-  // xl/worksheets/sheet1.xml (inline strings)
-  $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  // xl/worksheets/sheet1.xml (inline strings) con anchos de columna
+  $widths = [12, 28, 10, 26, 12, 14, 14, 14, 14, 14, 14, 14, 22, 14, 12, 12, 12, 12];
+  $colsXml = '<cols>';
+  for ($i=0; $i<count($widths); $i++) {
+    $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
+  }
+  $colsXml .= '</cols>';
+  $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'.$colsXml.'<sheetData>';
   for ($r = 0; $r < count($xlsxRows); $r++) {
     $rowXml = '<row r="'.($r+1).'">';
     $row = $xlsxRows[$r];
@@ -225,6 +231,7 @@ SQL;
       $val = $row[$c];
       if ($isHeader) {
         // Encabezados: siempre texto literal
+        // Evitar que Excel interprete encabezados como números o fechas
         $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
         $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
       } elseif (in_array($c, $commaCols, true)) {
