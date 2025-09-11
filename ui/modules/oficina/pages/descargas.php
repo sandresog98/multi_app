@@ -157,6 +157,10 @@ SQL;
 
   $invoice = (int)$start;
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    // Filtrar después de ejecutar SQL: descartar registros con amount1 == 0
+    $amount = (float)($row['amount1'] ?? 0);
+    if ($amount <= 0) { continue; }
+
     $digits = preg_replace('/\D+/', '', (string)($row['cedula_src'] ?? ''));
     $customerId = ($digits !== '' ? (int)$digits : null);
     $invoice++;
