@@ -91,6 +91,77 @@ class Dashboard {
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    // NUEVO: Resumen Oficina para tablero tipo Boletería
+    public function getAsociadosTotalesYActivos(): array {
+        $total = (int)$this->conn->query("SELECT COUNT(*) FROM control_asociados")->fetchColumn();
+        $activos = (int)$this->conn->query("SELECT COUNT(*) FROM control_asociados WHERE estado_activo = TRUE")->fetchColumn();
+        return ['total'=>$total, 'activos'=>$activos];
+    }
+
+    public function getPseCashSinAsignarCount(): array {
+        // Debe coincidir con trx_list.php -> getPagosDisponibles()
+        // PSE: sólo los relacionados en banco_asignacion_pse
+        $pse = (int)$this->conn->query("SELECT COUNT(*) FROM (
+            SELECT a.pse_id, COALESCE(u.utilizado,0) AS utilizado
+            FROM banco_asignacion_pse a
+            JOIN banco_pse p ON p.pse_id = a.pse_id
+            LEFT JOIN (
+              SELECT ct.pse_id, SUM(d.valor_asignado) AS utilizado
+              FROM control_transaccion ct JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+              WHERE ct.pse_id IS NOT NULL GROUP BY ct.pse_id
+            ) u ON u.pse_id = a.pse_id
+        ) q WHERE q.utilizado <= 0")->fetchColumn();
+
+        // Cash/QR: excluir no_válidos
+        $cash = (int)$this->conn->query("SELECT COUNT(*) FROM (
+            SELECT c.confiar_id, COALESCE(u.utilizado,0) AS utilizado
+            FROM banco_confirmacion_confiar c
+            JOIN banco_confiar b ON b.confiar_id = c.confiar_id
+            LEFT JOIN (
+              SELECT ct.confiar_id, SUM(d.valor_asignado) AS utilizado
+              FROM control_transaccion ct JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+              WHERE ct.confiar_id IS NOT NULL GROUP BY ct.confiar_id
+            ) u ON u.confiar_id = c.confiar_id
+            WHERE c.estado <> 'no_valido'
+        ) q WHERE q.utilizado <= 0")->fetchColumn();
+        return ['pse'=>$pse, 'cash_qr'=>$cash];
+    }
+
+    public function getDistribucionTipoAsignacionPse(): array {
+        $stmt = $this->conn->query("SELECT COALESCE(tipo_asignacion,'desconocido') AS tipo, COUNT(*) AS cantidad FROM banco_asignacion_pse GROUP BY COALESCE(tipo_asignacion,'desconocido') ORDER BY cantidad DESC");
+        return $stmt->fetchAll();
+    }
+
+    public function getDineroPorTipoTransaccionAsignada(): array {
+        $stmt = $this->conn->query("SELECT origen_pago AS tipo, SUM(valor_pago_total) AS total
+                                    FROM control_transaccion
+                                    WHERE (pse_id IS NOT NULL OR confiar_id IS NOT NULL)
+                                    GROUP BY origen_pago");
+        return $stmt->fetchAll();
+    }
+
+    public function getTransaccionesRecibidasPorDias(int $dias): array {
+        $sql = "SELECT origen_pago AS tipo, COUNT(*) AS cantidad
+                FROM control_transaccion
+                WHERE fecha_creacion >= (NOW() - INTERVAL :dias DAY)
+                GROUP BY origen_pago";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':dias', $dias, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public function getPagosCashQrSinAsignadosCount(): int {
+        // Replicar lógica de pagos_cash_qr.php (no asignados, excluye no válidas)
+        $sql = "SELECT COUNT(*) FROM banco_confiar c
+                LEFT JOIN banco_confirmacion_confiar a ON a.confiar_id = c.confiar_id
+                WHERE ((c.tipo_transaccion IN ('Pago Efectivo','Pago QR'))
+                       OR (c.tipo_transaccion IS NULL AND ((c.descripcion LIKE '%Consignacion Efectivo%' AND c.valor_consignacion > 0)
+                                                         OR (c.descripcion LIKE '%Pago QR%' AND c.valor_consignacion > 0))))
+                  AND (a.cedula IS NULL AND (a.estado IS NULL OR a.estado <> 'no_valido'))";
+        return (int)$this->conn->query($sql)->fetchColumn();
+    }
 }
 
 
