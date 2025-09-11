@@ -137,54 +137,108 @@ SQL;
   // Limpiar cualquier buffer previo para evitar líneas en blanco al inicio
   if (ob_get_length()) { @ob_end_clean(); }
 
-  header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
-  header('Content-Disposition: attachment; filename="pse.xls"');
-  header('Pragma: no-cache');
-  header('Expires: 0');
-  header('Content-Description: File Transfer');
-  header('Content-Transfer-Encoding: binary');
-  // Mensaje visible en la UI no viaja en headers; dejamos el filename y mantenemos la UI con texto.
-
-  // Comenzar documento XLS (HTML compatible con Excel)
-  echo "<html><head><meta charset='UTF-8'></head><body>";
-  echo "<table border='1'>";
-  echo "<thead><tr>"
-     ."<th>customer_id</th><th>customerid_type</th><th>optional1</th><th>payment_description1</th><th>invoice_id</th>"
-     ."<th>optional2</th><th>optional3</th><th>optional4</th><th>optional5</th><th>optional6</th><th>optional7</th><th>optional8</th>"
-     ."<th>optional9</th><th>amount1</th><th>date1</th><th>optional10</th><th>vatAmount1</th><th>optional11</th>"
-     ."</tr></thead><tbody>";
+  // Construir filas en memoria para generar XLSX (sin librerías externas)
+  $xlsxRows = [];
+  $xlsxRows[] = ['customer_id','customerid_type','optional1','payment_description1','invoice_id','optional2','optional3','optional4','optional5','optional6','optional7','optional8','optional9','amount1','date1','optional10','vatAmount1','optional11'];
 
   $invoice = (int)$start;
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    // Filtrar después de ejecutar SQL: descartar registros con amount1 == 0
     $amount = (float)($row['amount1'] ?? 0);
     if ($amount <= 0) { continue; }
-
     $digits = preg_replace('/\D+/', '', (string)($row['cedula_src'] ?? ''));
     $customerId = ($digits !== '' ? (int)$digits : null);
     $invoice++;
-    echo '<tr>'
-      .'<td>'.htmlspecialchars((string)$customerId, ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['customerid_type'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)(($row['optional1'] !== null ? $row['optional1'] : 0)), ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['payment_description1'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$invoice, ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional2'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional3'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional4'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional5'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional6'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional7'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional8'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional9'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['amount1'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['date1'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional10'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['vatAmount1'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'<td>'.htmlspecialchars((string)$row['optional11'], ENT_QUOTES, 'UTF-8').'</td>'
-      .'</tr>';
+    $xlsxRows[] = [
+      $customerId,
+      $row['customerid_type'],
+      ($row['optional1'] !== null ? $row['optional1'] : 0),
+      $row['payment_description1'],
+      $invoice,
+      $row['optional2'],
+      $row['optional3'],
+      $row['optional4'],
+      $row['optional5'],
+      $row['optional6'],
+      $row['optional7'],
+      $row['optional8'],
+      $row['optional9'],
+      $row['amount1'],
+      $row['date1'],
+      $row['optional10'],
+      $row['vatAmount1'],
+      $row['optional11'],
+    ];
   }
-  echo '</tbody></table></body></html>';
+
+  // Generar XLSX mínimo
+  $tmpXlsx = tempnam(sys_get_temp_dir(), 'xlsx_');
+  $zip = new ZipArchive();
+  $zip->open($tmpXlsx, ZipArchive::OVERWRITE);
+
+  // Helpers
+  $colLetter = function($i){
+    $i = (int)$i; $letters = '';
+    while ($i >= 0) { $letters = chr($i % 26 + 65) . $letters; $i = intdiv($i, 26) - 1; }
+    return $letters;
+  };
+  $xmlHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
+  // [Content_Types].xml
+  $contentTypes = $xmlHeader.'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    .'<Default Extension="xml" ContentType="application/xml"/>'
+    .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+    .'</Types>';
+  $zip->addFromString('[Content_Types].xml', $contentTypes);
+
+  // _rels/.rels
+  $rels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>'
+    .'</Relationships>';
+  $zip->addFromString('_rels/.rels', $rels);
+
+  // xl/workbook.xml
+  $workbook = $xmlHeader.'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+    .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    .'<sheets><sheet name="Hoja1" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  $zip->addFromString('xl/workbook.xml', $workbook);
+
+  // xl/_rels/workbook.xml.rels
+  $wbRels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+    .'</Relationships>';
+  $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
+
+  // xl/worksheets/sheet1.xml (inline strings)
+  $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  for ($r = 0; $r < count($xlsxRows); $r++) {
+    $rowXml = '<row r="'.($r+1).'">';
+    $row = $xlsxRows[$r];
+    for ($c = 0; $c < count($row); $c++) {
+      $cellRef = $colLetter($c).($r+1);
+      $val = $row[$c];
+      if (is_numeric($val) && $c !== 1 && $c !== 13 && $c !== 14) { // strings: customerid_type (1), optional9 (13), date1 (14)
+        $rowXml .= '<c r="'.$cellRef.'"><v>'.(0+$val).'</v></c>';
+      } else {
+        $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+        $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+      }
+    }
+    $rowXml .= '</row>';
+    $sheet .= $rowXml;
+  }
+  $sheet .= '</sheetData></worksheet>';
+  $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
+
+  $zip->close();
+
+  header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  header('Content-Disposition: attachment; filename="pse.xlsx"');
+  header('Pragma: no-cache');
+  header('Expires: 0');
+  readfile($tmpXlsx);
+  @unlink($tmpXlsx);
   exit;
 }
 
