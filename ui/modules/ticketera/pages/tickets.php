@@ -155,7 +155,7 @@ async function load(){
   const estado = document.getElementById('estado').value;
   const responsable = Number((sel_f_responsable&&sel_f_responsable.id)||0) || '';
   const solicitante = Number((sel_f_solicitante&&sel_f_solicitante.id)||0) || '';
-  const params = new URLSearchParams({ q, estado, responsable, solicitante, page, limit: 10, sort_by: 'fecha_creacion', sort_dir: 'DESC' });
+  const params = new URLSearchParams({ q, estado, responsable, solicitante, page, limit: 20, sort_by: 'fecha_creacion', sort_dir: 'DESC' });
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '<tr><td colspan="8" class="text-muted">Cargando…</td></tr>';
   try {

@@ -8,7 +8,7 @@ try{
     $auth->requireModule('ticketera');
     $c = new TicketeraController();
     $page = (int)($_GET['page'] ?? 1);
-    $limit = (int)($_GET['limit'] ?? 10);
+    $limit = (int)($_GET['limit'] ?? 20);
     $filters = [
         'q' => $_GET['q'] ?? '',
         'estado' => $_GET['estado'] ?? '',

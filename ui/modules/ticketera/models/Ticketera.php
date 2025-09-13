@@ -12,8 +12,16 @@ class Ticketera {
         $where=[];$params=[];
         if (!empty($filters['q'])) { $where[] = '(t.resumen LIKE ? OR t.descripcion LIKE ?)'; $params[] = '%'.$filters['q'].'%'; $params[] = '%'.$filters['q'].'%'; }
         if (!empty($filters['estado'])) { $where[] = 't.estado = ?'; $params[] = $filters['estado']; }
-        if (!empty($filters['responsable'])) { $where[] = 't.responsable_id = ?'; $params[] = (int)$filters['responsable']; }
-        if (!empty($filters['solicitante'])) { $where[] = 't.solicitante_id = ?'; $params[] = (int)$filters['solicitante']; }
+        $resp = isset($filters['responsable']) && $filters['responsable']!=='' ? (int)$filters['responsable'] : null;
+        $soli = isset($filters['solicitante']) && $filters['solicitante']!=='' ? (int)$filters['solicitante'] : null;
+        if (!is_null($resp) && !is_null($soli)) {
+            $where[] = '(t.responsable_id = ? OR t.solicitante_id = ?)';
+            $params[] = $resp; $params[] = $soli;
+        } else if (!is_null($resp)) {
+            $where[] = 't.responsable_id = ?'; $params[] = $resp;
+        } else if (!is_null($soli)) {
+            $where[] = 't.solicitante_id = ?'; $params[] = $soli;
+        }
         $whereClause = $where? ('WHERE '.implode(' AND ',$where)) : '';
         $allowedSort = [ 'fecha_creacion'=>'t.fecha_creacion', 'id'=>'t.id' ];
         $col = $allowedSort[$sortBy] ?? 't.fecha_creacion';

@@ -195,9 +195,9 @@ class PagoRelacionProcessor(BaseProcessor):
             confiar_id = relation['confiar_id']
             
             # Verificar que no existe ya la relación
-            if pse_id in existing_relations:
-                self.logger.info(f"PSE {pse_id} ya tiene relación, saltando...")
-                continue
+            #if pse_id in existing_relations:
+            #    self.logger.info(f"PSE {pse_id} ya tiene relación, saltando...")
+            #    continue
             
             # Verificar que no hay duplicados en esta ejecución
             if pse_id in seen_pse_ids:
