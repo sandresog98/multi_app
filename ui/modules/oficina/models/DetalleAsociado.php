@@ -6,7 +6,7 @@ class DetalleAsociado {
     public function __construct() { $this->conn = getConnection(); }
 
     public function getAsociadoInfo(string $cedula) {
-        $sql = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte FROM sifone_asociados WHERE cedula = ?";
+        $sql = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
         return $stmt->fetch();

@@ -79,6 +79,9 @@ include '../../../views/layouts/header.php';
             <div><strong><?php echo dict_label('sifone_asociados','mail','Email'); ?>:</strong> <?php echo htmlspecialchars($info['mail'] ?? ''); ?></div>
             <div><strong><?php echo dict_label('sifone_asociados','ciudad','Ciudad'); ?>:</strong> <?php echo htmlspecialchars($info['ciudad'] ?? ''); ?></div>
             <div><strong><?php echo dict_label('sifone_asociados','direcc','Dirección'); ?>:</strong> <?php echo htmlspecialchars($info['direcc'] ?? ''); ?></div>
+            <div><strong>Fecha de nacimiento:</strong> <?php echo !empty($info['fecnac']) ? date('d/m/Y', strtotime($info['fecnac'])) : '-'; ?>
+              <?php if (!empty($info['fecnac'])) { $edad = (int)floor((time() - strtotime($info['fecnac'])) / (365.25*24*3600)); echo ' <span class="text-muted">('.$edad.' años)</span>'; } ?></div>
+            <div><strong>Fecha de afiliación:</strong> <?php echo !empty($info['fechai']) ? date('d/m/Y', strtotime($info['fechai'])) : '-'; ?></div>
           </div></div>
         </div>
         <div class="col-md-6">

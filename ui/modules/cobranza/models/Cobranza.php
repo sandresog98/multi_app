@@ -191,7 +191,7 @@ class Cobranza {
 
 	public function obtenerDetalleCompletoAsociado($cedula) {
 		// Información del asociado
-		$sqlAsociado = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte FROM sifone_asociados WHERE cedula = ?";
+		$sqlAsociado = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
 		$stmtAsociado = $this->conn->prepare($sqlAsociado);
 		$stmtAsociado->execute([$cedula]);
 		$asociado = $stmtAsociado->fetch(PDO::FETCH_ASSOC);

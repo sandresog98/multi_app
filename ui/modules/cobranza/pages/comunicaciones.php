@@ -276,6 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
 										<div><strong>Email:</strong> ${detalle.asociado.mail || ''}</div>
 										<div><strong>Ciudad:</strong> ${detalle.asociado.ciudad || ''}</div>
 										<div><strong>Dirección:</strong> ${detalle.asociado.direcc || ''}</div>
+										<div><strong>Fecha de nacimiento:</strong> ${detalle.asociado.fecnac ? new Date(detalle.asociado.fecnac).toLocaleDateString('es-CO') : '-'}</div>
+										<div><strong>Edad:</strong> ${detalle.asociado.fecnac ? (Math.floor((Date.now() - new Date(detalle.asociado.fecnac).getTime()) / (365.25*24*3600*1000))) + ' años' : '-'}</div>
+										<div><strong>Fecha de afiliación:</strong> ${detalle.asociado.fechai ? new Date(detalle.asociado.fechai).toLocaleDateString('es-CO') : '-'}</div>
 									</div>
 								</div>
 							</div>
