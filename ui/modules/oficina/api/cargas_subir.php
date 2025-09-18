@@ -18,7 +18,7 @@ try {
     $tipo = $_POST['tipo'] ?? '';
     if (!$tipo) throw new Exception('Tipo requerido');
 
-    $allowed = ['sifone_libro','sifone_cartera_aseguradora','sifone_cartera_mora','pagos_pse','pagos_confiar'];
+    $allowed = ['sifone_libro','sifone_cartera_aseguradora','sifone_cartera_mora','sifone_datacredito','pagos_pse','pagos_confiar'];
     if (!in_array($tipo, $allowed, true)) throw new Exception('Tipo inválido');
 
     $ext = strtolower(pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION));

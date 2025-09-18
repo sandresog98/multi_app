@@ -31,6 +31,9 @@ class SifoneProcessor(BaseProcessor):
         self.cartera_required_columns = [
             'cedula', 'tipopr'
         ]
+        
+        # Columnas mínimas para datacredito: ninguna fija, pero requerimos al menos 1 columna
+        self.datacredito_required_min_columns = 1
     
     def process_files(self):
         """Procesar todos los archivos de Sifone"""
@@ -47,6 +50,9 @@ class SifoneProcessor(BaseProcessor):
 
             # Procesar archivos de cartera aseguradora
             self.process_cartera_aseguradora_files()
+            
+            # Procesar archivos de Datacredito
+            self.process_datacredito_files()
             
             logger.info("🎉 Procesamiento de Sifone completado")
             
@@ -525,6 +531,108 @@ class SifoneProcessor(BaseProcessor):
             logger.info(f"✅ Procesados {len(processed_data)} registros de {file_path}")
             return processed_data
 
+        except Exception as e:
+            logger.error(f"❌ Error procesando archivo {file_path}: {e}")
+            return []
+
+    def process_datacredito_files(self):
+        """Procesar archivos de Datacredito"""
+        logger.info("🔄 Iniciando procesamiento de archivos de Datacredito")
+
+        from config.settings import DATA_PATHS
+        files = self.get_files_by_type('sifone', 'datacredito') if 'datacredito' in DATA_PATHS['sifone'] else []
+        if not files:
+            logger.warning("⚠️ No se encontraron archivos de Datacredito para procesar")
+            return
+
+        total_inserted = 0
+        for file_path in files:
+            try:
+                data = self.process_datacredito_file(file_path)
+                self.truncate_table('sifone_datacredito')
+                if data:
+                    inserted = self.insert_data('sifone_datacredito', data, check_duplicates=False)
+                    total_inserted += inserted
+            except Exception as e:
+                logger.error(f"❌ Error procesando archivo {file_path}: {e}")
+                continue
+        logger.info(f"✅ Procesamiento de Datacredito completado. Total insertados: {total_inserted}")
+
+    def process_datacredito_file(self, file_path: str) -> List[Dict[str, Any]]:
+        """Procesar archivo Datacredito y retornar datos listos para insertar.
+        El archivo trae fechas en formato YYYYMMDD. Se mapearán columnas por nombre a la tabla sifone_datacredito
+        según existan; cualquier columna de fecha se procesará con date_yyyymmdd. Si los nombres no coinciden,
+        se intentará mapear por orden a columnas a..cd de la tabla.
+        """
+        try:
+            logger.info(f"🔄 Procesando archivo: {file_path}")
+            df = self.excel_processor.read_excel_file(file_path)
+            # Limpiar DataFrame (sin requisitos de columnas específicas)
+            df = self.excel_processor.clean_dataframe(df)
+
+            if df.shape[1] < self.datacredito_required_min_columns:
+                logger.error("❌ Archivo Datacredito no contiene columnas suficientes")
+                return []
+
+            # Determinar columnas de la tabla destino en orden
+            target_columns = [
+                'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+                'aa','ab','ac','ad','ae','af','ag','ah','ai','aj','ak','al','am','an','ao','ap','aq','ar','as1','at1','au','av','aw',
+                'ax','ay','az','ba','bb','bc','bd','be','bf','bg','bh','bi','bj','bk','bl','bm','bn','bo','bp','bq','br','bs','bt','bu',
+                'bv','bw','bx','by1','bz','ca','cb','cc','cd'
+            ]
+
+            # Heurística: columnas que aparentan ser fecha en YYYYMMDD
+            def is_yyyymmdd_like(col_series) -> bool:
+                try:
+                    sample = col_series.dropna().astype(str).head(5)
+                    if sample.empty:
+                        return False
+                    for val in sample:
+                        v = ''.join(filter(str.isdigit, val))
+                        if len(v) == 8 and v[:4].isdigit():
+                            continue
+                        else:
+                            return False
+                    return True
+                except Exception:
+                    return False
+
+            # Preparar limpieza por tipo dinámico: si parece fecha usar date_yyyymmdd
+            cleaning_map = {}
+            for idx, col in enumerate(df.columns):
+                if idx >= len(target_columns):
+                    break
+                if is_yyyymmdd_like(df[col]):
+                    cleaning_map[col] = 'date_yyyymmdd'
+                else:
+                    # Si es numérico puro y sin decimales probables, usar integer; si tiene decimales, numeric; si no, string
+                    try:
+                        if pd.api.types.is_integer_dtype(df[col]):
+                            cleaning_map[col] = 'integer'
+                        elif pd.api.types.is_float_dtype(df[col]):
+                            cleaning_map[col] = 'numeric'
+                        else:
+                            cleaning_map[col] = 'string'
+                    except Exception:
+                        cleaning_map[col] = 'string'
+
+            df = self.data_cleaner.clean_dataframe_columns(df, cleaning_map)
+
+            # Construir registros usando el orden de columnas disponible mapeado a a..cd
+            processed_data: List[Dict[str, Any]] = []
+            for _, row in df.iterrows():
+                record: Dict[str, Any] = {}
+                for idx, target_col in enumerate(target_columns):
+                    if idx < len(df.columns):
+                        src_col = df.columns[idx]
+                        record[target_col] = row.get(src_col)
+                    else:
+                        break
+                processed_data.append(record)
+
+            logger.info(f"✅ Procesados {len(processed_data)} registros de {file_path}")
+            return processed_data
         except Exception as e:
             logger.error(f"❌ Error procesando archivo {file_path}: {e}")
             return []

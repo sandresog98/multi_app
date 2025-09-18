@@ -38,6 +38,7 @@ include '../../../views/layouts/header.php';
                     <option value="sifone_libro">Libro de asociados</option>
                     <option value="sifone_cartera_aseguradora">Cartera Aseguradora</option>
                     <option value="sifone_cartera_mora">Cartera Mora</option>
+                    <option value="sifone_datacredito">Datacredito</option>
                   </select>
                 </div>
                 <div class="col-12">

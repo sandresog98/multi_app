@@ -74,6 +74,7 @@ def obtener_job_pendiente(db: DatabaseManager) -> Optional[Job]:
         'sifone_libro',
         'sifone_cartera_aseguradora',
         'sifone_cartera_mora',
+        'sifone_datacredito',
         'pagos_pse',
         'pagos_confiar',
     ]
@@ -147,6 +148,12 @@ def procesar_job_sifone(job: Job, sp: SifoneProcessor) -> bool:
             if data:
                 sp.truncate_table('sifone_cartera_aseguradora')
                 sp.insert_data('sifone_cartera_aseguradora', data, check_duplicates=False)
+                return True
+        elif job.tipo == "sifone_datacredito":
+            data = sp.process_datacredito_file(job.archivo_ruta)
+            if data:
+                sp.truncate_table('sifone_datacredito')
+                sp.insert_data('sifone_datacredito', data, check_duplicates=False)
                 return True
         else:
             raise ValueError(f"Tipo de sifone no soportado: {job.tipo}")

@@ -42,6 +42,7 @@ DATA_PATHS = {
         'asociados': SIFONE_ROOT,
         'cartera_mora': SIFONE_ROOT,
         'aseguradora': SIFONE_ROOT,
+        'datacredito': SIFONE_ROOT,
         'root': SIFONE_ROOT,
     }
 }
@@ -53,7 +54,8 @@ FILE_PATTERNS = {
     # Patrones específicos en una sola carpeta para Sifone
     'asociados': ['librodeasociados.*'],
     'cartera_mora': ['carteraxedades.*'],
-    'aseguradora': ['carteraaseguradora.*']
+    'aseguradora': ['carteraaseguradora.*'],
+    'datacredito': ['datacredito.*']
 }
 
 # Crear directorios si no existen

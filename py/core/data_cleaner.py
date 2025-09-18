@@ -102,6 +102,26 @@ class DataCleaner:
         except Exception as e:
             logger.warning(f"⚠️ No se pudo convertir fecha '{value}': {e}")
             return None
+
+    def clean_date_yyyymmdd(self, value: Any) -> Optional[str]:
+        """Limpiar campo de fecha con formato estricto YYYYMMDD (acepta int o str)."""
+        if pd.isna(value) or value is None:
+            return None
+        try:
+            # Convertir a string sin separadores ni decimales
+            text = str(value).strip()
+            # Eliminar puntos o comas si viniera con formato numérico
+            text = re.sub(r'[^0-9]', '', text)
+            if len(text) != 8:
+                # Fallback al parser genérico
+                return self.clean_date_field(value)
+            pd_date = pd.to_datetime(text, format='%Y%m%d', errors='coerce')
+            if pd.isna(pd_date):
+                return None
+            return pd_date.strftime('%Y-%m-%d')
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo convertir fecha YYYYMMDD '{value}': {e}")
+            return None
     
     def clean_boolean_field(self, value: Any) -> bool:
         """Limpiar campo booleano"""
@@ -132,6 +152,8 @@ class DataCleaner:
                     df[column] = df[column].apply(self.clean_integer_field)
                 elif cleaning_type == 'date':
                     df[column] = df[column].apply(self.clean_date_field)
+                elif cleaning_type == 'date_yyyymmdd':
+                    df[column] = df[column].apply(self.clean_date_yyyymmdd)
                 elif cleaning_type == 'boolean':
                     df[column] = df[column].apply(self.clean_boolean_field)
         
