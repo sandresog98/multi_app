@@ -18,8 +18,21 @@ if (!$cedula) { header('Location: asociados.php'); exit; }
 
 $info = $detalleModel->getAsociadoInfo($cedula) ?: [];
 $creditos = $detalleModel->getCreditos($cedula);
+$creditosFinalizados = $detalleModel->getCreditosFinalizados($cedula);
 $asignaciones = $detalleModel->getAsignaciones($cedula);
 $productosActivos = $detalleModel->getActiveProducts();
+
+// Cálculos monetarios
+$valorProductosMensual = 0.0;
+foreach ($asignaciones as $ap) { if (!empty($ap['estado_activo'])) { $valorProductosMensual += (float)$ap['monto_pago']; } }
+$valorPagoMinCreditos = 0.0;
+foreach ($creditos as $c) {
+  $cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
+  $saldoMora = (float)($c['saldo_mora'] ?? 0);
+  $montoCobranza = (float)($c['monto_cobranza'] ?? 0);
+  $valorPagoMinCreditos += ($saldoMora > 0 ? $saldoMora : $cuotaBase) + $montoCobranza;
+}
+$valorTotalMonetario = $valorProductosMensual + $valorPagoMinCreditos;
 
 // Transacciones del asociado
 $tpage = (int)($_GET['tpage'] ?? 1);
@@ -87,10 +100,14 @@ include '../../../views/layouts/header.php';
         <div class="col-md-6">
           <div class="card"><div class="card-header"><strong>Información monetaria</strong></div><div class="card-body">
             <div><strong><?php echo dict_label('sifone_asociados','aporte','Aportes'); ?>:</strong> <?php echo '$' . number_format((float)($info['aporte'] ?? 0), 0); ?></div>
+            <div><strong>Valor mensual de productos:</strong> <?php echo '$' . number_format($valorProductosMensual, 0); ?></div>
+            <div><strong>Valor pago mínimo créditos:</strong> <?php echo '$' . number_format($valorPagoMinCreditos, 0); ?></div>
+            <div><strong>Valor total:</strong> <?php echo '$' . number_format($valorTotalMonetario, 0); ?></div>
           </div></div>
         </div>
       </div>
 
+      <?php if (!empty($creditos)): ?>
       <div class="row g-3 mt-1">
         <div class="col-12">
           <div class="card"><div class="card-header"><strong>Información crédito</strong></div><div class="card-body">
@@ -100,10 +117,14 @@ include '../../../views/layouts/header.php';
                   <th><?php echo dict_label('sifone_cartera_aseguradora','numero','Crédito'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo Préstamo'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','plazo','Plazo'); ?></th>
+                  <th>Valor Cuota</th>
+                  <th>Cuotas Pendientes</th>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','tasa','Tasa Interés'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','carter','Deuda Capital'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_mora','sdomor','Saldo Mora'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_mora','diav','Días Mora'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_mora','sdomor','Saldo Mora'); ?></th>
+                  <th>Monto Cobranza</th>
+                  <th>Pago mínimo</th>
                   <th><?php echo dict_label('sifone_cartera_mora','fechap','Fecha de Pago'); ?></th>
                 </tr></thead>
                 <tbody>
@@ -112,10 +133,22 @@ include '../../../views/layouts/header.php';
                     <td><?php echo htmlspecialchars($c['numero_credito']); ?></td>
                     <td><?php echo htmlspecialchars($c['tipo_prestamo']); ?></td>
                     <td><?php echo (int)$c['plazo']; ?></td>
+                    <td><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
+                    <td><?php echo (int)($c['cuotas_pendientes'] ?? 0); ?></td>
                     <td><?php echo number_format((float)$c['tasa'] * 100, 2) . '%'; ?></td>
                     <td><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
-                    <td><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></td>
                     <td><?php echo (int)$c['dias_mora']; ?></td>
+                    <td><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></td>
+                    <td><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
+                    <td>
+                      <?php
+                        $__cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
+                        $__saldoMora = (float)($c['saldo_mora'] ?? 0);
+                        $__montoCob = (float)($c['monto_cobranza'] ?? 0);
+                        $__pagoMin = ($__saldoMora > 0 ? $__saldoMora : $__cuotaBase) + $__montoCob;
+                        echo '$' . number_format($__pagoMin, 0);
+                      ?>
+                    </td>
                     <td><?php echo $c['fecha_pago'] ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                   </tr>
                   <?php endforeach; ?>
@@ -125,17 +158,19 @@ include '../../../views/layouts/header.php';
           </div></div>
         </div>
       </div>
+      <?php endif; ?>
 
       <div class="row g-3 mt-1">
-        <div class="col-12">
+        <div class="col-md-6">
           <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><strong>Información de productos</strong>
             <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#asignarProductoModal"><i class="fas fa-plus me-1"></i>Asignar producto</button>
           </div>
           <div class="card-body">
+            <div class="mb-2"><strong>Total activos:</strong> <?php echo '$' . number_format($valorProductosMensual, 0); ?></div>
             <div class="table-responsive">
               <table class="table table-sm table-hover">
                 <thead class="table-light"><tr>
-                  <th>ID</th><th>Producto</th><th>Día Pago</th><th>Monto Pago</th><th>Rango</th><th>Estado</th><th>Acciones</th>
+                  <th>ID</th><th>Producto</th><th>Día Pago</th><th>Monto Pago</th><th>Estado</th><th>Acciones</th>
                 </tr></thead>
                 <tbody>
                   <?php foreach ($asignaciones as $ap): ?>
@@ -144,7 +179,6 @@ include '../../../views/layouts/header.php';
                     <td><?php echo htmlspecialchars($ap['producto_nombre']); ?></td>
                     <td><?php echo (int)$ap['dia_pago']; ?></td>
                     <td><?php echo '$' . number_format((float)$ap['monto_pago'], 0); ?></td>
-                    <td><?php echo '$' . number_format((float)$ap['valor_minimo'],0) . ' - $' . number_format((float)$ap['valor_maximo'],0); ?></td>
                     <td><span class="badge <?php echo $ap['estado_activo'] ? 'bg-success':'bg-secondary'; ?>"><?php echo $ap['estado_activo'] ? 'Activo':'Inactivo'; ?></span></td>
                     <td>
                       <div class="btn-group">
@@ -179,6 +213,32 @@ include '../../../views/layouts/header.php';
             </div>
           </div></div>
         </div>
+        <?php if (!empty($creditosFinalizados)): ?>
+        <div class="col-md-6">
+          <div class="card"><div class="card-header"><strong>Créditos finalizados</strong></div><div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light"><tr>
+                  <th>Crédito</th>
+                  <th>Fecha Pago</th>
+                  <th>Desembolso</th>
+                  <th>Cuotas Iniciales</th>
+                </tr></thead>
+                <tbody>
+                  <?php foreach ($creditosFinalizados as $f): ?>
+                  <tr>
+                    <td><?php echo htmlspecialchars($f['numero_credito']); ?></td>
+                    <td><?php echo !empty($f['fecha_pago']) ? date('d/m/Y', strtotime($f['fecha_pago'])) : '-'; ?></td>
+                    <td><?php echo '$' . number_format((float)($f['desembolso_inicial'] ?? 0), 0); ?></td>
+                    <td><?php echo (int)($f['cuotas_iniciales'] ?? 0); ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          </div></div>
+        </div>
+        <?php endif; ?>
       </div>
 
       <div class="row g-3 mt-1" id="txlist">

@@ -196,19 +196,35 @@ class Cobranza {
 		$stmtAsociado->execute([$cedula]);
 		$asociado = $stmtAsociado->fetch(PDO::FETCH_ASSOC);
 
-		// Información de créditos
+		// Información de créditos (alineado con Oficina: asociados_detalle)
 		$sqlCreditos = "SELECT 
 							a.numero AS numero_credito,
 							a.tipopr AS tipo_prestamo,
 							a.plazo,
 							a.tasa,
 							a.carter AS deuda_capital,
+							a.valorc AS cuota,
+							dv.cuota AS valor_cuota,
+							dv.cuotas_pendientes AS cuotas_pendientes,
 							m.sdomor AS saldo_mora,
 							m.diav AS dias_mora,
-							m.fechap AS fecha_pago
+							COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago,
+							CASE 
+								WHEN m.diav IS NULL THEN 0
+								WHEN m.diav > 60 THEN ROUND(a.valorc * 0.08, 2)
+								WHEN m.diav > 50 THEN ROUND(a.valorc * 0.06, 2)
+								WHEN m.diav > 40 THEN ROUND(a.valorc * 0.05, 2)
+								WHEN m.diav > 30 THEN ROUND(a.valorc * 0.04, 2)
+								WHEN m.diav > 20 THEN ROUND(a.valorc * 0.03, 2)
+								WHEN m.diav > 11 THEN ROUND(a.valorc * 0.02, 2)
+								ELSE 0
+							END AS monto_cobranza
 						FROM sifone_cartera_aseguradora a
 						LEFT JOIN sifone_cartera_mora m
 							ON m.cedula = a.cedula AND m.presta = a.numero
+						LEFT JOIN sifone_datacredito_vw dv
+							ON CAST(dv.cedula AS UNSIGNED) = CAST(a.cedula AS UNSIGNED)
+						   AND CAST(dv.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
 						WHERE a.cedula = ?
 						ORDER BY a.numero";
 		$stmtCreditos = $this->conn->prepare($sqlCreditos);

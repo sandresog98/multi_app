@@ -284,10 +284,29 @@ document.addEventListener('DOMContentLoaded', () => {
 							</div>
 							<div class="col-md-6">
 								<div class="card">
-									<div class="card-header"><strong>Información monetaria</strong></div>
-									<div class="card-body">
-										<div><strong>Aportes:</strong> $${Number(detalle.asociado.aporte || 0).toLocaleString('es-CO')}</div>
-									</div>
+                                    <div class="card-header"><strong>Información monetaria</strong></div>
+                                    <div class="card-body">
+                                        <div><strong>Aportes:</strong> $${Number(detalle.asociado.aporte || 0).toLocaleString('es-CO')}</div>
+                                        ${(()=>{
+                                            try {
+                                                const asignaciones = Array.isArray(detalle.productos)?detalle.productos:[];
+                                                const productosMensual = asignaciones.filter(p=>p.estado_activo).reduce((s,p)=>s+Number(p.monto_pago||0),0);
+                                                const creditos = Array.isArray(detalle.creditos)?detalle.creditos:[];
+                                                const pagoMinCred = creditos.reduce((s,c)=>{
+                                                    const cuotaBase = Number((c.valor_cuota ?? c.cuota) || 0);
+                                                    const saldoMora = Number(c.saldo_mora || 0);
+                                                    const montoCob = Number(c.monto_cobranza || 0);
+                                                    return s + ((saldoMora>0?saldoMora:cuotaBase) + montoCob);
+                                                },0);
+                                                const total = productosMensual + pagoMinCred;
+                                                return `
+                                                    <div><strong>Valor mensual de productos:</strong> $${productosMensual.toLocaleString('es-CO')}</div>
+                                                    <div><strong>Valor pago mínimo créditos:</strong> $${pagoMinCred.toLocaleString('es-CO')}</div>
+                                                    <div><strong>Valor total:</strong> $${total.toLocaleString('es-CO')}</div>
+                                                `;
+                                            } catch(e) { return ''; }
+                                        })()}
+                                    </div>
 								</div>
 							</div>
 						</div>
@@ -305,32 +324,45 @@ document.addEventListener('DOMContentLoaded', () => {
 										<div class="table-responsive">
 											<table class="table table-sm table-hover">
 												<thead class="table-light">
-													<tr>
-														<th>Crédito</th>
-														<th>Tipo Préstamo</th>
-														<th>Plazo</th>
-														<th>Tasa Interés</th>
-														<th>Deuda Capital</th>
-														<th>Saldo Mora</th>
-														<th>Días Mora</th>
-														<th>Fecha de Pago</th>
-													</tr>
+                                                    <tr>
+                                                        <th>Crédito</th>
+                                                        <th>Tipo Préstamo</th>
+                                                        <th>Plazo</th>
+                                                        <th>Valor Cuota</th>
+                                                        <th>Cuotas Pendientes</th>
+                                                        <th>Tasa Interés</th>
+                                                        <th>Deuda Capital</th>
+                                                        <th>Días Mora</th>
+                                                        <th>Saldo Mora</th>
+                                                        <th>Monto Cobranza</th>
+                                                        <th>Pago mínimo</th>
+                                                        <th>Fecha de Pago</th>
+                                                    </tr>
 												</thead>
 												<tbody>
 					`;
 					
 					for (const credito of detalle.creditos) {
-						const fechaPago = credito.fecha_pago ? new Date(credito.fecha_pago).toLocaleDateString('es-CO') : '-';
+                        const fechaPago = credito.fecha_pago ? new Date(credito.fecha_pago).toLocaleDateString('es-CO') : '-';
+                        const valorCuota = Number((credito.valor_cuota ?? credito.cuota) || 0);
+                        const cuotasPend = Number(credito.cuotas_pendientes || 0);
+                        const saldoMora = Number(credito.saldo_mora || 0);
+                        const montoCob = Number(credito.monto_cobranza || 0);
+                        const pagoMin = (saldoMora>0?saldoMora:valorCuota) + montoCob;
 						html += `
 							<tr>
 								<td>${credito.numero_credito || ''}</td>
 								<td>${credito.tipo_prestamo || ''}</td>
 								<td>${Number(credito.plazo || 0)}</td>
-								<td>${Number(credito.tasa || 0) * 100}%</td>
-								<td>$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
-								<td>$${Number(credito.saldo_mora || 0).toLocaleString('es-CO')}</td>
-								<td>${Number(credito.dias_mora || 0)}</td>
-								<td>${fechaPago}</td>
+                                <td>$${valorCuota.toLocaleString('es-CO')}</td>
+                                <td>${cuotasPend}</td>
+                                <td>${(Number(credito.tasa || 0) * 100).toFixed(2)}%</td>
+                                <td>$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
+                                <td>${Number(credito.dias_mora || 0)}</td>
+                                <td>$${saldoMora.toLocaleString('es-CO')}</td>
+                                <td>$${montoCob.toLocaleString('es-CO')}</td>
+                                <td>$${pagoMin.toLocaleString('es-CO')}</td>
+                                <td>${fechaPago}</td>
 							</tr>
 						`;
 					}
@@ -356,14 +388,13 @@ document.addEventListener('DOMContentLoaded', () => {
 										<div class="table-responsive">
 											<table class="table table-sm table-hover">
 												<thead class="table-light">
-													<tr>
-														<th>ID</th>
-														<th>Producto</th>
-														<th>Día Pago</th>
-														<th>Monto Pago</th>
-														<th>Rango</th>
-														<th>Estado</th>
-													</tr>
+                                                    <tr>
+                                                        <th>ID</th>
+                                                        <th>Producto</th>
+                                                        <th>Día Pago</th>
+                                                        <th>Monto Pago</th>
+                                                        <th>Estado</th>
+                                                    </tr>
 												</thead>
 												<tbody>
 					`;
@@ -376,8 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
 								<td>${Number(producto.id || 0)}</td>
 								<td>${producto.producto_nombre || ''}</td>
 								<td>${Number(producto.dia_pago || 0)}</td>
-								<td>$${Number(producto.monto_pago || 0).toLocaleString('es-CO')}</td>
-								<td>$${Number(producto.valor_minimo || 0).toLocaleString('es-CO')} - $${Number(producto.valor_maximo || 0).toLocaleString('es-CO')}</td>
+                                <td>$${Number(producto.monto_pago || 0).toLocaleString('es-CO')}</td>
 								<td><span class="badge ${estadoClass}">${estado}</span></td>
 							</tr>
 						`;

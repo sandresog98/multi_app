@@ -13,24 +13,58 @@ class DetalleAsociado {
     }
 
     public function getCreditos(string $cedula): array {
-        $sql = "SELECT 
-                    a.numero AS numero_credito,
-                    a.tipopr AS tipo_prestamo,
-                    a.plazo,
-                    a.tasa,
-                    a.carter AS deuda_capital,
-                    m.sdomor AS saldo_mora,
-                    m.diav AS dias_mora,
-                    m.fechap AS fecha_pago
-                FROM sifone_cartera_aseguradora a
-                LEFT JOIN sifone_cartera_mora m
-                    ON m.cedula = a.cedula AND m.presta = a.numero
-                WHERE a.cedula = ?
-                ORDER BY a.numero";
+		$sql = "SELECT 
+					a.numero AS numero_credito,
+					a.tipopr AS tipo_prestamo,
+					a.plazo,
+					a.tasa,
+					a.carter AS deuda_capital,
+					a.valorc AS cuota,
+					dv.cuota AS valor_cuota,
+					dv.cuotas_pendientes AS cuotas_pendientes,
+					m.sdomor AS saldo_mora,
+					m.diav AS dias_mora,
+					COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago,
+					CASE 
+						WHEN m.diav IS NULL THEN 0
+						WHEN m.diav > 60 THEN ROUND(a.valorc * 0.08, 2)
+						WHEN m.diav > 50 THEN ROUND(a.valorc * 0.06, 2)
+						WHEN m.diav > 40 THEN ROUND(a.valorc * 0.05, 2)
+						WHEN m.diav > 30 THEN ROUND(a.valorc * 0.04, 2)
+						WHEN m.diav > 20 THEN ROUND(a.valorc * 0.03, 2)
+						WHEN m.diav > 11 THEN ROUND(a.valorc * 0.02, 2)
+						ELSE 0
+					END AS monto_cobranza
+				FROM sifone_cartera_aseguradora a
+				LEFT JOIN sifone_cartera_mora m
+					ON m.cedula = a.cedula AND m.presta = a.numero
+				LEFT JOIN sifone_datacredito_vw dv
+					ON CAST(dv.cedula AS UNSIGNED) = CAST(a.cedula AS UNSIGNED)
+					   AND CAST(dv.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
+				WHERE a.cedula = ?
+				ORDER BY a.numero";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
         return $stmt->fetchAll();
     }
+
+	public function getCreditosFinalizados(string $cedula): array {
+		$sql = "SELECT 
+					numero_credito,
+					fecha_pago,
+					desembolso_inicial,
+					saldo_capital,
+					cuota,
+					cuotas_iniciales,
+					cuotas_pendientes
+				FROM sifone_datacredito_vw
+				WHERE CAST(cedula AS UNSIGNED) = CAST(? AS UNSIGNED)
+				  AND estado_credito = 5 AND codeudor = 0
+				ORDER BY numero_credito";
+		$stmt = $this->conn->prepare($sql);
+		$stmt->execute([$cedula]);
+		return $stmt->fetchAll();
+	}
 
     public function getAsignaciones(string $cedula): array {
         $sql = "SELECT ap.id, ap.cedula, ap.producto_id, ap.dia_pago, ap.monto_pago, ap.estado_activo,
