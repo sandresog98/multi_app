@@ -237,6 +237,24 @@ CREATE TABLE IF NOT EXISTS sifone_datacredito (
   cc VARCHAR(50),
   cd DATE
 );
+DROP VIEW IF EXISTS sifone_datacredito_vw;
+CREATE VIEW sifone_datacredito_vw AS
+    SELECT
+        b AS cedula,
+        c AS numero_credito,
+        d AS nombre,
+        f AS fecha_emision,
+        h as codeudor,
+        m AS estado_credito,
+        q AS fecha_pago,
+        x AS desembolso_inicial,
+        z AS saldo_capital,
+        aa AS cuota,
+        ac AS cuotas_iniciales,
+        ad AS cuotas_pendientes
+    FROM sifone_datacredito
+;
+
 
 -- Tabla de usuarios para autenticación
 CREATE TABLE IF NOT EXISTS control_usuarios (

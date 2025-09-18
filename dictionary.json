@@ -86,6 +86,16 @@
                 "descripcion" : "Fecha de pago del crédito"
             }
         },
+        "sifone_datacredito" : {
+            "cedula" : {
+                "nombre" : "Cédula",
+                "descripcion" : "llave primaria de asociado"
+            },
+            "numero_credito" : {
+                "nombre" : "Crédito",
+                "descripcion" : "llave primaria de la crédito"
+            }
+        },
         "control_asociados" : {
             "cedula" : {
                 "nombre" : "Cédula",
@@ -158,7 +168,8 @@
         },
         "credito": {
             "sifone_cartera_mora": "presta",
-            "sifone_cartera_aseguradora": "numero"
+            "sifone_cartera_aseguradora": "numero",
+            "sifone_datacredito": "numero_credito"
         }
     }
 }
