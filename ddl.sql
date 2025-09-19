@@ -251,7 +251,10 @@ CREATE VIEW sifone_datacredito_vw AS
         z AS saldo_capital,
         aa AS cuota,
         ac AS cuotas_iniciales,
-        ad AS cuotas_pendientes
+        ad AS cuotas_pendientes,
+        az AS direccion,
+        ba AS email,
+        bb AS celular
     FROM sifone_datacredito
 ;
 
