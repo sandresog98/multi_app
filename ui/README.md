@@ -1,3 +1,8 @@
+## Plantillas de descarga
+
+- Guarde archivos de referencia/plantillas descargables en `ui/assets/plantillas/`.
+- Ejemplo: `ui/assets/plantillas/pse_plantilla.xls` se publica como `BASE_URL/assets/plantillas/pse_plantilla.xls` y se enlaza desde la UI.
+
 # 🌐 **UI Multi App v2 - Interfaz Web Completa**
 
 Sistema de interfaz web modular para gestión de oficinas, cobranza, usuarios y auditoría con autenticación robusta y control de acceso granular.

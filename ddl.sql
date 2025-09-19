@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS control_transaccion_detalle (
 CREATE TABLE IF NOT EXISTS cobranza_comunicaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asociado_cedula VARCHAR(20) NOT NULL,
-    tipo_comunicacion ENUM('Llamada','Mensaje de Texto','Whatsapp','Email') NOT NULL,
+    tipo_comunicacion VARCHAR(50) NOT NULL,
     estado ENUM('Sin comunicación','Informa de pago realizado','Comprometido a realizar el pago','Sin respuesta') NOT NULL,
     comentario TEXT NULL,
     fecha_comunicacion DATETIME NOT NULL,

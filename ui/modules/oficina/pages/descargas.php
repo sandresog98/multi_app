@@ -104,7 +104,7 @@ SELECT
       ELSE 0
     END
   ), 2) AS DECIMAL(12,2)) AS optional8,
-  DATE_FORMAT(LAST_DAY(CURDATE()), '%M %e de %Y') AS optional9,
+  DATE_FORMAT(COALESCE(m.fechap, dv.fecha_pago), '%M %e de %Y') AS optional9,
   CAST(
     (a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END)
     + ROUND(a.valorc * (
@@ -128,6 +128,9 @@ FROM control_asociados ca
 JOIN sifone_asociados sa ON sa.cedula = ca.cedula
 JOIN sifone_cartera_aseguradora a ON a.cedula = sa.cedula
 LEFT JOIN sifone_cartera_mora m ON m.cedula = a.cedula AND m.presta = a.numero
+LEFT JOIN sifone_datacredito_vw dv
+  ON CAST(dv.cedula AS UNSIGNED) = CAST(a.cedula AS UNSIGNED)
+ AND CAST(dv.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
 WHERE ca.estado_activo = TRUE
 
 ORDER BY 1, 4, 3
@@ -172,107 +175,42 @@ SQL;
       ];
     }
 
-    // Generar XLSX mínimo
-    $tmpXlsx = tempnam(sys_get_temp_dir(), 'xlsx_');
-    if (!class_exists('ZipArchive')) {
-      if (ob_get_length()) { @ob_end_clean(); }
-      http_response_code(500);
-      header('Content-Type: text/plain; charset=UTF-8');
-      echo "Error: La extensión ZIP de PHP no está habilitada.\n";
-      echo "Habilítela en php.ini (extension=zip) y reinicie Apache.";
-      exit;
-    }
-    $zip = new ZipArchive();
-    $zip->open($tmpXlsx, ZipArchive::OVERWRITE);
-
-    // Helpers
-    $colLetter = function($i){
-      $i = (int)$i; $letters = '';
-      while ($i >= 0) { $letters = chr($i % 26 + 65) . $letters; $i = intdiv($i, 26) - 1; }
-      return $letters;
-    };
-    $xmlHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
-
-    // [Content_Types].xml
-    $contentTypes = $xmlHeader.'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-      .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-      .'<Default Extension="xml" ContentType="application/xml"/>'
-      .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-      .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-      .'</Types>';
-    $zip->addFromString('[Content_Types].xml', $contentTypes);
-
-    // _rels/.rels
-    $rels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>'
-      .'</Relationships>';
-    $zip->addFromString('_rels/.rels', $rels);
-
-    // xl/workbook.xml
-    $workbook = $xmlHeader.'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
-      .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-      .'<sheets><sheet name="Hoja1" sheetId="1" r:id="rId1"/></sheets></workbook>';
-    $zip->addFromString('xl/workbook.xml', $workbook);
-
-    // xl/_rels/workbook.xml.rels
-    $wbRels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
-      .'</Relationships>';
-    $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
-
-    // xl/worksheets/sheet1.xml (inline strings) con anchos de columna
-    $widths = [12, 28, 10, 26, 12, 14, 14, 14, 14, 14, 14, 14, 22, 14, 12, 12, 12, 12];
-    $colsXml = '<cols>';
-    for ($i=0; $i<count($widths); $i++) {
-      $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
-    }
-    $colsXml .= '</cols>';
-    $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'.$colsXml.'<sheetData>';
-    for ($r = 0; $r < count($xlsxRows); $r++) {
-      $rowXml = '<row r="'.($r+1).'">';
-      $row = $xlsxRows[$r];
-      $isHeader = ($r === 0);
-      // Columnas que deben forzarse como texto con coma decimal (filas de datos)
-      $commaCols = [5,6,7,8,9,10,11,13,15,16,17]; // índices 0-based en $xlsxRows
-      // Columnas siempre string
-      $stringCols = [1,3,12,14];
-      for ($c = 0; $c < count($row); $c++) {
-        $cellRef = $colLetter($c).($r+1);
-        $val = $row[$c];
-        if ($isHeader) {
-          // Encabezados: siempre texto literal
-          // Evitar que Excel interprete encabezados como números o fechas
-          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
-          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
-        } elseif (in_array($c, $commaCols, true)) {
-          // Formatear con coma decimal y forzar como texto
-          $textVal = number_format((float)$val, 2, ',', '');
-          $safe = htmlspecialchars($textVal, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
-          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
-        } elseif (in_array($c, $stringCols, true)) {
-          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
-          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
-        } elseif (is_numeric($val)) {
-          $rowXml .= '<c r="'.$cellRef.'"><v>'.(0+$val).'</v></c>';
-        } else {
-          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
-          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
-        }
-      }
-      $rowXml .= '</row>';
-      $sheet .= $rowXml;
-    }
-    $sheet .= '</sheetData></worksheet>';
-    $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
-
-    $zip->close();
-
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment; filename="pse.xlsx"');
+    // Generar XLS (BIFF) real para evitar advertencias de Excel
+    if (ob_get_length()) { @ob_end_clean(); }
+    header('Content-Type: application/vnd.ms-excel');
+    header('Content-Disposition: attachment; filename="pse.xls"');
     header('Pragma: no-cache');
     header('Expires: 0');
-    readfile($tmpXlsx);
-    @unlink($tmpXlsx);
+
+    $xlsBOF = function(){ echo pack('vvvvvv', 0x809, 0x0008, 0x0000, 0x0010, 0x0000, 0x0000); };
+    $xlsEOF = function(){ echo pack('vv', 0x000A, 0x0000); };
+    $xlsLabel = function($row, $col, $text){ $xf=0x0000; $str = utf8_decode((string)$text); $len = strlen($str); echo pack('vvvvv', 0x0204, 8+$len, $row, $col, $xf) . pack('v', $len) . $str; };
+
+    $xlsBOF();
+    $moneyCols = [5,6,7,8,9,10,11,13,15,16,17];
+    for ($r = 0; $r < count($xlsxRows); $r++) {
+      $row = $xlsxRows[$r];
+      for ($c = 0; $c < count($row); $c++) {
+        $val = $row[$c];
+        if ($r === 0) {
+          $xlsLabel($r, $c, $val);
+        } else {
+          if (in_array($c, $moneyCols, true)) {
+            $txt = number_format((float)$val, 2, ',', '');
+            $xlsLabel($r, $c, $txt);
+          } else {
+            // Forzar invoice_id (col 4, index 4) como número entero
+            if ($c === 4 && is_numeric($val)) {
+              $intVal = (int)$val;
+              $xlsLabel($r, $c, (string)$intVal);
+            } else {
+              $xlsLabel($r, $c, (string)$val);
+            }
+          }
+        }
+      }
+    }
+    $xlsEOF();
     exit;
   } elseif ($type === 'mora') {
     $sql = <<<SQL
@@ -472,7 +410,12 @@ include '../../../views/layouts/header.php';
           <div class="col-md-3 align-self-end">
             <input type="hidden" name="download" value="1">
             <input type="hidden" name="type" value="pse">
-            <button class="btn btn-primary w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLSX (pse.xlsx)</button>
+            <div class="d-grid gap-2 d-md-flex">
+              <button class="btn btn-primary"><i class="fas fa-file-excel me-1"></i>Descargar XLS (pse.xls)</button>
+              <a class="btn btn-outline-secondary" href="<?php echo getBaseUrl(); ?>assets/plantillas/pse_plantilla.xls" download>
+                <i class="fas fa-download me-1"></i>Descargar plantilla
+              </a>
+            </div>
           </div>
         </form>
       </div></div>
