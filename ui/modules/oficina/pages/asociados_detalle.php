@@ -241,6 +241,7 @@ include '../../../views/layouts/header.php';
         <?php endif; ?>
       </div>
 
+      <?php if (!empty($txListado['items'])): ?>
       <div class="row g-3 mt-1" id="txlist">
         <div class="col-12">
           <div class="card"><div class="card-header"><strong>Transacciones creadas</strong></div><div class="card-body">
@@ -336,6 +337,7 @@ include '../../../views/layouts/header.php';
           </div></div>
         </div>
       </div>
+      <?php endif; ?>
 
     </main>
   </div>

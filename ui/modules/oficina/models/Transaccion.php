@@ -95,6 +95,7 @@ class Transaccion {
                            b.valor_consignacion AS valor,
                            b.fecha,
                            b.descripcion,
+                           b.tipo_transaccion AS tipo_transaccion,
                            c.cedula AS cedula_asignada,
                            COALESCE(u.utilizado,0) AS utilizado,
                            GREATEST(b.valor_consignacion - COALESCE(u.utilizado,0), 0) AS restante

@@ -161,7 +161,7 @@ include '../../../views/layouts/header.php';
             </div>
             <div class="mb-2 d-none" id="pagoCashBox">
               <div class="d-flex justify-content-between align-items-center">
-                <label class="form-label mb-0">Cash/QR confirmados</label>
+                <label class="form-label mb-0">Cash/QR/Transf. AV confirmados</label>
                 <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalCash"><i class="fas fa-list"></i></button>
               </div>
               <select id="confiarId" class="form-select form-select-sm" disabled title="Usa la lista para seleccionar">
@@ -290,14 +290,24 @@ include '../../../views/layouts/header.php';
 <div class="modal-dialog modal-xl"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>PSE relacionados</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
-      <form class="row g-2 mb-2" onsubmit="return false">
-        <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
-        <div class="col-md-3"><label class="form-label small">Referencia 2 (CC)</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="CC"></div>
-        <div class="col-md-2"><label class="form-label small">Referencia 3 (N)</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="N"></div>
-        <div class="col-md-2"><label class="form-label small">PSE ID</label><input class="form-control form-control-sm" id="pseFiltroId" placeholder="pse_id"></div>
-        <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPse()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+      <form class="mb-2" onsubmit="return false">
+        <div class="row g-2">
+          <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
+          <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="Cédula"></div>
+          <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="Nombre"></div>
+        </div>
+        <div class="row g-2 mt-1">
+          <div class="col-md-3"><label class="form-label small">CUS ID</label><input class="form-control form-control-sm" id="pseFiltroId" placeholder="CUS ID"></div>
+          <div class="col-md-2"><label class="form-label small">Estado</label>
+            <select class="form-select form-select-sm" id="pseFiltroEstado">
+              <option value="disp" selected>Disponibles</option>
+              <option value="comp">Completadas</option>
+              <option value="todas">Todas</option>
+            </select>
+          </div>
+          <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPse()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+        </div>
       </form>
-      <div class="small text-muted mb-1">CC/N corresponde a Referencia 2 / Referencia 3 del PSE.</div>
       <div class="table-responsive">
         <table class="table table-sm table-hover align-middle">
           <thead class="table-light"><tr><th>PSE</th><th>Fecha</th><th>Valor</th><th>Usado</th><th>Restante</th><th>CC/N</th><th></th></tr></thead>
@@ -314,12 +324,31 @@ include '../../../views/layouts/header.php';
 <div class="modal-dialog modal-xl"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>Cash/QR confirmados</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
-      <form class="row g-2 mb-2" onsubmit="return false">
-        <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
-        <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula"></div>
-        <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
-        <div class="col-md-2"><label class="form-label small">Confiar ID</label><input class="form-control form-control-sm" id="cashFiltroId" placeholder="confiar_id"></div>
-        <div class="col-md-1 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarCash()"><i class="fas fa-filter"></i></button></div>
+      <form class="mb-2" onsubmit="return false">
+        <div class="row g-2">
+          <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
+          <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula"></div>
+          <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
+        </div>
+        <div class="row g-2 mt-1">
+          <div class="col-md-2"><label class="form-label small">Confiar ID</label><input class="form-control form-control-sm" id="cashFiltroId" placeholder="confiar_id"></div>
+          <div class="col-md-2"><label class="form-label small">Tipo</label>
+            <select class="form-select form-select-sm" id="cashFiltroTipo">
+              <option value="">Todos</option>
+              <option value="Pago Efectivo">Pago Efectivo</option>
+              <option value="Pago QR">Pago QR</option>
+              <option value="Transf. Agencia Virtual">Transf. Agencia Virtual</option>
+            </select>
+          </div>
+          <div class="col-md-2"><label class="form-label small">Estado</label>
+            <select class="form-select form-select-sm" id="cashFiltroEstado">
+              <option value="disp" selected>Disponibles</option>
+              <option value="comp">Completadas</option>
+              <option value="todas">Todas</option>
+            </select>
+          </div>
+          <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarCash()"><i class="fas fa-filter"></i>Filtrar</button></div>
+        </div>
       </form>
       <div class="small text-muted mb-1">Se muestra la descripción del movimiento y la cédula asignada en confirmación.</div>
       <div class="table-responsive">
@@ -434,8 +463,9 @@ function renderPseList(list){
                     <td>$${Number(r.utilizado||0).toLocaleString()}</td>
                     <td>$${Number(r.restante||0).toLocaleString()}</td>
                     <td>${r.referencia_2||''} / ${r.referencia_3||''}</td>
-                    <td class="text-end"><button class="btn btn-sm btn-primary" ${Number(r.restante||0)<=0?'disabled':''} data-bs-dismiss="modal">Seleccionar</button></td>`;
-    tr.querySelector('button').addEventListener('click', ()=> seleccionarPse(r.pse_id, Number(r.restante||r.valor||0)));
+                    <td class="text-end">${Number(r.restante||0)<=0?'<span class="badge bg-success">Completada</span>':'<button class="btn btn-sm btn-primary" data-bs-dismiss="modal">Seleccionar</button>'}</td>`;
+    const btn = tr.querySelector('button');
+    if (btn) btn.addEventListener('click', ()=> seleccionarPse(r.pse_id, Number(r.restante||r.valor||0)));
     body.appendChild(tr);
   });
 }
@@ -449,10 +479,11 @@ function renderCashList(list){
                     <td>$${Number(r.valor||0).toLocaleString()}</td>
                     <td>$${Number(r.utilizado||0).toLocaleString()}</td>
                     <td>$${Number(r.restante||0).toLocaleString()}</td>
-                    <td class="text-truncate" style="max-width:240px">${r.descripcion||''}</td>
+                    <td class=\"text-truncate\" style=\"max-width:240px\">${r.descripcion||''}</td>
                     <td>${r.cedula_asignada||''}</td>
-                    <td class="text-end"><button class="btn btn-sm btn-primary" ${Number(r.restante||0)<=0?'disabled':''} data-bs-dismiss="modal">Seleccionar</button></td>`;
-    tr.querySelector('button').addEventListener('click', ()=> seleccionarCash(r.confiar_id, Number(r.restante||r.valor||0)));
+                    <td class="text-end">${Number(r.restante||0)<=0?'<span class="badge bg-success">Completada</span>':'<button class="btn btn-sm btn-primary" data-bs-dismiss="modal">Seleccionar</button>'}</td>`;
+    const btn = tr.querySelector('button');
+    if (btn) btn.addEventListener('click', ()=> seleccionarCash(r.confiar_id, Number(r.restante||r.valor||0)));
     body.appendChild(tr);
   });
 }
@@ -462,7 +493,10 @@ function filtrarPse(){
   const ref2 = document.getElementById('pseFiltroRef2').value.trim();
   const ref3 = document.getElementById('pseFiltroRef3').value.trim();
   const pid = document.getElementById('pseFiltroId').value.trim();
+  const estSel = (document.getElementById('pseFiltroEstado')?.value || 'disp');
   let list = pagosPse.slice();
+  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
+  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
   if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
   if (ref2) list = list.filter(r => String(r.referencia_2||'').includes(ref2));
   if (ref3) list = list.filter(r => String(r.referencia_3||'').includes(ref3));
@@ -474,17 +508,22 @@ function filtrarCash(){
   const ced = document.getElementById('cashFiltroCedula').value.trim();
   const desc = document.getElementById('cashFiltroDesc').value.trim().toLowerCase();
   const cid = document.getElementById('cashFiltroId').value.trim();
+  const tipo = document.getElementById('cashFiltroTipo').value;
+  const estSel = (document.getElementById('cashFiltroEstado')?.value || 'disp');
   let list = pagosCash.slice();
+  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
+  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
   if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
   if (ced) list = list.filter(r => String(r.cedula_asignada||'').includes(ced));
   if (desc) list = list.filter(r => String(r.descripcion||'').toLowerCase().includes(desc));
   if (cid) list = list.filter(r => String(r.confiar_id||'').includes(cid));
+  if (tipo) list = list.filter(r => String(r.tipo_transaccion||'') === tipo);
   renderCashList(list);
 }
 
 // Inicializar listas al abrir modales
-document.getElementById('modalPse')?.addEventListener('shown.bs.modal', ()=> { renderPseList(pagosPse); });
-document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { renderCashList(pagosCash); });
+document.getElementById('modalPse')?.addEventListener('shown.bs.modal', ()=> { filtrarPse(); });
+document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { filtrarCash(); });
 
 async function guardarTransaccion(){
   const cedula = '<?php echo htmlspecialchars($cedula); ?>';

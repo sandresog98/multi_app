@@ -166,6 +166,8 @@ class PagosProcessor(BaseProcessor):
             # Aceptar variantes con/ sin acento, mayúsculas, etc.
             if 'consignacion en cuenta efectivo' in desc_norm:
                 return 'Pago Efectivo'
+            if 'consignacion por transf. agencia virtual' in desc_norm:
+                return 'Transf. Agencia Virtual'
         return ''
     
     def generate_confiar_id(self, row: pd.Series, seq_por_fecha: int) -> str:
