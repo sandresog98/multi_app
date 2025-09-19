@@ -189,8 +189,8 @@ class Ticketera {
         // Total creados
         $q1 = $this->conn->query("SELECT COUNT(*) AS c FROM ticketera_tickets");
         $kpis['tickets_creados'] = (int)($q1->fetch()['c'] ?? 0);
-        // Abiertos (no aceptados)
-        $q2 = $this->conn->query("SELECT COUNT(*) AS c FROM ticketera_tickets WHERE estado <> 'Aceptado'");
+        // Abiertos (excluye Aceptado y Rechazado)
+        $q2 = $this->conn->query("SELECT COUNT(*) AS c FROM ticketera_tickets WHERE estado NOT IN ('Aceptado','Rechazado')");
         $kpis['tickets_abiertos'] = (int)($q2->fetch()['c'] ?? 0);
         // Promedio horas abierto: desde creación hasta Aceptado, sólo tickets aceptados
         $sqlAvg = "SELECT AVG(TIMESTAMPDIFF(HOUR, t.fecha_creacion, e.fecha)) AS avg_hours
@@ -225,7 +225,7 @@ class Ticketera {
         $stmt = $this->conn->query("SELECT t.responsable_id AS id, COALESCE(u.nombre_completo,'Sin asignar') AS nombre, COUNT(*) AS cantidad
             FROM ticketera_tickets t
             LEFT JOIN control_usuarios u ON u.id = t.responsable_id
-            WHERE t.estado <> 'Aceptado'
+            WHERE t.estado NOT IN ('Aceptado','Rechazado')
             GROUP BY t.responsable_id, u.nombre_completo
             ORDER BY cantidad DESC");
         return $stmt->fetchAll();
