@@ -186,7 +186,7 @@ include '../../../views/layouts/header.php';
       <div class="card mt-3"><div class="card-header"><strong><?php echo !empty($cedula) ? 'Transacciones creadas' : 'Últimas transacciones'; ?></strong></div><div class="card-body">
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle">
-            <thead class="table-light"><tr><th>ID</th><th>Asociado</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
+            <thead class="table-light"><tr><th>ID</th><th>Asociado</th><th>Origen / Ref</th><th>Recibo Sifone</th><th>Total asignado</th><th>Items</th><th></th></tr></thead>
             <tbody>
             <?php $txModals = []; foreach (($listado['items'] ?? []) as $tx): ?>
               <tr>
@@ -195,20 +195,20 @@ include '../../../views/layouts/header.php';
                   <div class="small fw-semibold"><?php echo htmlspecialchars($tx['asociado_nombre'] ?? ''); ?></div>
                   <div class="small text-muted"><?php echo htmlspecialchars($tx['cedula'] ?? ''); ?></div>
                 </td>
-                <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
                 <td>
-                  <?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?>
-                  <?php if (!empty($tx['ref_fecha'])): ?>
-                    <small class="text-muted"> — <?php echo htmlspecialchars($tx['ref_fecha']); ?></small>
-                  <?php endif; ?>
+                  <div class="small">
+                    <div class="text-muted"><?php echo htmlspecialchars(strtolower($tx['origen_pago'])); ?></div>
+                    <div><strong><?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?></strong></div>
+                    <?php $miniFecha = $tx['ref_fecha'] ?: $tx['fecha_creacion']; if (!empty($miniFecha)): ?>
+                      <div class="text-muted"><?php echo htmlspecialchars($miniFecha); ?></div>
+                    <?php endif; ?>
+                  </div>
                 </td>
                 <td><?php echo htmlspecialchars($tx['recibo_caja_sifone'] ?? ''); ?></td>
-                <td><?php echo '$'.number_format((float)$tx['valor_pago_total'],0); ?></td>
                 <td><?php echo '$'.number_format((float)$tx['total_asignado'],0); ?></td>
                 <td><?php echo (int)$tx['items']; ?></td>
-                <td><small><?php echo htmlspecialchars($tx['fecha_creacion']); ?></small></td>
                 <td class="text-end">
-                  <a href="#modalTx<?php echo (int)$tx['id']; ?>" data-bs-toggle="modal" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i> Ver detalle</a>
+                  <a href="#modalTx<?php echo (int)$tx['id']; ?>" data-bs-toggle="modal" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
                   <?php if (!empty($cedula)): ?>
                   <form method="POST" onsubmit="return confirm('¿Eliminar transacción?');" class="d-inline">
                     <input type="hidden" name="action" value="eliminar">
@@ -221,7 +221,7 @@ include '../../../views/layouts/header.php';
               <?php if (!empty($cedula)): ?>
               <?php $txd_inline = $model->getTransaccionDetalles((int)$tx['id']); ?>
               <tr class="table-light">
-                <td colspan="9">
+                <td colspan="7">
                   <div class="table-responsive">
                     <table class="table table-sm mb-0 align-middle small">
                       <thead class="table-light"><tr>
