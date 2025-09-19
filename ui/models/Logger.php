@@ -86,17 +86,27 @@ class Logger {
         if (!empty($filtros['fecha_hasta'])) { $where[] = "DATE(l.timestamp) <= ?"; $params[] = $filtros['fecha_hasta']; }
 
         $whereClause = !empty($where) ? ("WHERE " . implode(" AND ", $where)) : "";
-        $limit = (int)($filtros['limite'] ?? 200);
+        $limit = (int)($filtros['limite'] ?? 50);
+        $page = max(1, (int)($filtros['page'] ?? 1));
+        $offset = ($page - 1) * $limit;
 
         $sql = "SELECT l.*, u.usuario, u.nombre_completo 
                 FROM control_logs l 
                 LEFT JOIN control_usuarios u ON l.id_usuario = u.id 
                 $whereClause 
                 ORDER BY l.timestamp DESC 
-                LIMIT $limit";
+                LIMIT $limit OFFSET $offset";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Total para paginación
+        $countSql = "SELECT COUNT(*) c FROM control_logs l $whereClause";
+        $cstmt = $this->conn->prepare($countSql);
+        $cstmt->execute($params);
+        $total = (int)($cstmt->fetch(PDO::FETCH_ASSOC)['c'] ?? 0);
+
+        return [ 'items' => $rows, 'total' => $total, 'pages' => $limit>0 ? (int)ceil($total/$limit) : 1, 'current_page' => $page ];
     }
 
     public function getEstadisticas($fecha_desde = null, $fecha_hasta = null) {

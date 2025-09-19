@@ -18,9 +18,15 @@ $filtros = [];
 foreach (['usuario','modulo','accion','nivel','fecha_desde','fecha_hasta'] as $k) {
     if (!empty($_GET[$k])) $filtros[$k] = $_GET[$k];
 }
-$filtros['limite'] = 200;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$filtros['limite'] = 50;
+$filtros['page'] = $page;
 
-$logs = $logger->getLogs($filtros);
+$result = $logger->getLogs($filtros);
+$logs = $result['items'] ?? [];
+$total = (int)($result['total'] ?? 0);
+$pages = (int)($result['pages'] ?? 1);
+$cur = (int)($result['current_page'] ?? $page);
 $estadisticas = $logger->getEstadisticas($_GET['fecha_desde'] ?? null, $_GET['fecha_hasta'] ?? null);
 
 // Listas para filtros
@@ -107,6 +113,38 @@ include '../../../views/layouts/header.php';
     </main>
   </div>
 </div>
+
+<?php if (($pages ?? 1) > 1): ?>
+<nav class="mt-3"><ul class="pagination pagination-sm justify-content-center">
+  <?php
+    $cur = $cur ?? 1; $pages = $pages ?? 1;
+    $window = 2; // mostrar ±2 alrededor de la actual
+    $start = max(1, $cur - $window);
+    $end = min($pages, $cur + $window);
+    $renderLink = function($i, $label=null, $active=false, $disabled=false){
+      $label = $label ?? $i;
+      $cls = 'page-item'.($active?' active':'').($disabled?' disabled':'');
+      echo '<li class="'.$cls.'">';
+      if ($disabled) { echo '<span class="page-link">'.$label.'</span>'; }
+      else { $q=$_GET; $q['page']=$i; echo '<a class="page-link" href="?'.http_build_query($q).'">'.$label.'</a>'; }
+      echo '</li>';
+    };
+    // Botón anterior
+    $renderLink(max(1, $cur-1), '«', false, $cur<=1);
+    // Primera página
+    $renderLink(1, '1', $cur==1);
+    if ($start > 2) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+    for ($i=$start; $i<=$end; $i++){
+      if ($i==1 || $i==$pages) continue;
+      $renderLink($i, null, $i==$cur);
+    }
+    if ($end < $pages-1) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+    if ($pages>1) $renderLink($pages, (string)$pages, $cur==$pages);
+    // Botón siguiente
+    $renderLink(min($pages, $cur+1), '»', false, $cur>=$pages);
+  ?>
+</ul></nav>
+<?php endif; ?>
 
 <!-- Modal Detalle -->
 <div class="modal fade" id="logDetailModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">

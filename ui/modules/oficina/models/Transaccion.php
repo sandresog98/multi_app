@@ -170,7 +170,7 @@ class Transaccion {
         if (!empty($cedula)) { $where[] = 't.cedula = ?'; $params[] = $cedula; }
         $whereClause = empty($where) ? '' : ('WHERE '.implode(' AND ', $where));
 
-        $sql = "SELECT t.id, t.cedula, t.origen_pago, t.pse_id, t.confiar_id, t.recibo_caja_sifone, t.valor_pago_total, t.fecha_creacion,
+        $sql = "SELECT t.id, t.cedula, sa.nombre AS asociado_nombre, t.origen_pago, t.pse_id, t.confiar_id, t.recibo_caja_sifone, t.valor_pago_total, t.fecha_creacion,
                        COALESCE(SUM(d.valor_asignado),0) AS total_asignado,
                        COUNT(d.id) AS items,
                        COALESCE(DATE(p.fecha_hora_resolucion_de_la_transaccion), b.fecha) AS ref_fecha
@@ -178,6 +178,7 @@ class Transaccion {
                 LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
                 LEFT JOIN banco_pse p ON p.pse_id = t.pse_id
                 LEFT JOIN banco_confiar b ON b.confiar_id = t.confiar_id
+                LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
                 $whereClause
                 GROUP BY t.id
                 ORDER BY t.fecha_creacion DESC

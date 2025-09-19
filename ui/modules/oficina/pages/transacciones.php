@@ -28,7 +28,8 @@ if ($cedula !== '') {
   $asociadoInfo = $detModel->getAsociadoInfo($cedula);
 }
 // Siempre listar transacciones (filtradas por cédula si aplica)
-$listado = $model->listTransacciones($cedula ?: null, $tpage, 10);
+$listadoLimit = empty($cedula) ? 10 : 10;
+$listado = $model->listTransacciones($cedula ?: null, $tpage, $listadoLimit);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $action = $_POST['action'] ?? '';
@@ -182,15 +183,18 @@ include '../../../views/layouts/header.php';
       </div>
       <?php endif; ?>
 
-      <?php if (!empty($cedula)): ?>
-      <div class="card mt-3"><div class="card-header"><strong>Transacciones creadas</strong></div><div class="card-body">
+      <div class="card mt-3"><div class="card-header"><strong><?php echo !empty($cedula) ? 'Transacciones creadas' : 'Últimas transacciones'; ?></strong></div><div class="card-body">
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle">
-            <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
+            <thead class="table-light"><tr><th>ID</th><th>Asociado</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>
             <tbody>
             <?php $txModals = []; foreach (($listado['items'] ?? []) as $tx): ?>
               <tr>
                 <td><?php echo (int)$tx['id']; ?></td>
+                <td>
+                  <div class="small fw-semibold"><?php echo htmlspecialchars($tx['asociado_nombre'] ?? ''); ?></div>
+                  <div class="small text-muted"><?php echo htmlspecialchars($tx['cedula'] ?? ''); ?></div>
+                </td>
                 <td><span class="badge bg-secondary"><?php echo htmlspecialchars($tx['origen_pago']); ?></span></td>
                 <td>
                   <?php echo htmlspecialchars($tx['pse_id'] ?: $tx['confiar_id']); ?>
@@ -204,14 +208,17 @@ include '../../../views/layouts/header.php';
                 <td><?php echo (int)$tx['items']; ?></td>
                 <td><small><?php echo htmlspecialchars($tx['fecha_creacion']); ?></small></td>
                 <td class="text-end">
-                  <a href="#modalTx<?php echo (int)$tx['id']; ?>" data-bs-toggle="modal" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i></a>
+                  <a href="#modalTx<?php echo (int)$tx['id']; ?>" data-bs-toggle="modal" class="btn btn-sm btn-outline-info"><i class="fas fa-eye"></i> Ver detalle</a>
+                  <?php if (!empty($cedula)): ?>
                   <form method="POST" onsubmit="return confirm('¿Eliminar transacción?');" class="d-inline">
                     <input type="hidden" name="action" value="eliminar">
                     <input type="hidden" name="id" value="<?php echo (int)$tx['id']; ?>">
                     <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
                   </form>
+                  <?php endif; ?>
                 </td>
               </tr>
+              <?php if (!empty($cedula)): ?>
               <?php $txd_inline = $model->getTransaccionDetalles((int)$tx['id']); ?>
               <tr class="table-light">
                 <td colspan="9">
@@ -241,6 +248,7 @@ include '../../../views/layouts/header.php';
                   </div>
                 </td>
               </tr>
+              <?php endif; ?>
               <?php ob_start(); ?>
               <div class="modal fade" id="modalTx<?php echo (int)$tx['id']; ?>" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Detalle transacción #<?php echo (int)$tx['id']; ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -273,13 +281,35 @@ include '../../../views/layouts/header.php';
         <?php echo implode('', $txModals); ?>
         <?php if ((($listado['pages'] ?? 1)) > 1): $tp=(int)$listado['current_page']; $pgs=(int)$listado['pages']; ?>
           <nav><ul class="pagination pagination-sm justify-content-center">
-            <?php for ($i=1;$i<=$pgs;$i++): ?>
-              <li class="page-item <?php echo $i==$tp?'active':''; ?>"><a class="page-link" href="?cedula=<?php echo urlencode($cedula); ?>&tpage=<?php echo $i; ?>#txlist"><?php echo $i; ?></a></li>
-            <?php endfor; ?>
+            <?php
+              $window = 2;
+              $start = max(1, $tp - $window);
+              $end = min($pgs, $tp + $window);
+              $buildLink = function($i, $label=null, $active=false, $disabled=false) use ($cedula){
+                $label = $label ?? $i;
+                $cls = 'page-item' . ($active?' active':'') . ($disabled?' disabled':'');
+                echo '<li class="'.$cls.'">';
+                if ($disabled) { echo '<span class="page-link">'.$label.'</span>'; }
+                else { echo '<a class="page-link" href="?cedula='.urlencode($cedula).'&tpage='.$i.'#txlist">'.$label.'</a>'; }
+                echo '</li>';
+              };
+              // Prev
+              $buildLink(max(1,$tp-1), '«', false, $tp<=1);
+              // First
+              $buildLink(1, '1', $tp==1);
+              if ($start > 2) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+              for ($i=$start; $i<=$end; $i++){
+                if ($i==1 || $i==$pgs) continue;
+                $buildLink($i, null, $i==$tp);
+              }
+              if ($end < $pgs-1) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
+              if ($pgs>1) $buildLink($pgs, (string)$pgs, $tp==$pgs);
+              // Next
+              $buildLink(min($pgs,$tp+1), '»', false, $tp>=$pgs);
+            ?>
           </ul></nav>
         <?php endif; ?>
       </div></div>
-      <?php endif; ?>
 
     </main>
   </div>
