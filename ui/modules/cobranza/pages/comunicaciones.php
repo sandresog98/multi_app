@@ -208,12 +208,16 @@ function tiempoRelativo($fecha) {
 							<div class="row g-3">
 								<div class="col-md-4">
 									<label class="form-label">Tipo de comunicación</label>
-									<select class="form-select" name="tipo" required>
-										<option value="Llamada">Llamada</option>
-										<option value="Mensaje de Texto">Mensaje de Texto</option>
-										<option value="Whatsapp">Whatsapp</option>
-										<option value="Email">Email</option>
-									</select>
+                                    <select class="form-select" name="tipo" required>
+                                        <option value="Llamada">Llamada</option>
+                                        <option value="Mensaje de Texto">Mensaje de Texto</option>
+                                        <option value="Whatsapp">Whatsapp</option>
+                                        <option value="Email">Email</option>
+                                        <option value="Codeudor - Llamada">Codeudor - Llamada</option>
+                                        <option value="Codeudor - Mensaje de Texto">Codeudor - Mensaje de Texto</option>
+                                        <option value="Codeudor - Whatsapp">Codeudor - Whatsapp</option>
+                                        <option value="Codeudor - Email">Codeudor - Email</option>
+                                    </select>
 								</div>
 								<div class="col-md-4">
 									<label class="form-label">Estado</label>
@@ -349,11 +353,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const saldoMora = Number(credito.saldo_mora || 0);
                         const montoCob = Number(credito.monto_cobranza || 0);
                         const pagoMin = (saldoMora>0?saldoMora:valorCuota) + montoCob;
-						html += `
-							<tr>
-								<td>${credito.numero_credito || ''}</td>
-								<td>${credito.tipo_prestamo || ''}</td>
-								<td>${Number(credito.plazo || 0)}</td>
+                        html += `
+                            <tr>
+                                <td>${credito.numero_credito || ''}</td>
+                                <td>${credito.tipo_prestamo || ''}</td>
+                                <td>${Number(credito.plazo || 0)}</td>
                                 <td>$${valorCuota.toLocaleString('es-CO')}</td>
                                 <td>${cuotasPend}</td>
                                 <td>${(Number(credito.tasa || 0) * 100).toFixed(2)}%</td>
@@ -363,8 +367,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>$${montoCob.toLocaleString('es-CO')}</td>
                                 <td>$${pagoMin.toLocaleString('es-CO')}</td>
                                 <td>${fechaPago}</td>
-							</tr>
-						`;
+                            </tr>
+                            ${(credito.codeudor_nombre||credito.codeudor_celular||credito.codeudor_email||credito.codeudor_direccion)?`
+                            <tr class="table-light">
+                                <td colspan="12">
+                                    <div class="small text-muted">Codeudor: <strong>${(credito.codeudor_nombre||'').replace(/</g,'&lt;')}</strong> · Teléfono: <strong>${(credito.codeudor_celular||'')}</strong> · Email: <strong>${(credito.codeudor_email||'')}</strong> · Dirección: <strong>${(credito.codeudor_direccion||'').replace(/</g,'&lt;')}</strong></div>
+                                </td>
+                            </tr>`:''}
+                        `;
 					}
 					
 					html += `
