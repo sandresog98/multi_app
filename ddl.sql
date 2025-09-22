@@ -585,6 +585,8 @@ CREATE TABLE IF NOT EXISTS creditos_solicitudes (
     archivo_estudio VARCHAR(255) NULL,
     archivo_pagare_pdf VARCHAR(255) NULL,
     archivo_amortizacion VARCHAR(255) NULL,
+    archivo_libranza VARCHAR(255) NULL,
+    numero_credito_sifone VARCHAR(50) NULL,
     creado_por INT NULL,
     aprobado_por INT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

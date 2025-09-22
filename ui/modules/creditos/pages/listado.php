@@ -96,7 +96,7 @@ async function load(){
         `<button class=\"btn btn-outline-primary\" onclick=\"abrirDetalle(${it.id})\" title=\"Ver detalle\"><i class=\"fas fa-eye\"></i></button>`+
         (it.estado==='Creado'?`<button class=\"btn btn-outline-secondary\" onclick=\"abrirModalArchivo(${it.id},'Con Datacrédito','archivo_datacredito')\" title=\"Adjuntar Datacrédito (PDF)\"><i class=\"fas fa-file-upload\"></i></button>`:'')+
         (it.estado==='Aprobado'?`<button class=\"btn btn-outline-secondary\" onclick=\"abrirModalArchivo(${it.id},'Con Estudio','archivo_estudio')\" title=\"Adjuntar Estudio (PDF)\"><i class=\"fas fa-search\"></i></button>`:'')+
-        (it.estado==='Con Estudio'?`<button class=\"btn btn-outline-secondary\" onclick=\"abrirModalGuardado(${it.id})\" title=\"Adjuntar Pagaré y Amortización (PDF)\"><i class=\"fas fa-save\"></i></button>`:'')+
+        (it.estado==='Con Estudio'?`<button class=\"btn btn-outline-secondary\" onclick=\"abrirModalGuardado(${it.id})\" title=\"Adjuntar Pagaré, Amortización y Libranza (PDF)\"><i class=\"fas fa-save\"></i></button>`:'')+
         (canApprove && it.estado==='Con Datacrédito'?`<button class=\"btn btn-outline-success\" onclick=\"cambiar(${it.id},'Aprobado')\" title=\"Aprobar\"><i class=\"fas fa-check\"></i></button>`:'')+
         (canApprove && it.estado==='Con Datacrédito'?`<button class=\"btn btn-outline-danger\" onclick=\"cambiar(${it.id},'Rechazado')\" title=\"Rechazar\"><i class=\"fas fa-times\"></i></button>`:'')+
       `</div>`;
@@ -153,16 +153,17 @@ function abrirModalArchivo(id,estado,campo){
 }
 
 function abrirModalGuardado(id){
-  const html = `<div class=\"modal fade\" id=\"mGuardar\" tabindex=\"-1\"><div class=\"modal-dialog\"><div class=\"modal-content\"><div class=\"modal-header\"><h5 class=\"modal-title\">Adjuntar Pagaré y Amortización</h5><button class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div><div class=\"modal-body\"><div class=\"mb-3\"><label class=\"form-label\">Pagaré (PDF)</label><input type=\"file\" class=\"form-control\" id=\"pagare\" accept=\".pdf\"></div><div class=\"mb-3\"><label class=\"form-label\">Amortización (PDF)</label><input type=\"file\" class=\"form-control\" id=\"amort\" accept=\".pdf\"></div></div><div class=\"modal-footer\"><button class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancelar</button><button class=\"btn btn-primary\" id=\"btnGuardarArch\">Guardar</button></div></div></div></div>`;
+  const html = `<div class=\"modal fade\" id=\"mGuardar\" tabindex=\"-1\"><div class=\"modal-dialog\"><div class=\"modal-content\"><div class=\"modal-header\"><h5 class=\"modal-title\">Adjuntar Pagaré, Amortización y Libranza</h5><button class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div><div class=\"modal-body\"><div class=\"mb-3\"><label class=\"form-label\">Pagaré (PDF)</label><input type=\"file\" class=\"form-control\" id=\"pagare\" accept=\".pdf\"></div><div class=\"mb-3\"><label class=\"form-label\">Amortización (PDF)</label><input type=\"file\" class=\"form-control\" id=\"amort\" accept=\".pdf\"></div><div class=\"mb-3\"><label class=\"form-label\">Libranza (PDF)</label><input type=\"file\" class=\"form-control\" id=\"libranza\" accept=\".pdf\"></div><div class=\"mb-3\"><label class=\"form-label\">Número crédito SIFONE</label><input type=\"number\" class=\"form-control\" id=\"sifone\" min=\"1\" step=\"1\" placeholder=\"Ej: 123456\"></div></div><div class=\"modal-footer\"><button class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancelar</button><button class=\"btn btn-primary\" id=\"btnGuardarArch\">Guardar</button></div></div></div></div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   const modalEl = document.getElementById('mGuardar'); const modal = new bootstrap.Modal(modalEl); modal.show();
   modalEl.addEventListener('hidden.bs.modal', ()=>modalEl.remove());
   document.getElementById('btnGuardarArch').addEventListener('click', async ()=>{
-    const p = document.getElementById('pagare').files[0]; const a = document.getElementById('amort').files[0];
-    if(!p||!a){alert('Adjunte ambos archivos'); return;}
-    if (p.size>5*1024*1024 || a.size>5*1024*1024){ alert('Máx 5MB'); return; }
-    if (!/\.pdf$/i.test(p.name) || !/\.pdf$/i.test(a.name)) { alert('Solo PDF'); return; }
-    const fd = new FormData(); fd.append('id', id); fd.append('estado','Guardado'); fd.append('archivo_pagare_pdf', p); fd.append('archivo_amortizacion', a);
+    const p = document.getElementById('pagare').files[0]; const a = document.getElementById('amort').files[0]; const l = document.getElementById('libranza').files[0]; const s = (document.getElementById('sifone').value||'').trim();
+    if(!p||!a||!l){alert('Adjunte los tres archivos'); return;}
+    if(!/^\d+$/.test(s)){ alert('Ingrese un número válido para SIFONE'); return; }
+    if (p.size>5*1024*1024 || a.size>5*1024*1024 || l.size>5*1024*1024){ alert('Máx 5MB'); return; }
+    if (!/\.pdf$/i.test(p.name) || !/\.pdf$/i.test(a.name) || !/\.pdf$/i.test(l.name)) { alert('Solo PDF'); return; }
+    const fd = new FormData(); fd.append('id', id); fd.append('estado','Guardado'); fd.append('archivo_pagare_pdf', p); fd.append('archivo_amortizacion', a); fd.append('archivo_libranza', l); fd.append('numero_credito_sifone', s);
     const res = await fetch('../api/solicitud_cambiar_estado.php', { method: 'POST', body: fd });
     const j = await res.json(); if (j && j.success) { modal.hide(); load(); } else { alert(j.message||'No se pudo guardar'); }
   });
@@ -174,14 +175,14 @@ async function abrirDetalle(id){
     const j = await res.json(); if(!(j&&j.success)){ alert(j.message||'Error'); return; }
     const it = j.item||{}; const hist = j.historial||[];
     const labels = {
-      identificacion:'Identificación', nombres:'Nombre', celular:'Celular', email:'Correo', monto_deseado:'Monto deseado', tipo:'Tipo', estado:'Estado', fecha_creacion:'F. creación', fecha_actualizacion:'F. actualización'
+      identificacion:'Identificación', nombres:'Nombre', celular:'Celular', email:'Correo', monto_deseado:'Monto deseado', tipo:'Tipo', numero_credito_sifone:'Número crédito SIFONE', estado:'Estado', fecha_creacion:'F. creación', fecha_actualizacion:'F. actualización'
     };
     const pairs = [
       ['identificacion','nombres'],
       ['celular','email'],
       ['monto_deseado','tipo'],
       ['estado','fecha_creacion'],
-      ['fecha_actualizacion', null]
+      ['fecha_actualizacion','numero_credito_sifone']
     ];
     const infoRows = pairs.map(([k1,k2])=>{
       const v1 = k1==='monto_deseado' ? fmtCOP(it[k1]) : (k1==='fecha_creacion'||k1==='fecha_actualizacion'? sinSeg(it[k1]) : String(it[k1]||''));
@@ -195,16 +196,21 @@ async function abrirDetalle(id){
       return `<tr><th class=\"w-25\">${labels[k1]}</th><td>${escapeHtml(v1)}</td>${right}</tr>`;
     }).join('');
 
-    // Sección Archivos ordenada según flujo
-    const grupos = [
+    // Sección Archivos ordenada: 1) Dependiente/Independiente según tipo, 2) Datacrédito, 3) Estudio, 4) Pagaré, Amortización y Libranza
+    const grupos = [];
+    const tipoLower = String(it.tipo||'').toLowerCase();
+    if (tipoLower === 'dependiente') {
+      grupos.push({ titulo: 'Dependiente', campos: ['dep_nomina_1','dep_nomina_2','dep_cert_laboral','dep_simulacion_pdf'] });
+    } else if (tipoLower === 'independiente') {
+      grupos.push({ titulo: 'Independiente', campos: ['ind_decl_renta','ind_simulacion_pdf','ind_codeudor_nomina_1','ind_codeudor_nomina_2','ind_codeudor_cert_laboral'] });
+    }
+    grupos.push(
       { titulo: 'Datacrédito', campos: ['archivo_datacredito'] },
       { titulo: 'Estudio', campos: ['archivo_estudio'] },
-      { titulo: 'Pagaré y Amortización', campos: ['archivo_pagare_pdf','archivo_amortizacion'] },
-      { titulo: 'Dependiente', campos: ['dep_nomina_1','dep_nomina_2','dep_cert_laboral','dep_simulacion_pdf'] },
-      { titulo: 'Independiente', campos: ['ind_decl_renta','ind_simulacion_pdf','ind_codeudor_nomina_1','ind_codeudor_nomina_2','ind_codeudor_cert_laboral'] }
-    ];
+      { titulo: 'Pagaré, Amortización y Libranza', campos: ['archivo_pagare_pdf','archivo_amortizacion','archivo_libranza'] }
+    );
     const nombresCampo = {
-      archivo_datacredito:'Datacrédito (PDF)', archivo_estudio:'Estudio (PDF)', archivo_pagare_pdf:'Pagaré (PDF)', archivo_amortizacion:'Amortización (PDF)',
+      archivo_datacredito:'Datacrédito (PDF)', archivo_estudio:'Estudio (PDF)', archivo_pagare_pdf:'Pagaré (PDF)', archivo_amortizacion:'Amortización (PDF)', archivo_libranza:'Libranza (PDF)',
       dep_nomina_1:'Desprendible nómina (1)', dep_nomina_2:'Desprendible nómina (2)', dep_cert_laboral:'Certificación laboral', dep_simulacion_pdf:'Simulación pagos (PDF)',
       ind_decl_renta:'Declaración de renta', ind_simulacion_pdf:'Simulación pagos (PDF)', ind_codeudor_nomina_1:'Nómina codeudor (1)', ind_codeudor_nomina_2:'Nómina codeudor (2)', ind_codeudor_cert_laboral:'Certificación codeudor'
     };

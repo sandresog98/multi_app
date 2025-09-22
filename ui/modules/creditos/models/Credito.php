@@ -28,7 +28,7 @@ class Credito {
         ];
         $col = $allowed[$sortBy] ?? 'fecha_creacion';
         $dir = strtoupper($sortDir)==='ASC'?'ASC':'DESC';
-        $sql = "SELECT id, nombres, identificacion, celular, email, tipo, estado, fecha_creacion, fecha_actualizacion, archivo_datacredito, archivo_estudio, archivo_pagare_pdf, archivo_amortizacion FROM creditos_solicitudes $whereClause ORDER BY $col $dir LIMIT ? OFFSET ?";
+        $sql = "SELECT id, nombres, identificacion, celular, email, tipo, estado, fecha_creacion, fecha_actualizacion, archivo_datacredito, archivo_estudio, archivo_pagare_pdf, archivo_amortizacion, archivo_libranza, numero_credito_sifone FROM creditos_solicitudes $whereClause ORDER BY $col $dir LIMIT ? OFFSET ?";
         $stmt = $this->conn->prepare($sql); $stmt->execute(array_merge($params,[$limit,$offset]));
         $items = $stmt->fetchAll();
         $cstmt = $this->conn->prepare("SELECT COUNT(*) total FROM creditos_solicitudes $whereClause"); $cstmt->execute($params); $total = (int)($cstmt->fetch()['total'] ?? 0);
@@ -57,11 +57,12 @@ class Credito {
         }
         $sets = ['estado = ?']; $params = [$nuevoEstado];
         $mapFiles = [
-            'archivo_datacredito','archivo_estudio','archivo_pagare_pdf','archivo_amortizacion'
+            'archivo_datacredito','archivo_estudio','archivo_pagare_pdf','archivo_amortizacion','archivo_libranza'
         ];
         foreach ($mapFiles as $k) {
             if (array_key_exists($k,$data)) { $sets[] = "$k = ?"; $params[] = $data[$k]; }
         }
+        if (array_key_exists('numero_credito_sifone',$data)) { $sets[] = 'numero_credito_sifone = ?'; $params[] = (string)$data['numero_credito_sifone']; }
         if (isset($data['aprobado_por'])) { $sets[] = 'aprobado_por = ?'; $params[] = (int)$data['aprobado_por']; }
         $params[] = $id;
         $sql = 'UPDATE creditos_solicitudes SET '.implode(', ',$sets).', fecha_actualizacion = CURRENT_TIMESTAMP WHERE id = ?';
@@ -73,7 +74,7 @@ class Credito {
             $userId = (int)($_SESSION['user_id'] ?? 0);
             $hist = $this->conn->prepare('INSERT INTO creditos_historial (solicitud_id, usuario_id, accion, estado_anterior, estado_nuevo, archivo_campo, archivo_ruta) VALUES (?,?,?,?,?,?,?)');
             $archivoCampo = null; $archivoRuta = null;
-            foreach (['archivo_datacredito','archivo_estudio','archivo_pagare_pdf','archivo_amortizacion'] as $k) {
+            foreach (['archivo_datacredito','archivo_estudio','archivo_pagare_pdf','archivo_amortizacion','archivo_libranza'] as $k) {
                 if (isset($data[$k])) { $archivoCampo = $k; $archivoRuta = $data[$k]; break; }
             }
             $hist->execute([$id, $userId, 'cambiar_estado', $actual, $nuevoEstado, $archivoCampo, $archivoRuta]);

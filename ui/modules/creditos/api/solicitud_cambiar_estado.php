@@ -57,9 +57,14 @@ try {
     } elseif ($estado === 'Guardado') {
       $pagare = $saveFile('archivo_pagare_pdf', true);
       $amort = $saveFile('archivo_amortizacion', true);
-      if (!$pagare || !$amort) { throw new Exception('Debe adjuntar Pagaré y Amortización (PDF)'); }
+      $libranza = $saveFile('archivo_libranza', true);
+      if (!$pagare || !$amort || !$libranza) { throw new Exception('Debe adjuntar Pagaré, Amortización y Libranza (PDF)'); }
+      $sifone = (string)($_POST['numero_credito_sifone'] ?? '');
+      if ($sifone === '' || !preg_match('/^\d+$/', $sifone)) { throw new Exception('Número crédito SIFONE inválido'); }
       $data['archivo_pagare_pdf'] = $pagare;
       $data['archivo_amortizacion'] = $amort;
+      $data['archivo_libranza'] = $libranza;
+      $data['numero_credito_sifone'] = $sifone;
     }
     echo json_encode($ctrl->cambiarEstado($id,$estado,$data));
   } else {
