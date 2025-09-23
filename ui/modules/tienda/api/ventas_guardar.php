@@ -33,8 +33,11 @@ try{
       $dispI = (int)$q->fetchColumn();
       if ($cant > $dispI) throw new Exception('Stock IMEI insuficiente para el producto');
     } else {
-      $q = $pdo->prepare('SELECT COALESCE(SUM(cd.cantidad),0) - COALESCE(SUM(v.cant),0) AS disp FROM tienda_compra_detalle cd LEFT JOIN (SELECT producto_id, SUM(cantidad) cant FROM tienda_venta_detalle WHERE compra_imei_id IS NULL GROUP BY producto_id) v ON v.producto_id=cd.producto_id WHERE cd.producto_id=?');
-      $q->execute([$pid]);
+      // Calcular disponible evitando duplicar la suma de vendidos por múltiples filas de compras
+      $q = $pdo->prepare('SELECT 
+          (SELECT COALESCE(SUM(cantidad),0) FROM tienda_compra_detalle WHERE producto_id = ?) 
+        - (SELECT COALESCE(SUM(cantidad),0) FROM tienda_venta_detalle WHERE producto_id = ? AND compra_imei_id IS NULL) AS disp');
+      $q->execute([$pid, $pid]);
       $disp = (int)$q->fetchColumn();
       if ($cant > $disp) throw new Exception('Stock insuficiente para el producto');
     }

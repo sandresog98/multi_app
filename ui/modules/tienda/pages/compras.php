@@ -124,7 +124,7 @@ async function guardarCompra(){
   if (!items.length){ alert('Agregue items'); return; }
   const res = await fetch('../api/compras_guardar.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items }) });
   const j = await res.json(); if(!j.success){ alert(j.message||'Error'); return; }
-  alert('Compra guardada'); items.length=0; renderItems();
+  alert('Compra guardada'); location.reload();
 }
 
 async function loadCompras(){

@@ -33,8 +33,8 @@ try {
     return;
   }
   if ($action === 'eliminar_categoria') {
-    $id = (int)($_POST['id'] ?? 0); if ($id<=0) throw new Exception('ID inválido');
-    echo json_encode($model->eliminarCategoria($id)); return;
+    // Eliminación deshabilitada por política
+    throw new Exception('Eliminar categorías no está permitido');
   }
 
   if ($action === 'guardar_marca') {
@@ -46,8 +46,8 @@ try {
     return;
   }
   if ($action === 'eliminar_marca') {
-    $id = (int)($_POST['id'] ?? 0); if ($id<=0) throw new Exception('ID inválido');
-    echo json_encode($model->eliminarMarca($id)); return;
+    // Eliminación deshabilitada por política
+    throw new Exception('Eliminar marcas no está permitido');
   }
 
   if ($action === 'guardar_producto') {
@@ -89,8 +89,8 @@ try {
     return;
   }
   if ($action === 'eliminar_producto') {
-    $id = (int)($_POST['id'] ?? 0); if ($id<=0) throw new Exception('ID inválido');
-    echo json_encode($model->eliminarProducto($id)); return;
+    // Eliminación deshabilitada por política
+    throw new Exception('Eliminar productos no está permitido');
   }
 
   echo json_encode(['success'=>false,'message'=>'Acción no soportada']);

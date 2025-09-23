@@ -8,7 +8,16 @@ try{
   $auth->requireModule('tienda.clientes');
   $model = new TiendaClientes();
   $action = $_GET['action'] ?? ($_POST['action'] ?? '');
-  if ($action==='listar') { echo json_encode(['success'=>true,'items'=>$model->listar()]); return; }
+  if ($action==='listar') {
+    $pdo = getConnection();
+    $rows = $model->listar();
+    // Marcar si el cliente fue usado en ventas
+    foreach ($rows as &$r){
+      $q = $pdo->prepare('SELECT COUNT(*) FROM tienda_venta WHERE cliente_id = ?');
+      $q->execute([(int)($r['id'] ?? 0)]);
+      $r['usado'] = (int)$q->fetchColumn();
+    }
+    echo json_encode(['success'=>true,'items'=>$rows]); return; }
   if ($action==='guardar') {
     $id = isset($_POST['id'])&&$_POST['id']!==''?(int)$_POST['id']:null;
     $nombre = trim($_POST['nombre'] ?? '');
@@ -20,6 +29,11 @@ try{
   }
   if ($action==='eliminar') {
     $id = (int)($_POST['id'] ?? 0); if ($id<=0) throw new Exception('ID inválido');
+    // Bloqueo: si el cliente ya fue usado en ventas, no se puede eliminar
+    $pdo = getConnection();
+    $q = $pdo->prepare('SELECT COUNT(*) FROM tienda_venta WHERE cliente_id = ?');
+    $q->execute([$id]);
+    if ((int)$q->fetchColumn() > 0) throw new Exception('No se puede eliminar: el cliente tiene ventas asociadas');
     echo json_encode($model->eliminar($id)); return;
   }
   echo json_encode(['success'=>false,'message'=>'Acción no soportada']);

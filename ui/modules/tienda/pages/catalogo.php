@@ -141,7 +141,7 @@ function renderCategorias(list){
                     <td><span class="badge ${it.estado_activo? 'bg-success':'bg-secondary'}">${it.estado_activo? 'Activa':'Inactiva'}</span></td>
                     <td class="text-end">
                       <button class="btn btn-sm btn-outline-info" onclick='editCategoria(${JSON.stringify(it)})'><i class="fas fa-edit"></i></button>
-                      <button class="btn btn-sm btn-outline-danger" onclick='delCategoria(${Number(it.id)})'><i class="fas fa-trash"></i></button>
+                      <button class="btn btn-sm btn-outline-danger" disabled title="Eliminar deshabilitado"><i class="fas fa-trash"></i></button>
                     </td>`;
     body.appendChild(tr);
   });
@@ -155,7 +155,7 @@ function renderMarcas(list){
                     <td><span class="badge ${it.estado_activo? 'bg-success':'bg-secondary'}">${it.estado_activo? 'Activa':'Inactiva'}</span></td>
                     <td class="text-end">
                       <button class="btn btn-sm btn-outline-info" onclick='editMarca(${JSON.stringify(it)})'><i class="fas fa-edit"></i></button>
-                      <button class="btn btn-sm btn-outline-danger" onclick='delMarca(${Number(it.id)})'><i class="fas fa-trash"></i></button>
+                      <button class="btn btn-sm btn-outline-danger" disabled title="Eliminar deshabilitado"><i class="fas fa-trash"></i></button>
                     </td>`;
     body.appendChild(tr);
   });
@@ -174,7 +174,7 @@ function renderProductos(list){
                     <td><span class="badge ${it.estado_activo? 'bg-success':'bg-secondary'}">${it.estado_activo? 'Activo':'Inactivo'}</span></td>
                     <td class="text-end">
                       <button class="btn btn-sm btn-outline-info" onclick="editProductoById(${Number(it.id)})"><i class=\"fas fa-edit\"></i></button>
-                      <button class="btn btn-sm btn-outline-danger" onclick='delProducto(${Number(it.id)})'><i class="fas fa-trash"></i></button>
+                      <button class="btn btn-sm btn-outline-danger" disabled title="Eliminar deshabilitado"><i class="fas fa-trash"></i></button>
                     </td>`;
     body.appendChild(tr);
   });
@@ -212,7 +212,7 @@ async function guardarCategoria(){
 }
 function nuevoCategoria(){ limpiarCategoria(); const m=new bootstrap.Modal(document.getElementById('mCategoria')); m.show(); }
 function editCategoria(it){ document.getElementById('cat_id').value=it.id; document.getElementById('cat_nombre').value=it.nombre||''; document.getElementById('cat_estado').checked=!!it.estado_activo; const m=new bootstrap.Modal(document.getElementById('mCategoria')); m.show(); }
-async function delCategoria(id){ if(!confirm('¿Eliminar categoría?')) return; const fd=new FormData(); fd.append('action','eliminar_categoria'); fd.append('id',id); const res=await fetch(apiCatalogo,{method:'POST',body:fd}); const j=await res.json(); if(!j.success){alert(j.message||'Error');return;} loadAll(); }
+async function delCategoria(id){ alert('Eliminar categorías no está permitido.'); }
 function limpiarCategoria(){ document.getElementById('cat_id').value=''; document.getElementById('cat_nombre').value=''; document.getElementById('cat_estado').checked=true; }
 
 // CRUD marcas
@@ -233,7 +233,7 @@ async function guardarMarca(){
 }
 function nuevoMarca(){ limpiarMarca(); const m=new bootstrap.Modal(document.getElementById('mMarca')); m.show(); }
 function editMarca(it){ document.getElementById('marca_id').value=it.id; document.getElementById('marca_nombre').value=it.nombre||''; document.getElementById('marca_estado').checked=!!it.estado_activo; const m=new bootstrap.Modal(document.getElementById('mMarca')); m.show(); }
-async function delMarca(id){ if(!confirm('¿Eliminar marca?')) return; const fd=new FormData(); fd.append('action','eliminar_marca'); fd.append('id',id); const res=await fetch(apiCatalogo,{method:'POST',body:fd}); const j=await res.json(); if(!j.success){alert(j.message||'Error');return;} loadAll(); }
+async function delMarca(id){ alert('Eliminar marcas no está permitido.'); }
 function limpiarMarca(){ document.getElementById('marca_id').value=''; document.getElementById('marca_nombre').value=''; document.getElementById('marca_estado').checked=true; }
 
 // CRUD productos
@@ -272,7 +272,7 @@ function editProducto(it){
   document.getElementById('prod_precio_compra').value = it.precio_compra_aprox||''; document.getElementById('prod_precio_venta').value = it.precio_venta_aprox||'';
   document.getElementById('prod_estado').checked = !!it.estado_activo; const m=new bootstrap.Modal(document.getElementById('mProducto')); m.show();
 }
-async function delProducto(id){ if(!confirm('¿Eliminar producto?')) return; const fd=new FormData(); fd.append('action','eliminar_producto'); fd.append('id',id); const res=await fetch(apiCatalogo,{method:'POST',body:fd}); const j=await res.json(); if(!j.success){alert(j.message||'Error');return;} loadAll(); }
+async function delProducto(id){ alert('Eliminar productos no está permitido.'); }
 function limpiarProducto(){ document.getElementById('prod_id').value=''; document.getElementById('prod_categoria').value=''; document.getElementById('prod_marca').value=''; document.getElementById('prod_nombre').value=''; document.getElementById('prod_desc').value=''; document.getElementById('prod_precio_compra').value=''; document.getElementById('prod_precio_venta').value=''; document.getElementById('prod_estado').checked=true; document.getElementById('prod_foto').value=''; }
 
 document.addEventListener('DOMContentLoaded', loadAll);

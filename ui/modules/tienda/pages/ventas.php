@@ -47,6 +47,8 @@ include '../../../views/layouts/header.php';
       </div>
 
       <div class="card mb-3"><div class="card-body">
+        <h5 class="mb-2">Cliente</h5>
+        <div class="text-muted small mb-2">Selecciona el cliente o el asociado.</div>
         <div class="row g-2">
           <div class="col-md-3">
             <label class="form-label small">Tipo cliente</label>
@@ -65,40 +67,23 @@ include '../../../views/layouts/header.php';
         </div>
       </div></div>
 
-      <div class="card mb-3"><div class="card-body">
-        <div class="row g-2 align-items-end">
-          <div class="col-md-5 position-relative"><label class="form-label small">Producto (escribe categoría, marca o nombre)</label>
-            <input id="buscarProd" class="form-control" placeholder="Ej: Celulares Samsung A14" autocomplete="off">
-            <div id="prod_results" class="list-group position-absolute w-100" style="top:100%; left:0; z-index:1070; max-height:220px; overflow:auto; background:#fff; border:1px solid #dee2e6; border-top:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
-            <select id="selProd" class="form-select d-none">
-              <option value="">Seleccione producto</option>
-              <?php foreach ($prods as $p): ?>
-              <option value="<?php echo (int)$p['id']; ?>" data-label="<?php echo htmlspecialchars(($p['categoria']?:'').' - '.($p['marca']?:'').' - '.$p['nombre']); ?>" data-pc="<?php echo htmlspecialchars((string)($p['precio_compra_aprox'] ?? '')); ?>" data-pv="<?php echo htmlspecialchars((string)($p['precio_venta_aprox'] ?? '')); ?>" data-disp="<?php echo (int)($p['disp_sin_imei'] ?? 0); ?>" data-dispimei="<?php echo (int)($p['disp_imei'] ?? 0); ?>"><?php echo htmlspecialchars(($p['categoria']?:'').' - '.$p['nombre']); ?></option>
-              <?php endforeach; ?>
-            </select></div>
-          <div class="col-md-2"><label class="form-label small">Cantidad</label><input type="number" id="cantidad" class="form-control" min="1" value="1"></div>
-          <div class="col-md-3"><label class="form-label small">Precio unitario</label><input type="number" id="precio" class="form-control" min="0" step="0.01"><div class="form-text" id="precioRef"></div></div>
-          <div class="col-md-2 d-grid"><button class="btn btn-primary" onclick="addItem()"><i class="fas fa-plus me-1"></i>Agregar</button></div>
-          <div class="col-12 d-none" id="boxImei">
-            <label class="form-label small">Seleccionar IMEIs disponibles</label>
-            <div class="input-group">
-              <button type="button" class="btn btn-outline-secondary" onclick="abrirImeis()"><i class="fas fa-list"></i> Ver IMEIs</button>
-              <input class="form-control" id="imeis" placeholder="IMEIs seleccionados" readonly>
-            </div>
-            <div class="form-text">La cantidad debe coincidir con los IMEIs seleccionados.</div>
-          </div>
-        </div>
-      </div></div>
+
 
       <div class="card mb-3"><div class="card-body">
+        <h5 class="mb-2">Lista de productos</h5>
+        <div class="text-muted small mb-2">Revisa los productos agregados a la venta.</div>
+        <div class="d-flex justify-content-end mb-2">
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mSelProducto"><i class="fas fa-plus me-1"></i>Agregar producto</button>
+        </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th><th>IMEIs</th><th class="text-end">Acciones</th></tr></thead><tbody id="tblItems"></tbody></table>
         </div>
-        <div class="text-end h5">Total: $<span id="total">0</span></div>
+        <div class="text-end h5" id="totalLine">Total: $<span id="total">0</span></div>
       </div></div>
 
       <div class="card"><div class="card-body">
-        <h6 class="mb-2">Pagos</h6>
+        <h5 class="mb-2">Medios de Pago</h5>
+        <div class="text-muted small mb-2">Agrega uno o varios medios de pago hasta completar el total.</div>
         <div id="pagosBox" class="row g-2">
           <div class="col-md-3"><select class="form-select" id="tipoPago"><option value="efectivo">Efectivo</option><option value="bold">Bold</option><option value="qr">Código QR</option><option value="sifone">Crédito SIFONE</option><option value="reversion">Reversión</option></select></div>
           <div class="col-md-3"><input type="number" class="form-control" id="montoPago" placeholder="Monto" step="0.01" min="0"></div>
@@ -107,12 +92,45 @@ include '../../../views/layouts/header.php';
           <div class="col-md-3 d-grid"><button class="btn btn-outline-primary" onclick="addPago()"><i class="fas fa-plus me-1"></i>Agregar pago</button></div>
         </div>
         <div class="table-responsive mt-2"><table class="table table-sm"><thead class="table-light"><tr><th>Tipo</th><th>Monto</th><th>Detalle</th><th class="text-end">Acciones</th></tr></thead><tbody id="tblPagos"></tbody></table></div>
-        <div class="text-end"><button class="btn btn-success" onclick="guardarVenta()"><i class="fas fa-check me-1"></i>Registrar venta</button></div>
+        <div class="text-end h6" id="totalPagosLine">Total pagos: $<span id="totalPagos">0</span></div>
+        <div class="text-end"><button id="btnRegistrarVenta" class="btn btn-success" onclick="guardarVenta()" disabled><i class="fas fa-check me-1"></i>Registrar venta</button></div>
       </div></div>
 
     </main>
   </div>
 </div>
+
+<!-- Modal Selección de producto -->
+<div class="modal fade" id="mSelProducto" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Agregar producto</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6 position-relative"><label class="form-label small">Producto (escribe categoría, marca o nombre)</label>
+        <input id="buscarProd" class="form-control" placeholder="Ej: Celulares Samsung A14" autocomplete="off">
+        <div id="prod_results" class="list-group position-absolute w-100" style="top:100%; left:0; z-index:1070; max-height:220px; overflow:auto; background:#fff; border:1px solid #dee2e6; border-top:none; box-shadow:0 4px 10px rgba(0,0,0,0.1);"></div>
+        <select id="selProd" class="form-select d-none">
+          <option value="">Seleccione producto</option>
+          <?php foreach ($prods as $p): ?>
+          <option value="<?php echo (int)$p['id']; ?>" data-label="<?php echo htmlspecialchars(($p['categoria']?:'').' - '.($p['marca']?:'').' - '.$p['nombre']); ?>" data-pc="<?php echo htmlspecialchars((string)($p['precio_compra_aprox'] ?? '')); ?>" data-pv="<?php echo htmlspecialchars((string)($p['precio_venta_aprox'] ?? '')); ?>" data-disp="<?php echo (int)($p['disp_sin_imei'] ?? 0); ?>" data-dispimei="<?php echo (int)($p['disp_imei'] ?? 0); ?>"><?php echo htmlspecialchars(($p['categoria']?:'').' - '.$p['nombre']); ?></option>
+          <?php endforeach; ?>
+        </select></div>
+      <div class="col-md-2"><label class="form-label small">Cantidad</label><input type="number" id="cantidad" class="form-control" min="1" value="1"></div>
+      <div class="col-md-4"><label class="form-label small d-flex justify-content-between align-items-center">Precio unitario <small id="precioRef" class="text-muted ms-2"></small></label><input type="number" id="precio" class="form-control" min="0" step="0.01"></div>
+      <div class="col-12 d-none" id="boxImei">
+        <label class="form-label small">Seleccionar IMEIs disponibles</label>
+        <div class="input-group">
+          <button type="button" class="btn btn-outline-secondary" onclick="abrirImeis()"><i class="fas fa-list"></i> Ver IMEIs</button>
+          <input class="form-control" id="imeis" placeholder="IMEIs seleccionados" readonly>
+        </div>
+        <div class="form-text">La cantidad debe coincidir con los IMEIs seleccionados.</div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button class="btn btn-primary" onclick="addItem(); const m=bootstrap.Modal.getInstance(document.getElementById('mSelProducto')); if(m) m.hide();"><i class="fas fa-plus me-1"></i>Agregar</button>
+  </div>
+</div></div></div>
 
 <script>
 function escapeHtml(str){ return String(str||'').replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
@@ -123,7 +141,9 @@ tipoCliente.addEventListener('change', ()=>{
   document.getElementById('boxExterno').classList.toggle('d-none', !ext);
 });
 const selProd = document.getElementById('selProd'); const imeiBox = document.getElementById('boxImei');
-selProd.addEventListener('change', ()=>{ const opt=selProd.selectedOptions[0]; const t=opt?.textContent||''; const isCel=/(^|\s|-)Celulares(\s|-)/i.test(t); imeiBox.classList.toggle('d-none', !isCel); const pc=parseFloat(opt?.getAttribute('data-pc')||''); const pv=parseFloat(opt?.getAttribute('data-pv')||''); if(!isNaN(pv)){ document.getElementById('precio').value=pv; } const disp = Number(opt?.getAttribute('data-disp')||0); const dispImei = Number(opt?.getAttribute('data-dispimei')||0); document.getElementById('cantidad').max = isCel ? dispImei : disp; document.getElementById('precioRef').textContent = (!isNaN(pc) ? ('Compra aprox: $'+pc.toLocaleString()+' · Stock: '+ (isCel?dispImei:disp)) : ('Stock: '+(isCel?dispImei:disp))); });
+let precioEdited = false;
+document.getElementById('precio').addEventListener('input', ()=>{ precioEdited = true; });
+selProd.addEventListener('change', ()=>{ const opt=selProd.selectedOptions[0]; const t=opt?.textContent||''; const isCel=/(^|\s|-)Celulares(\s|-)/i.test(t); imeiBox.classList.toggle('d-none', !isCel); const pc=parseFloat(opt?.getAttribute('data-pc')||''); const pv=parseFloat(opt?.getAttribute('data-pv')||''); if(!isNaN(pv)){ document.getElementById('precio').value=pv; } const disp = Number(opt?.getAttribute('data-disp')||0); const dispImei = Number(opt?.getAttribute('data-dispimei')||0); document.getElementById('cantidad').max = isCel ? dispImei : disp; document.getElementById('precioRef').textContent = (!isNaN(pc) ? ('Compra aprox: $'+pc.toLocaleString()) : '') + (isNaN(pc)?'':'') + (isNaN(disp)&&isNaN(dispImei)?'':(' · Stock: '+ (isCel?dispImei:disp))); precioEdited = false; });
 const items=[]; const pagos=[];
 function addItem(){ const opt=selProd.selectedOptions[0]; const id=Number(selProd.value||0); const text=opt?.textContent||''; const cant=Number(document.getElementById('cantidad').value||0); const precio=Number(document.getElementById('precio').value||0); if(!id||cant<=0||precio<0){ alert('Complete datos del producto'); return; } const isCel=/(^|\s|-)Celulares(\s|-)/i.test(text); const stock = Number(opt?.getAttribute('data-disp')||0); const stockImei = Number(opt?.getAttribute('data-dispimei')||0); if (!isCel && cant > stock){ alert('Cantidad supera el inventario disponible ('+stock+')'); return; } let imeis=[]; if(isCel){ imeis=(document.getElementById('imeis').value||'').split(/,\s*|\r?\n/).map(s=>s.trim()).filter(Boolean); if(imeis.length!==cant){ alert('Debe ingresar '+cant+' IMEIs'); return; } const set=new Set(imeis); if(set.size!==imeis.length){ alert('IMEIs duplicados'); return; } if (cant > stockImei){ alert('Cantidad supera IMEIs disponibles ('+stockImei+')'); return; } } items.push({producto_id:id, label:text, cantidad:cant, precio_unitario:precio, imeis}); renderItems(); limpiarProductoVenta(); }
 
@@ -137,13 +157,47 @@ function limpiarProductoVenta(){
   document.getElementById('precioRef').textContent='';
   document.getElementById('imeis').value='';
   imeiBox.classList.add('d-none');
+  precioEdited = false;
 }
 function delItem(i){ items.splice(i,1); renderItems(); }
-function renderItems(){ const body=document.getElementById('tblItems'); body.innerHTML=''; let total=0; if(!items.length){ body.innerHTML='<tr><td colspan="6" class="text-muted">Sin items</td></tr>'; document.getElementById('total').textContent='0'; return; } items.forEach((it,idx)=>{ const sub=it.cantidad*it.precio_unitario; total+=sub; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(it.label)}</td><td>${it.cantidad}</td><td>$${it.precio_unitario.toLocaleString()}</td><td>$${sub.toLocaleString()}</td><td>${it.imeis?.length?it.imeis.join('<br>'):''}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="delItem(${idx})"><i class="fas fa-trash"></i></button></td>`; body.appendChild(tr); }); document.getElementById('total').textContent=total.toLocaleString(); }
+function renderItems(){ const body=document.getElementById('tblItems'); body.innerHTML=''; let total=0; if(!items.length){ body.innerHTML='<tr><td colspan="6" class="text-muted">Sin items</td></tr>'; document.getElementById('total').textContent='0'; syncTotalsHighlight(); return; } items.forEach((it,idx)=>{ const sub=Number(it.cantidad||0)*Number(it.precio_unitario||0); total+=sub; const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(it.label)}</td><td>${it.cantidad}</td><td>$${Number(it.precio_unitario||0).toLocaleString()}</td><td>$${sub.toLocaleString()}</td><td>${it.imeis?.length?it.imeis.join('<br>'):''}</td><td class=\"text-end\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"delItem(${idx})\"><i class=\"fas fa-trash\"></i></button></td>`; body.appendChild(tr); }); document.getElementById('total').textContent=total.toLocaleString(); syncTotalsHighlight(); }
 const tipoPagoSel=document.getElementById('tipoPago'); tipoPagoSel.addEventListener('change',()=>{ const t=tipoPagoSel.value; document.getElementById('boxNumCred').classList.toggle('d-none', t!=='sifone'); document.getElementById('boxPagoAnt').classList.toggle('d-none', t!=='reversion'); });
-function addPago(){ const t=tipoPagoSel.value; const monto=Number(document.getElementById('montoPago').value||0); if(monto<=0){ alert('Monto inválido'); return; } const det={tipo:t, monto}; if(t==='sifone'){ const nc=document.getElementById('numCredito').value.trim(); if(!/^\d+$/.test(nc)){ alert('Número crédito SIFONE inválido'); return; } det.numero_credito_sifone=nc; } if(t==='reversion'){ const pa=document.getElementById('pagoAnterior').value.trim(); if(!pa){ alert('Ingrese ID pago anterior'); return; } det.pago_anterior_id=pa; } pagos.push(det); renderPagos(); }
+function addPago(){ const t=tipoPagoSel.value; const monto=Number(document.getElementById('montoPago').value||0); if(monto<=0){ alert('Monto inválido'); return; } const det={tipo:t, monto}; if(t==='sifone'){ const nc=document.getElementById('numCredito').value.trim(); if(!/^\d+$/.test(nc)){ alert('Número crédito SIFONE inválido'); return; } det.numero_credito_sifone=nc; } if(t==='reversion'){ const pa=document.getElementById('pagoAnterior').value.trim(); if(!pa){ alert('Ingrese ID pago anterior'); return; } det.pago_anterior_id=pa; } pagos.push(det); renderPagos(); document.getElementById('montoPago').value=''; if(t==='sifone'){ document.getElementById('numCredito').value=''; } if(t==='reversion'){ document.getElementById('pagoAnterior').value=''; } }
 function delPago(i){ pagos.splice(i,1); renderPagos(); }
-function renderPagos(){ const body=document.getElementById('tblPagos'); body.innerHTML=''; if(!pagos.length){ body.innerHTML='<tr><td colspan="4" class="text-muted">Sin pagos</td></tr>'; return; } pagos.forEach((p,idx)=>{ const extra = p.tipo==='sifone'?('Crédito: '+escapeHtml(p.numero_credito_sifone||'')) : (p.tipo==='reversion'?('Pago ant.: '+escapeHtml(p.pago_anterior_id||'')) : ''); const tr=document.createElement('tr'); tr.innerHTML=`<td>${escapeHtml(p.tipo)}</td><td>$${Number(p.monto).toLocaleString()}</td><td>${extra}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="delPago(${idx})"><i class="fas fa-trash"></i></button></td>`; body.appendChild(tr); }); }
+function renderPagos(){
+  const body=document.getElementById('tblPagos'); body.innerHTML='';
+  let total=0;
+  if(!pagos.length){
+    body.innerHTML='<tr><td colspan="4" class="text-muted">Sin pagos</td></tr>';
+    const tp=document.getElementById('totalPagos'); if(tp) tp.textContent='0';
+    return;
+  }
+  pagos.forEach((p,idx)=>{
+    const extra = p.tipo==='sifone'?('Crédito: '+escapeHtml(p.numero_credito_sifone||'')) : (p.tipo==='reversion'?('Pago ant.: '+escapeHtml(p.pago_anterior_id||'')) : '');
+    total += Number(p.monto)||0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${escapeHtml(p.tipo)}</td><td>$${Number(p.monto).toLocaleString()}</td><td>${extra}</td><td class=\"text-end\"><button class=\"btn btn-sm btn-outline-danger\" onclick=\"delPago(${idx})\"><i class=\"fas fa-trash\"></i></button></td>`;
+    body.appendChild(tr);
+  });
+  const tp=document.getElementById('totalPagos'); if(tp) tp.textContent=total.toLocaleString();
+  syncTotalsHighlight();
+}
+
+function syncTotalsHighlight(){
+  // Calcular a partir de las estructuras de datos para evitar problemas de formato local
+  const t = (items||[]).reduce((s,it)=> s + Number(it.cantidad||0) * Number(it.precio_unitario||0), 0);
+  const p = (pagos||[]).reduce((s,pg)=> s + Number(pg.monto||0), 0);
+  const tl = document.getElementById('totalLine');
+  const pl = document.getElementById('totalPagosLine');
+  const btn = document.getElementById('btnRegistrarVenta');
+  if (!tl || !pl) return;
+  const match = Math.abs(t - p) < 0.01;
+  tl.classList.toggle('text-danger', !match);
+  pl.classList.toggle('text-danger', !match);
+  tl.classList.toggle('text-success', match);
+  pl.classList.toggle('text-success', match);
+  if (btn) btn.disabled = !match || t <= 0;
+}
 async function guardarVenta(){
   if(!items.length){ alert('Agregar items'); return; }
   const tipo = tipoCliente.value;
@@ -229,8 +283,19 @@ function confirmarImeis(){
   const modal = bootstrap.Modal.getInstance(el); if (modal) modal.hide();
   // Ajustar cantidad al número de IMEIs
   document.getElementById('cantidad').value = imeis.length || 1;
-  // Autorelleno con el último precio de venta sugerido marcado
-  if (checks.length){ const last = checks[checks.length-1]; const pv = Number(last.getAttribute('data-pv')||0); if (!isNaN(pv) && pv>0){ document.getElementById('precio').value = pv; } }
+  // Autorelleno con el último precio de venta sugerido marcado (solo si no se editó manualmente)
+  if (checks.length){
+    const last = checks[checks.length-1];
+    const pv = Number(last.getAttribute('data-pv')||0);
+    if (!isNaN(pv) && pv>0){
+      const precioInput = document.getElementById('precio');
+      const curr = Number(precioInput.value||0);
+      if (!precioEdited || !(curr>0)){
+        precioInput.value = pv;
+        precioEdited = false;
+      }
+    }
+  }
 }
 
 // Autocomplete productos por categoría/marca/nombre

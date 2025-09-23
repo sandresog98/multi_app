@@ -11,7 +11,7 @@ $pdo = getConnection();
 // Query inventario: totales por producto y detalle IMEIs disponibles
 $cats = $pdo->query("SELECT id, nombre FROM tienda_categoria WHERE estado_activo = TRUE ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC) ?: [];
 $marcasList = $pdo->query("SELECT id, nombre FROM tienda_marca WHERE estado_activo = TRUE ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-$items = $pdo->query("SELECT p.id, p.nombre, c.id AS categoria_id, c.nombre AS categoria, m.id AS marca_id, m.nombre AS marca,
+$items = $pdo->query("SELECT p.id, p.nombre, p.foto_url, c.id AS categoria_id, c.nombre AS categoria, m.id AS marca_id, m.nombre AS marca,
                              COALESCE(cd.ingresado,0) AS ingresado,
                              COALESCE(vd.vendido,0) AS vendido,
                              COALESCE(cd.ingresado,0) - COALESCE(vd.vendido,0) AS disponible
@@ -57,12 +57,13 @@ include '../../../views/layouts/header.php';
       <div class="card"><div class="card-body">
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle">
-            <thead class="table-light"><tr><th>Categoría</th><th>Producto</th><th>Ingresado</th><th>Vendido</th><th>Disponible</th><th class="text-end">Acciones</th></tr></thead>
+            <thead class="table-light"><tr><th>Categoría</th><th>Producto</th><th>Foto</th><th>Ingresado</th><th>Vendido</th><th>Disponible</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
               <?php foreach ($items as $r): ?>
               <tr>
                 <td><?php echo htmlspecialchars($r['categoria'] ?? ''); ?></td>
                 <td><?php echo htmlspecialchars($r['nombre'] ?? ''); ?></td>
+                <td><?php if (!empty($r['foto_url'])): ?><a href="<?php echo htmlspecialchars($r['foto_url']); ?>" target="_blank"><img src="<?php echo htmlspecialchars($r['foto_url']); ?>" alt="foto" style="height:40px"></a><?php endif; ?></td>
                 <td><?php echo (int)($r['ingresado'] ?? 0); ?></td>
                 <td><?php echo (int)($r['vendido'] ?? 0); ?></td>
                 <td><?php echo (int)($r['disponible'] ?? 0); ?></td>
@@ -92,10 +93,11 @@ const dataInv = <?php echo json_encode($items); ?>;
 function renderInv(list){
   const tbody = document.querySelector('table tbody');
   tbody.innerHTML = '';
-  if (!list || !list.length){ tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin resultados</td></tr>'; return; }
+  if (!list || !list.length){ tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Sin resultados</td></tr>'; return; }
   list.forEach(r=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(r.categoria||'')}</td><td>${escapeHtml(r.nombre||'')}</td><td>${Number(r.ingresado||0)}</td><td>${Number(r.vendido||0)}</td><td>${Number(r.disponible||0)}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verDetalleProd(${r.id}, '${r.nombre?String(r.nombre).replace(/['"\\]/g,''):''}')"><i class="fas fa-eye"></i> Detalle</button> <button class="btn btn-sm btn-outline-primary" onclick="verImeis(${r.id})"><i class="fas fa-list"></i> IMEIs</button></td>`;
+    const foto = r.foto_url ? `<a href="${escapeHtml(r.foto_url)}" target="_blank"><img src="${escapeHtml(r.foto_url)}" alt="foto" style="height:40px"></a>` : '';
+    tr.innerHTML = `<td>${escapeHtml(r.categoria||'')}</td><td>${escapeHtml(r.nombre||'')}</td><td>${foto}</td><td>${Number(r.ingresado||0)}</td><td>${Number(r.vendido||0)}</td><td>${Number(r.disponible||0)}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verDetalleProd(${r.id}, '${r.nombre?String(r.nombre).replace(/['"\\]/g,''):''}')"><i class="fas fa-eye"></i> Detalle</button> <button class="btn btn-sm btn-outline-primary" onclick="verImeis(${r.id})"><i class="fas fa-list"></i> IMEIs</button></td>`;
     tbody.appendChild(tr);
   });
 }

@@ -40,7 +40,8 @@ async function loadVentas(){
     list.forEach(v=>{
       const tr=document.createElement('tr');
       const quien = v.tipo_cliente==='asociado' ? ('Asociado · '+escapeHtml(v.asociado_cedula||'')) : ('Cliente · '+escapeHtml(v.cliente_nombre||''));
-      tr.innerHTML = `<td>${v.id}</td><td>${escapeHtml(v.fecha_creacion||'')}</td><td>${quien}</td><td>$${Number(v.total||0).toLocaleString()}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verVenta(${v.id})"><i class="fas fa-eye"></i></button><button class="btn btn-sm btn-outline-danger" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button></td>`;
+      const btnEliminar = (Number(v.reversiones||0) > 0 || Number(v.usada_como_pago_anterior||0) > 0) ? '<span class="text-muted">Bloqueada</span>' : `<button class="btn btn-sm btn-outline-danger" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>`;
+      tr.innerHTML = `<td>${v.id}</td><td>${escapeHtml(v.fecha_creacion||'')}</td><td>${quien}</td><td>$${Number(v.total||0).toLocaleString()}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verVenta(${v.id})"><i class="fas fa-eye"></i></button>${btnEliminar}</td>`;
       body.appendChild(tr);
     });
   }catch(e){ document.getElementById('tblFact').innerHTML='<tr><td colspan="5" class="text-danger">'+e+'</td></tr>'; }
