@@ -255,6 +255,7 @@ include '../../../views/layouts/header.php';
             <label for="rol" class="form-label">Rol</label>
             <select class="form-select" id="rol" name="rol" <?php if (strtolower($currentUser['rol']??'')==='lider') echo 'data-lock-admin="1"'; ?>>
               <option value="oficina">Oficina</option>
+              <option value="tienda">Tienda</option>
               <option value="lider">Líder</option>
               <option value="admin" <?php if (strtolower($currentUser['rol']??'')==='lider') echo 'disabled'; ?>>Administrador</option>
             </select>
@@ -298,6 +299,7 @@ include '../../../views/layouts/header.php';
             <label for="rol_<?php echo $usuario['id']; ?>" class="form-label">Rol</label>
             <select class="form-select" id="rol_<?php echo $usuario['id']; ?>" name="rol" <?php if (strtolower($currentUser['rol']??'')==='lider' && strtolower($usuario['rol']??'')==='admin') echo 'disabled'; ?>>
               <option value="oficina" <?php echo $usuario['rol'] === 'oficina' ? 'selected' : ''; ?>>Oficina</option>
+              <option value="tienda" <?php echo $usuario['rol'] === 'tienda' ? 'selected' : ''; ?>>Tienda</option>
               <option value="lider" <?php echo $usuario['rol'] === 'lider' ? 'selected' : ''; ?>>Líder</option>
               <option value="admin" <?php echo $usuario['rol'] === 'admin' ? 'selected' : ''; ?>>Administrador</option>
             </select>

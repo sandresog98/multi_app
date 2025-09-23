@@ -10,6 +10,14 @@
                 "oficina.pagos_cash_qr",
                 "oficina.cargas",
                 "oficina.descargas",
+                "tienda",
+                "tienda.catalogo",
+                "tienda.facturacion",
+                "tienda.inventario",
+                "tienda.compras",
+                "tienda.ventas",
+                "tienda.clientes",
+                "tienda.reversiones",
                 "boleteria",
                 "cobranza",
                 "usuarios",
@@ -28,10 +36,35 @@
                 "oficina.pagos_cash_qr",
                 "oficina.cargas",
                 "oficina.descargas",
+                "tienda",
+                "tienda.catalogo",
+                "tienda.facturacion",
+                "tienda.inventario",
+                "tienda.compras",
+                "tienda.ventas",
+                "tienda.clientes",
+                "tienda.reversiones",
                 "boleteria",
                 "cobranza",
                 "creditos",
                 "ticketera"
+            ]
+        },
+        "tienda" : {
+            "modulos" : [
+                "oficina",
+                "oficina.asociados",
+                "oficina.informaciones",
+                "tienda",
+                "tienda.catalogo",
+                "tienda.facturacion",
+                "tienda.inventario",
+                "tienda.compras",
+                "tienda.ventas",
+                "tienda.clientes",
+                "tienda.reversiones",
+                "ticketera",
+                "creditos"
             ]
         }
     }

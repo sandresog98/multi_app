@@ -678,3 +678,155 @@ CREATE TABLE IF NOT EXISTS ticketera_eventos (
     KEY idx_resp_nuevo (responsable_nuevo_id),
     KEY idx_fecha (fecha)
 );
+
+-- Tienda: Catálogo
+CREATE TABLE IF NOT EXISTS tienda_categoria (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(120) NOT NULL,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_tienda_cat_nombre (nombre),
+    KEY idx_tienda_cat_activo (estado_activo)
+);
+DROP TRIGGER IF EXISTS tienda_categoria_bu;
+CREATE TRIGGER tienda_categoria_bu BEFORE UPDATE ON tienda_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS tienda_categoria_bi;
+CREATE TRIGGER tienda_categoria_bi BEFORE INSERT ON tienda_categoria
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+CREATE TABLE IF NOT EXISTS tienda_marca (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(120) NOT NULL,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_tienda_marca_nombre (nombre),
+    KEY idx_tienda_marca_activo (estado_activo)
+);
+DROP TRIGGER IF EXISTS tienda_marca_bu;
+CREATE TRIGGER tienda_marca_bu BEFORE UPDATE ON tienda_marca
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS tienda_marca_bi;
+CREATE TRIGGER tienda_marca_bi BEFORE INSERT ON tienda_marca
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+CREATE TABLE IF NOT EXISTS tienda_producto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    categoria_id INT NOT NULL,
+    marca_id INT NOT NULL,
+    nombre VARCHAR(200) NOT NULL,
+    foto_url VARCHAR(255) NULL,
+    descripcion TEXT NULL,
+    precio_compra_aprox DECIMAL(12,2) NULL,
+    precio_venta_aprox DECIMAL(12,2) NULL,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    UNIQUE KEY uq_tienda_prod (categoria_id, marca_id, nombre),
+    KEY idx_tienda_prod_cat (categoria_id),
+    KEY idx_tienda_prod_marca (marca_id),
+    CONSTRAINT fk_tienda_prod_cat FOREIGN KEY (categoria_id) REFERENCES tienda_categoria(id),
+    CONSTRAINT fk_tienda_prod_marca FOREIGN KEY (marca_id) REFERENCES tienda_marca(id)
+);
+DROP TRIGGER IF EXISTS tienda_producto_bu;
+CREATE TRIGGER tienda_producto_bu BEFORE UPDATE ON tienda_producto
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+DROP TRIGGER IF EXISTS tienda_producto_bi;
+CREATE TRIGGER tienda_producto_bi BEFORE INSERT ON tienda_producto
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- Tienda: Clientes (externos)
+CREATE TABLE IF NOT EXISTS tienda_clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    nit_cedula VARCHAR(50) NOT NULL,
+    telefono VARCHAR(50) NULL,
+    email VARCHAR(120) NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_tienda_cliente_doc (nit_cedula)
+);
+
+-- Tienda: Compras (ingreso a inventario)
+CREATE TABLE IF NOT EXISTS tienda_compra (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    observacion VARCHAR(300) NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
+);
+DROP TRIGGER IF EXISTS tienda_compra_bu;
+CREATE TRIGGER tienda_compra_bu BEFORE UPDATE ON tienda_compra
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+
+CREATE TABLE IF NOT EXISTS tienda_compra_detalle (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    compra_id INT NOT NULL,
+    producto_id INT NOT NULL,
+    cantidad INT NOT NULL,
+    precio_compra DECIMAL(12,2) NOT NULL,
+    precio_venta_sugerido DECIMAL(12,2) NOT NULL,
+    -- CONSTRAINT fk_tienda_compra FOREIGN KEY (compra_id) REFERENCES tienda_compra(id),
+    -- CONSTRAINT fk_tienda_compra_prod FOREIGN KEY (producto_id) REFERENCES tienda_producto(id),
+    KEY idx_tienda_compra (compra_id),
+    KEY idx_tienda_compra_prod (producto_id)
+);
+
+-- IMEIs para celulares (único por unidad)
+CREATE TABLE IF NOT EXISTS tienda_compra_imei (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    compra_detalle_id INT NOT NULL,
+    imei VARCHAR(30) NOT NULL,
+    vendido BOOLEAN DEFAULT FALSE,
+    -- CONSTRAINT fk_tienda_imei_det FOREIGN KEY (compra_detalle_id) REFERENCES tienda_compra_detalle(id)
+    UNIQUE KEY uq_tienda_imei (imei)
+);
+
+-- Tienda: Ventas
+CREATE TABLE IF NOT EXISTS tienda_venta (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_cliente ENUM('asociado','externo') NOT NULL,
+    asociado_cedula VARCHAR(20) NULL,
+    cliente_id INT NULL,
+    usuario_id INT NULL,
+    total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_tienda_venta_tipo (tipo_cliente),
+    KEY idx_tienda_venta_asoc (asociado_cedula),
+    KEY idx_tienda_venta_cliente (cliente_id)
+);
+CREATE TABLE IF NOT EXISTS tienda_venta_detalle (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta_id INT NOT NULL,
+    producto_id INT NOT NULL,
+    cantidad INT NOT NULL,
+    precio_unitario DECIMAL(12,2) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    compra_imei_id INT NULL,
+    -- CONSTRAINT fk_tienda_venta FOREIGN KEY (venta_id) REFERENCES tienda_venta(id),
+    -- CONSTRAINT fk_tienda_venta_prod FOREIGN KEY (producto_id) REFERENCES tienda_producto(id),
+    -- CONSTRAINT fk_tienda_venta_imei FOREIGN KEY (compra_imei_id) REFERENCES tienda_compra_imei(id),
+    KEY idx_tienda_venta_id (venta_id)
+);
+CREATE TABLE IF NOT EXISTS tienda_venta_pago (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta_id INT NOT NULL,
+    tipo ENUM('efectivo','bold','qr','sifone','reversion') NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    numero_credito_sifone VARCHAR(50) NULL,
+    pago_anterior_id INT NULL,
+    -- CONSTRAINT fk_tienda_venta_pago FOREIGN KEY (venta_id) REFERENCES tienda_venta(id),
+    KEY idx_tienda_pago_tipo (tipo)
+);
+
+-- Tienda: Reversiones
+CREATE TABLE IF NOT EXISTS tienda_reversion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta_detalle_id INT NOT NULL,
+    motivo TEXT NULL,
+    puede_revender BOOLEAN DEFAULT FALSE,
+    usuario_id INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- CONSTRAINT fk_tienda_rev_det FOREIGN KEY (venta_detalle_id) REFERENCES tienda_venta_detalle(id)
+);
