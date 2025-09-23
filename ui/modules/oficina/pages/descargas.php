@@ -106,7 +106,7 @@ SELECT
   ), 2) AS DECIMAL(12,2)) AS optional8,
   DATE_FORMAT(COALESCE(m.fechap, dv.fecha_pago), '%M %e de %Y') AS optional9,
   CAST(
-    (a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END)
+    (CASE WHEN m.diav IS NULL THEN a.valorc ELSE COALESCE(m.sdomor,0) END)
     + ROUND(a.valorc * (
         CASE
           WHEN m.diav > 60 THEN 0.08
