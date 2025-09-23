@@ -4,6 +4,7 @@
             "modulos" : [
                 "oficina",
                 "oficina.asociados",
+                "oficina.informaciones",
                 "oficina.trx_list",
                 "oficina.transacciones",
                 "oficina.pagos_cash_qr",
@@ -21,6 +22,7 @@
             "modulos" : [
                 "oficina",
                 "oficina.asociados",
+                "oficina.informaciones",
                 "oficina.transacciones",
                 "oficina.trx_list",
                 "oficina.pagos_cash_qr",

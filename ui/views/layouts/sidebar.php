@@ -26,10 +26,9 @@
         }
         ?>
         <?php if (!empty($currentUser)): ?>
-        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas']); ?>
+        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','informaciones']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
-            <i class="fas fa-chevron-<?php echo $isOficinaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isOficinaOpen ? 'show' : ''; ?> ms-3" id="menuOficina">
             <?php if (canAccess('oficina.resumen')): ?>
@@ -47,9 +46,19 @@
                 <i class="fas fa-file-upload small me-2"></i>Cargas
             </a>
             <?php endif; ?>
+            <?php if (canAccess('oficina.descargas')): ?>
+            <a class="nav-link <?php echo $currentPage === 'descargas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/descargas.php">
+                <i class="fas fa-download small me-2"></i>Descargas
+            </a>
+            <?php endif; ?>
             <?php if (canAccess('oficina.asociados')): ?>
             <a class="nav-link <?php echo $currentPage === 'asociados' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/asociados.php">
                 <i class="fas fa-users small me-2"></i>Asociados
+            </a>
+            <?php endif; ?>
+            <?php if (canAccess('oficina.informaciones')): ?>
+            <a class="nav-link <?php echo $currentPage === 'informaciones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/informaciones.php">
+                <i class="fas fa-info-circle small me-2"></i>Informaciones
             </a>
             <?php endif; ?>
             <?php if (canAccess('oficina.pagos_pse')): ?>
@@ -72,17 +81,11 @@
                 <i class="fas fa-exchange-alt small me-2"></i>Transacciones
             </a>
             <?php endif; ?>
-            <?php if (canAccess('oficina.descargas')): ?>
-            <a class="nav-link <?php echo $currentPage === 'descargas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/descargas.php">
-                <i class="fas fa-download small me-2"></i>Descargas
-            </a>
-            <?php endif; ?>
         </div>
 
         <?php $isTicketOpen = in_array(($currentPage ?? ''), ['ticketera_resumen','ticketera_tickets','ticketera_categorias']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuTicketera" role="button" aria-expanded="<?php echo $isTicketOpen ? 'true' : 'false'; ?>" aria-controls="menuTicketera">
             <span><i class="fas fa-project-diagram me-2"></i>Ticketera</span>
-            <i class="fas fa-chevron-<?php echo $isTicketOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isTicketOpen ? 'show' : ''; ?> ms-3" id="menuTicketera">
             <?php if (canAccess('ticketera')): ?>
@@ -101,7 +104,6 @@
         <?php $isBoleteriaOpen = in_array(($currentPage ?? ''), ['boleteria','boleteria_categorias','boleteria_boletas']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuBoleteria" role="button" aria-expanded="<?php echo $isBoleteriaOpen ? 'true' : 'false'; ?>" aria-controls="menuBoleteria">
             <span><i class="fas fa-ticket-alt me-2"></i>Boletería</span>
-            <i class="fas fa-chevron-<?php echo $isBoleteriaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isBoleteriaOpen ? 'show' : ''; ?> ms-3" id="menuBoleteria">
             <?php if (canAccess('boleteria.resumen')): ?>
@@ -124,7 +126,6 @@
         <?php $isCredOpen = in_array(($currentPage ?? ''), ['creditos','creditos_solicitudes','creditos_listado']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCreditos" role="button" aria-expanded="<?php echo $isCredOpen ? 'true' : 'false'; ?>" aria-controls="menuCreditos">
             <span><i class="fas fa-hand-holding-usd me-2"></i>Gestión Créditos</span>
-            <i class="fas fa-chevron-<?php echo $isCredOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isCredOpen ? 'show' : ''; ?> ms-3" id="menuCreditos">
             <a class="nav-link <?php echo $currentPage === 'creditos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/index.php">
@@ -141,7 +142,6 @@
         <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCobranza" role="button" aria-expanded="<?php echo $isCobranzaOpen ? 'true' : 'false'; ?>" aria-controls="menuCobranza">
             <span><i class="fas fa-phone me-2"></i>Cobranza</span>
-            <i class="fas fa-chevron-<?php echo $isCobranzaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isCobranzaOpen ? 'show' : ''; ?> ms-3" id="menuCobranza">
             <?php if (canAccess('cobranza.resumen')): ?>
@@ -171,7 +171,6 @@
         <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
-            <i class="fas fa-chevron-<?php echo $isOficinaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isOficinaOpen ? 'show' : ''; ?> ms-3" id="menuOficina">
             <a class="nav-link <?php echo $currentPage === 'oficina' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/index.php">
@@ -206,7 +205,6 @@
         <?php $isBoleteriaOpen = in_array(($currentPage ?? ''), ['boleteria','boleteria_categorias','boleteria_boletas']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuBoleteria" role="button" aria-expanded="<?php echo $isBoleteriaOpen ? 'true' : 'false'; ?>" aria-controls="menuBoleteria">
             <span><i class="fas fa-ticket-alt me-2"></i>Boletería</span>
-            <i class="fas fa-chevron-<?php echo $isBoleteriaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isBoleteriaOpen ? 'show' : ''; ?> ms-3" id="menuBoleteria">
             <a class="nav-link <?php echo $currentPage === 'boleteria' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/boleteria/pages/index.php">
@@ -223,7 +221,6 @@
         <?php $isCredOpen = in_array(($currentPage ?? ''), ['creditos','creditos_solicitudes','creditos_listado']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCreditos" role="button" aria-expanded="<?php echo $isCredOpen ? 'true' : 'false'; ?>" aria-controls="menuCreditos">
             <span><i class="fas fa-hand-holding-usd me-2"></i>Gestión Créditos</span>
-            <i class="fas fa-chevron-<?php echo $isCredOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isCredOpen ? 'show' : ''; ?> ms-3" id="menuCreditos">
             <a class="nav-link <?php echo $currentPage === 'creditos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/index.php">
@@ -240,7 +237,6 @@
         <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCobranza" role="button" aria-expanded="<?php echo $isCobranzaOpen ? 'true' : 'false'; ?>" aria-controls="menuCobranza">
             <span><i class="fas fa-phone me-2"></i>Cobranza</span>
-            <i class="fas fa-chevron-<?php echo $isCobranzaOpen ? 'up' : 'down'; ?>"></i>
         </a>
         <div class="collapse <?php echo $isCobranzaOpen ? 'show' : ''; ?> ms-3" id="menuCobranza">
             <a class="nav-link <?php echo $currentPage === 'cobranza' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cobranza/pages/index.php">
