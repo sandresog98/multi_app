@@ -1,6 +1,16 @@
 <?php
 // Asegurar disponibilidad de getBaseUrl() para recursos estáticos
 require_once dirname(__DIR__, 2) . '/config/paths.php';
+
+# AZUL CLARO
+$color_from = 'rgb(102, 157, 234) 0%';
+$color_to = 'rgb(57, 108, 127) 100%';
+# ROJO CLARO
+#$color_from = 'rgb(235, 47, 46) 0%';
+#$color_to = 'rgb(170, 78, 78) 100%';
+# AZUL OSCURO
+#$color_from = 'rgb(86, 126, 184) 0%';
+#$color_to = 'rgb(52, 106, 122) 100%';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -14,7 +24,7 @@ require_once dirname(__DIR__, 2) . '/config/paths.php';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         .sidebar {
-            background: linear-gradient(135deg,rgb(102, 157, 234) 0%,rgb(57, 108, 127) 100%);
+            background: linear-gradient(135deg,<?php echo $color_from; ?>,<?php echo $color_to; ?>);
             min-height: 100vh;
             height: 100vh;
             color: white;
@@ -129,14 +139,14 @@ require_once dirname(__DIR__, 2) . '/config/paths.php';
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .login-header {
-            background: linear-gradient(135deg,rgb(102, 157, 234) 0%,rgb(57, 108, 127) 100%);
+            background: linear-gradient(135deg,<?php echo $color_from; ?>,<?php echo $color_to; ?>);
             color: white;
             padding: 2rem;
             border-radius: 15px 15px 0 0;
             text-align: center;
         }
         .btn-login {
-            background: linear-gradient(135deg,rgb(102, 157, 234) 0%,rgb(57, 108, 127) 100%);
+            background: linear-gradient(135deg,<?php echo $color_from; ?>,<?php echo $color_to; ?>);
             border: none;
             border-radius: 25px;
             padding: 12px 30px;
