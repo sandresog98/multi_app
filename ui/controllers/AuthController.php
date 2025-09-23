@@ -209,32 +209,49 @@ class AuthController {
      */
     private function ensurePermissionsLoaded() {
         $this->ensureSession();
+        $currentRole = $_SESSION["user_role"] ?? '';
+        $rolesPath = __DIR__ . '/../../roles.json';
+        $currentRolesMtime = is_file($rolesPath) ? @filemtime($rolesPath) : 0;
+
+        $needsReload = false;
         if (!isset($_SESSION['module_perms_loaded']) || !$_SESSION['module_perms_loaded']) {
-            $role = $_SESSION['user_role'] ?? '';
-            $_SESSION['module_permissions'] = [];
-            if (!$role) { $_SESSION['module_perms_loaded'] = true; return; }
-            if ($role === 'admin') { // admin: acceso total
-                $_SESSION['module_permissions'] = ['*'];
-                $_SESSION['module_perms_loaded'] = true;
-                return;
-            }
-            try {
-                $rolesPath = __DIR__ . '/../../roles.json';
-                if (!is_file($rolesPath)) {
-                    $_SESSION['module_permissions'] = [];
-                } else {
-                    $json = json_decode(file_get_contents($rolesPath), true);
-                    $mods = $json['roles'][$role]['modulos'] ?? [];
-                    if (!is_array($mods)) { $mods = []; }
-                    // Normalizar a strings únicas
-                    $mods = array_values(array_unique(array_map('strval', $mods)));
-                    $_SESSION['module_permissions'] = $mods;
-                }
-            } catch (Throwable $e) {
-                $_SESSION['module_permissions'] = [];
-            }
-            $_SESSION['module_perms_loaded'] = true;
+            $needsReload = true;
         }
+        if (($_SESSION['perm_role'] ?? null) !== $currentRole) {
+            $needsReload = true;
+        }
+        if (($currentRolesMtime !== 0) && (($_SESSION['roles_json_mtime'] ?? 0) !== $currentRolesMtime)) {
+            $needsReload = true;
+        }
+
+        if (!$needsReload) { return; }
+
+        $_SESSION['module_permissions'] = [];
+        $_SESSION['perm_role'] = $currentRole;
+        $_SESSION['roles_json_mtime'] = $currentRolesMtime;
+
+        if (!$currentRole) { $_SESSION['module_perms_loaded'] = true; return; }
+        if ($currentRole === 'admin') { // admin: acceso total
+            $_SESSION['module_permissions'] = ['*'];
+            $_SESSION['module_perms_loaded'] = true;
+            return;
+        }
+
+        try {
+            if (!is_file($rolesPath)) {
+                $_SESSION['module_permissions'] = [];
+            } else {
+                $json = json_decode(file_get_contents($rolesPath), true);
+                $mods = $json['roles'][$currentRole]['modulos'] ?? [];
+                if (!is_array($mods)) { $mods = []; }
+                // Normalizar a strings únicas
+                $mods = array_values(array_unique(array_map('strval', $mods)));
+                $_SESSION['module_permissions'] = $mods;
+            }
+        } catch (Throwable $e) {
+            $_SESSION['module_permissions'] = [];
+        }
+        $_SESSION['module_perms_loaded'] = true;
     }
 
     /**
