@@ -87,7 +87,7 @@ SELECT
   sa.nombre AS customerid_type,
   a.numero AS optional1,
   a.tipopr AS payment_description1,
-  CAST(a.valorc + CASE WHEN m.diav IS NULL THEN 0 ELSE COALESCE(m.sdomor,0) END AS DECIMAL(12,2)) AS optional2,
+  CAST(CASE WHEN m.diav IS NULL THEN a.valorc ELSE COALESCE(m.sdomor,0) END AS DECIMAL(12,2)) AS optional2,
   CAST(0 AS DECIMAL(12,2)) AS optional3,
   CAST(0 AS DECIMAL(12,2)) AS optional4,
   CAST(0 AS DECIMAL(12,2)) AS optional5,
