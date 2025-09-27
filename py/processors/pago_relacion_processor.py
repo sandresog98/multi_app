@@ -197,19 +197,19 @@ class PagoRelacionProcessor(BaseProcessor):
             relation_pair = (pse_id, confiar_id)
             
             # Verificar que no existe ya la relación exacta en BD
-            # if relation_pair in existing_relations:
-            #    self.logger.info(f"Relación existente (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
-            #    continue
+            if relation_pair in existing_relations:
+                # self.logger.info(f"Relación existente (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
+                continue
             
             # Verificar que no haya duplicados del mismo par en esta ejecución
-            # if relation_pair in seen_pairs:
-            #   self.logger.info(f"Relación duplicada en esta ejecución (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
-            #   continue
+            if relation_pair in seen_pairs:
+                # self.logger.info(f"Relación duplicada en esta ejecución (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
+                continue
             
             # (Opcional) Restringir a una sola relación por PSE en la misma ejecución
-            # if pse_id in seen_pse_ids:
-            #    self.logger.info(f"PSE {pse_id} duplicado en esta ejecución, saltando...")
-            #    continue
+            if pse_id in seen_pse_ids:
+                # self.logger.info(f"PSE {pse_id} duplicado en esta ejecución, saltando...")
+                continue
             
             seen_pairs.add(relation_pair)
             seen_pse_ids.add(pse_id)
@@ -273,7 +273,7 @@ class PagoRelacionProcessor(BaseProcessor):
         
         try:
             insert_query = """
-                INSERT INTO banco_asignacion_pse (pse_id, confiar_id, tipo_asignacion, fecha_validacion)
+                INSERT IGNORE INTO banco_asignacion_pse (pse_id, confiar_id, tipo_asignacion, fecha_validacion)
                 VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
             """
             
