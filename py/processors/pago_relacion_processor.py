@@ -202,14 +202,14 @@ class PagoRelacionProcessor(BaseProcessor):
             #    continue
             
             # Verificar que no haya duplicados del mismo par en esta ejecución
-            if relation_pair in seen_pairs:
-                self.logger.info(f"Relación duplicada en esta ejecución (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
-                continue
+            # if relation_pair in seen_pairs:
+            #   self.logger.info(f"Relación duplicada en esta ejecución (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
+            #   continue
             
             # (Opcional) Restringir a una sola relación por PSE en la misma ejecución
-            if pse_id in seen_pse_ids:
-                self.logger.info(f"PSE {pse_id} duplicado en esta ejecución, saltando...")
-                continue
+            # if pse_id in seen_pse_ids:
+            #    self.logger.info(f"PSE {pse_id} duplicado en esta ejecución, saltando...")
+            #    continue
             
             seen_pairs.add(relation_pair)
             seen_pse_ids.add(pse_id)
