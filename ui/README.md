@@ -59,8 +59,9 @@ ui/
 
 ### **Roles del Sistema (roles.json):**
 - **`admin`**: acceso total
-- **`lider`**: acceso total (con restricciones administrativas)
-- **`oficina`**: acceso a Oficina, Boletería, Cobranza y Créditos (sin aprobar/rechazar)
+- **`lider`**: acceso amplio (con restricciones para acciones críticas como eliminar admins)
+- **`oficina`**: Oficina, Boletería, Cobranza y Créditos (sin aprobar/rechazar)
+- **`tienda`**: Oficina (Resumen, Asociados, Informaciones) + Tienda completa (Catálogo, Compras, Inventario, Ventas, Reversiones, Facturación)
 
 ### **Módulos por Rol:**
 | Módulo | Admin | Oficina | Usuario |
@@ -94,9 +95,13 @@ ui/
   └── 📞 Comunicaciones
 👥 Usuarios
 📝 Logs
-🎁 Beneficios (Placeholder)
-🏛️ FAU (Placeholder)
-🛒 Tienda (Placeholder)
+🛒 Tienda (Acordeón)
+  ├── 🏷️ Catálogo (Productos, Marcas, Categorías)
+  ├── 🚚 Compras (ingreso a inventario)
+  ├── 📦 Inventario (con detalle por lotes e IMEIs)
+  ├── 🛍️ Ventas (asociados o clientes externos)
+  ├── 📄 Facturación (lista y detalle de ventas)
+  └── 🔁 Reversiones (gestión de devoluciones)
 ```
 
 ## 🏢 **Módulo Oficina**
@@ -288,12 +293,68 @@ RewriteRule ^(.*)$ index.php [QSA,L]
 ```bash
 # Directorios de uploads
 chmod 755 ui/uploads/
-chmod 755 ui/uploads/recibos/
+chmod 755 ui/uploads/tienda/
+chmod 755 ui/uploads/creditos/
 
 # Archivos de configuración
 chmod 644 ui/config/*.php
 chmod 644 ui/controllers/*.php
 ```
+
+### **Acceso web a archivos subidos**
+Para evitar errores 403 en imágenes/adjuntos, existe `ui/uploads/.htaccess` con permisos abiertos de lectura.
+
+---
+
+## 🛒 Módulo Tienda
+
+### Catálogo
+- Gestión de Categorías, Marcas y Productos (con foto PNG/JPG/JPEG máx. 2MB).
+- Filtros en Productos: categoría, marca, nombre y rango de precio.
+- Formularios de crear/editar en modales flotantes.
+- Nota: Eliminación deshabilitada por política para categorías, marcas y productos.
+
+### Compras (Ingreso a inventario)
+- Registrar ítems con cantidad, precio de compra y precio de venta sugerido.
+- Para categoría "Celulares" se exige IMEI por unidad (único).
+- Tras guardar, la página se recarga para ver la compra en “Compras recientes”.
+- Eliminación de compra solo si no genera stock negativo y sin IMEIs vendidos.
+
+### Inventario
+- Vista agregada: ingresado, vendido y disponible por producto.
+- Filtros por categoría, marca y nombre; muestra miniatura de foto si existe.
+- Detalle por producto: lotes (precios), IMEIs disponibles y reversiones asociadas (incluye IMEI, precios y si fue revendido).
+
+### Ventas
+- Cliente: asociado (búsqueda por cédula/nombre) o cliente externo (autocomplete).
+- Selección de producto en modal; para “Celulares” selección de IMEIs disponibles.
+- Precio unitario editable; muestra referencia “Compra aprox” y Stock.
+- Validación de stock en cliente y servidor (incluye IMEIs).
+- Pagos múltiples: Efectivo, Bold, QR, Crédito SIFONE (número obligatorio), Reversión (requiere pago anterior).
+- Totales: se muestran Total de productos y Total pagos; el botón “Registrar venta” se habilita solo cuando coinciden y Total > 0.
+
+### Reversiones
+- Búsqueda de ventas, selección de producto, registro de motivo y si puede revenderse.
+- Bloquea reversiones duplicadas sobre el mismo detalle de venta.
+- El detalle se refleja en Inventario y Facturación (bandera “Reversado”).
+
+### Facturación
+- Lista de ventas con detalle (productos, IMEIs, precios, pagos, ganancia).
+- Eliminación bloqueada cuando:
+  - La venta tiene reversiones asociadas, o
+  - Alguno de sus pagos fue usado como “pago anterior” en otra venta.
+- La UI muestra “Bloqueada” en lugar del botón Eliminar cuando corresponda.
+
+### Clientes (externos)
+- CRUD en modal; autocomplete en Ventas.
+- Eliminación bloqueada si el cliente tiene ventas asociadas. La UI muestra “Bloqueado”.
+
+---
+
+## 🔑 Permisos y Sidebar
+- El Sidebar muestra solo los enlaces permitidos según `roles.json`.
+- El encabezado de cada acordeón (Oficina, Tienda, Créditos, etc.) solo se muestra si el rol tiene acceso a ese módulo o a alguna de sus páginas hijas.
+- Los permisos se recargan automáticamente si cambia el rol del usuario o si se modifica `roles.json` (sin necesidad de cerrar sesión).
 
 ## 🔍 **Solución de Problemas**
 
