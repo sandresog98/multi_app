@@ -189,21 +189,29 @@ class PagoRelacionProcessor(BaseProcessor):
         # Filtrar relaciones válidas
         valid_relations = []
         seen_pse_ids = set()
+        seen_pairs = set()
         
         for relation in relaciones:
             pse_id = relation['pse_id']
             confiar_id = relation['confiar_id']
+            relation_pair = (pse_id, confiar_id)
             
-            # Verificar que no existe ya la relación
-            #if pse_id in existing_relations:
-            #    self.logger.info(f"PSE {pse_id} ya tiene relación, saltando...")
-            #    continue
+            # Verificar que no existe ya la relación exacta en BD
+            if relation_pair in existing_relations:
+                self.logger.info(f"Relación existente (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
+                continue
             
-            # Verificar que no hay duplicados en esta ejecución
+            # Verificar que no haya duplicados del mismo par en esta ejecución
+            if relation_pair in seen_pairs:
+                self.logger.info(f"Relación duplicada en esta ejecución (pse_id={pse_id}, confiar_id={confiar_id}), saltando...")
+                continue
+            
+            # (Opcional) Restringir a una sola relación por PSE en la misma ejecución
             if pse_id in seen_pse_ids:
                 self.logger.info(f"PSE {pse_id} duplicado en esta ejecución, saltando...")
                 continue
             
+            seen_pairs.add(relation_pair)
             seen_pse_ids.add(pse_id)
             valid_relations.append(relation)
         
@@ -213,14 +221,14 @@ class PagoRelacionProcessor(BaseProcessor):
     def _get_existing_relations(self) -> set:
         """Obtiene las relaciones existentes"""
         try:
-            query = "SELECT pse_id FROM banco_asignacion_pse"
+            query = "SELECT pse_id, confiar_id FROM banco_asignacion_pse"
             
             with self.db_manager.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(query)
                 results = cursor.fetchall()
             
-            return {row[0] for row in results}
+            return {(row[0], row[1]) for row in results}
             
         except Exception as e:
             self.logger.error(f"Error obteniendo relaciones existentes: {e}")
