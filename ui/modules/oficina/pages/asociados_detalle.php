@@ -181,23 +181,29 @@ include '../../../views/layouts/header.php';
             <table class="table table-sm table-hover align-middle">
               <thead class="table-light"><tr>
                 <th>Fecha</th>
-                <th class="text-end">Débito</th>
-                <th class="text-end">Crédito</th>
-                <th class="text-end">Saldo</th>
                 <th>Recibo Sifone</th>
                 <th>Producto Id</th>
                 <th>Producto</th>
+                <th>Tipo</th>
+                <th class="text-end">Valor</th>
               </tr></thead>
               <tbody>
                 <?php foreach ($movs as $m): ?>
                 <tr>
-                  <td><small><?php echo !empty($m['fecham']) ? date('d/m/Y', strtotime($m['fecham'])) : '-'; ?></small></td>
-                  <td class="text-end"><?php echo '$'.number_format((float)($m['debito'] ?? 0), 0); ?></td>
-                  <td class="text-end"><?php echo '$'.number_format((float)($m['credit'] ?? 0), 0); ?></td>
-                  <td class="text-end"><?php echo '$'.number_format((float)($m['saldof'] ?? 0), 0); ?></td>
+                  <td><small><?php echo !empty($m['fecham']) ? date('Y-m-d', strtotime($m['fecham'])) : '-'; ?></small></td>
                   <td><?php echo htmlspecialchars($m['numero'] ?? ''); ?></td>
                   <td><?php echo htmlspecialchars($m['cuenta'] ?? ''); ?></td>
                   <td class="text-truncate" style="max-width:240px"><?php echo htmlspecialchars($m['nombrc'] ?? ''); ?></td>
+                  <td>
+                    <?php
+                      $deb = (float)($m['debito'] ?? 0);
+                      $cre = (float)($m['credit'] ?? 0);
+                      echo $deb != 0 ? 'Débito' : ($cre != 0 ? 'Crédito' : '');
+                    ?>
+                  </td>
+                  <td class="text-end">
+                    <?php $valor = (float)($m['debito'] ?? 0); if ($valor == 0) { $valor = (float)($m['credit'] ?? 0); } echo '$'.number_format($valor, 0); ?>
+                  </td>
                 </tr>
                 <?php endforeach; ?>
               </tbody>
