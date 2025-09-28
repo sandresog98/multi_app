@@ -35,10 +35,12 @@ include '../../../views/layouts/header.php';
                 <div class="col-12">
                   <label class="form-label">Tipo de archivo</label>
                   <select name="tipo" class="form-select" required>
-                    <option value="sifone_libro">Libro de asociados</option>
+                    <option value="sifone_libro">Libro de Asociados</option>
                     <option value="sifone_cartera_aseguradora">Cartera Aseguradora</option>
                     <option value="sifone_cartera_mora">Cartera Mora</option>
                     <option value="sifone_datacredito">Datacredito</option>
+                    <option value="sifone_balance_prueba">Balance prueba</option>
+                    <option value="sifone_movimientos_tributarios">Auxiliar de Movimientos Tributarios</option>
                   </select>
                 </div>
                 <div class="col-12">
@@ -88,6 +90,13 @@ include '../../../views/layouts/header.php';
               <thead class="table-light"><tr><th>ID</th><th>Tipo</th><th>Archivo</th><th>Estado</th><th>Mensaje</th><th>Fecha carga</th></tr></thead>
               <tbody id="cargasTbl"></tbody>
             </table>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <div class="small text-muted" id="cargasPageInfo"></div>
+              <div class="btn-group btn-group-sm" role="group" aria-label="Paginación">
+                <button class="btn btn-outline-secondary" id="cargasPrev">Anterior</button>
+                <button class="btn btn-outline-secondary" id="cargasNext">Siguiente</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -133,22 +142,45 @@ async function enviar(form, tipoGrupo){
 document.getElementById('formSifone')?.addEventListener('submit', (e)=>{ e.preventDefault(); enviar(e.target, 'sifone'); });
 document.getElementById('formPagos')?.addEventListener('submit', (e)=>{ e.preventDefault(); enviar(e.target, 'pagos'); });
 
-async function cargarListado(){
-  const res = await fetch('<?php echo getBaseUrl(); ?>modules/oficina/api/cargas_estado.php');
-  const data = await res.json();
-  const list = data.items||[];
-  const body = document.getElementById('cargasTbl');
-  body.innerHTML = '';
-  list.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.id}</td>
-                    <td>${r.tipo}</td>
-                    <td class="text-truncate" style="max-width:260px" title="${r.archivo_ruta}">${String(r.archivo_ruta||'').split(/[\\\/]/).pop()}</td>
-                    <td>${estadoBadge(r.estado)}</td>
-                    <td class="text-truncate" style="max-width:320px">${r.mensaje_log||''}</td>
-                    <td><small>${r.fecha_creacion}</small></td>`;
-    body.appendChild(tr);
-  });
+let cargasPage = 1;
+const cargasPageSize = 20;
+
+async function cargarListado(page = cargasPage){
+  try {
+    const url = '<?php echo getBaseUrl(); ?>modules/oficina/api/cargas_estado.php?page=' + page + '&limit=' + cargasPageSize;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Error al cargar');
+
+    const list = data.items||[];
+    const pag = data.pagination || { page: page, pageSize: cargasPageSize, total: list.length, totalPages: 1 };
+    cargasPage = pag.page;
+
+    const body = document.getElementById('cargasTbl');
+    body.innerHTML = '';
+    list.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.id}</td>
+                      <td>${r.tipo}</td>
+                      <td class="text-truncate" style="max-width:260px" title="${r.archivo_ruta}">${String(r.archivo_ruta||'').split(/[\\\/]/).pop()}</td>
+                      <td>${estadoBadge(r.estado)}</td>
+                      <td class="text-truncate" style="max-width:320px">${r.mensaje_log||''}</td>
+                      <td><small>${r.fecha_creacion}</small></td>`;
+      body.appendChild(tr);
+    });
+
+    const info = document.getElementById('cargasPageInfo');
+    const start = (pag.page - 1) * pag.pageSize + 1;
+    const end = Math.min(pag.page * pag.pageSize, pag.total);
+    info.textContent = `Mostrando ${start}-${end} de ${pag.total}`;
+
+    const btnPrev = document.getElementById('cargasPrev');
+    const btnNext = document.getElementById('cargasNext');
+    btnPrev.disabled = pag.page <= 1;
+    btnNext.disabled = pag.page >= pag.totalPages;
+  } catch (e) {
+    console.error(e);
+  }
 }
 function estadoBadge(est){
   if (est==='completado') return '<span class="badge bg-success">Completado</span>';
@@ -156,7 +188,9 @@ function estadoBadge(est){
   if (est==='error') return '<span class="badge bg-danger">Error</span>';
   return '<span class="badge bg-secondary">Pendiente</span>';
 }
-document.getElementById('btnRefrescar')?.addEventListener('click', (e)=>{ e.preventDefault(); cargarListado(); });
+document.getElementById('btnRefrescar')?.addEventListener('click', (e)=>{ e.preventDefault(); cargarListado(1); });
+document.getElementById('cargasPrev')?.addEventListener('click', (e)=>{ e.preventDefault(); if (cargasPage>1) cargarListado(cargasPage-1); });
+document.getElementById('cargasNext')?.addEventListener('click', (e)=>{ e.preventDefault(); cargarListado(cargasPage+1); });
 
 // Botón para ejecutar worker
 document.getElementById('btnEjecutarWorker')?.addEventListener('click', async (e) => {

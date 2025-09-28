@@ -257,7 +257,67 @@ CREATE VIEW sifone_datacredito_vw AS
         bb AS celular
     FROM sifone_datacredito
 ;
-
+CREATE TABLE IF NOT EXISTS sifone_balance_prueba (
+    cuenta          VARCHAR(50),
+    nombre          VARCHAR(255),
+    cedula          VARCHAR(50),
+    nombrt          VARCHAR(255),
+    salant          NUMERIC(18, 2),
+    debito          NUMERIC(18, 2),
+    credit          NUMERIC(18, 2),
+    nuesal          NUMERIC(18, 2),
+    grupo1          BIGINT, 
+    nombr1          VARCHAR(255),
+    grupo2          BIGINT, 
+    nombr2          VARCHAR(255),
+    grupo3          BIGINT, 
+    nombr3          VARCHAR(255),
+    grupo4          BIGINT, 
+    nombr4          VARCHAR(255),
+    salantg1        NUMERIC(18, 2),
+    debitog1        NUMERIC(18, 2),
+    creditg1        NUMERIC(18, 2),
+    nuesalg1        NUMERIC(18, 2),
+    salantg2        NUMERIC(18, 2),
+    debitog2        NUMERIC(18, 2),
+    creditg2        NUMERIC(18, 2),
+    nuesalg2        NUMERIC(18, 2),
+    salantg3        NUMERIC(18, 2),
+    debitog3        NUMERIC(18, 2),
+    creditg3        NUMERIC(18, 2),
+    nuesalg3        NUMERIC(18, 2),
+    salantg4        NUMERIC(18, 2),
+    debitog4        NUMERIC(18, 2),
+    creditg4        NUMERIC(18, 2),
+    nuesalg4        NUMERIC(18, 2),
+    salantc         NUMERIC(18, 2),
+    nuesalc         NUMERIC(18, 2),
+    debitoc         NUMERIC(18, 2),
+    creditc         NUMERIC(18, 2),
+    detall          VARCHAR(255),
+    cuentx          VARCHAR(50),
+    period          VARCHAR(7),
+    longitud        INTEGER 
+);
+CREATE TABLE IF NOT EXISTS sifone_movimientos_tributarios (
+    cuenta          BIGINT,        
+    nombrc          VARCHAR(255),  
+    period          VARCHAR(7),    
+    cedula          VARCHAR(50),   
+    nombre          VARCHAR(255),  
+    compro          VARCHAR(20),   
+    numero          VARCHAR(50),   
+    docref          VARCHAR(50),   
+    fecham          DATE,          
+    detall          VARCHAR(255),  
+    debito          NUMERIC(18, 2),
+    credit          NUMERIC(18, 2),
+    saldof          NUMERIC(18, 2),
+    usuari          VARCHAR(100),  
+    saldoi          NUMERIC(18, 2),
+    base            NUMERIC(18, 2),
+    cencos          VARCHAR(50)    
+);
 
 -- Tabla de usuarios para autenticación
 CREATE TABLE IF NOT EXISTS control_usuarios (

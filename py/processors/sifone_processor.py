@@ -636,6 +636,135 @@ class SifoneProcessor(BaseProcessor):
         except Exception as e:
             logger.error(f"❌ Error procesando archivo {file_path}: {e}")
             return []
+
+    def process_balance_prueba_file(self, file_path: str) -> List[Dict[str, Any]]:
+        """Procesar archivo Balance de Prueba para tabla sifone_balance_prueba."""
+        try:
+            logger.info(f"🔄 Procesando Balance de Prueba: {file_path}")
+            df = self.excel_processor.read_excel_file(file_path)
+            df = self.excel_processor.clean_dataframe(df)
+
+            # Mapeo a los nombres de columnas de la tabla destino si existen
+            column_mapping = {
+                'cuenta': 'string',
+                'nombre': 'string',
+                'cedula': 'string',
+                'nombrt': 'string',
+                'salant': 'numeric',
+                'debito': 'numeric',
+                'credit': 'numeric',
+                'nuesal': 'numeric',
+                'grupo1': 'integer',
+                'nombr1': 'string',
+                'grupo2': 'integer',
+                'nombr2': 'string',
+                'grupo3': 'integer',
+                'nombr3': 'string',
+                'grupo4': 'integer',
+                'nombr4': 'string',
+                'salantg1': 'numeric',
+                'debitog1': 'numeric',
+                'creditg1': 'numeric',
+                'nuesalg1': 'numeric',
+                'salantg2': 'numeric',
+                'debitog2': 'numeric',
+                'creditg2': 'numeric',
+                'nuesalg2': 'numeric',
+                'salantg3': 'numeric',
+                'debitog3': 'numeric',
+                'creditg3': 'numeric',
+                'nuesalg3': 'numeric',
+                'salantg4': 'numeric',
+                'debitog4': 'numeric',
+                'creditg4': 'numeric',
+                'nuesalg4': 'numeric',
+                'salantc': 'numeric',
+                'nuesalc': 'numeric',
+                'debitoc': 'numeric',
+                'creditc': 'numeric',
+                'detall': 'string',
+                'cuentx': 'string',
+                'period': 'string',
+                'longitud': 'integer',
+            }
+
+            # Limpiar sólo las columnas que existan en el archivo
+            df = self.data_cleaner.clean_dataframe_columns(df, {k: v for k, v in column_mapping.items() if k in df.columns})
+
+            processed_data: List[Dict[str, Any]] = []
+            for _, row in df.iterrows():
+                record: Dict[str, Any] = {}
+                for col, col_type in column_mapping.items():
+                    if col not in df.columns:
+                        continue
+                    if col_type == 'string':
+                        record[col] = self.data_cleaner.clean_string_field(row.get(col))
+                    elif col_type == 'numeric':
+                        record[col] = self.data_cleaner.clean_numeric_field(row.get(col))
+                    elif col_type == 'integer':
+                        record[col] = self.data_cleaner.clean_integer_field(row.get(col))
+                    else:
+                        record[col] = row.get(col)
+                processed_data.append(record)
+
+            logger.info(f"✅ Balance de Prueba: {len(processed_data)} registros")
+            return processed_data
+        except Exception as e:
+            logger.error(f"❌ Error procesando Balance de Prueba {file_path}: {e}")
+            return []
+
+    def process_movimientos_tributarios_file(self, file_path: str) -> List[Dict[str, Any]]:
+        """Procesar archivo Auxiliar de Movimientos Tributarios para su tabla."""
+        try:
+            logger.info(f"🔄 Procesando Movimientos Tributarios: {file_path}")
+            df = self.excel_processor.read_excel_file(file_path)
+            df = self.excel_processor.clean_dataframe(df)
+
+            column_mapping = {
+                'cuenta': 'integer',
+                'nombrc': 'string',
+                'period': 'string',
+                'cedula': 'string',
+                'nombre': 'string',
+                'compro': 'string',
+                'numero': 'string',
+                'docref': 'string',
+                'fecham': 'date',
+                'detall': 'string',
+                'debito': 'numeric',
+                'credit': 'numeric',
+                'saldof': 'numeric',
+                'usuari': 'string',
+                'saldoi': 'numeric',
+                'base': 'numeric',
+                'cencos': 'string',
+            }
+
+            df = self.data_cleaner.clean_dataframe_columns(df, {k: v for k, v in column_mapping.items() if k in df.columns})
+
+            processed_data: List[Dict[str, Any]] = []
+            for _, row in df.iterrows():
+                record: Dict[str, Any] = {}
+                for col, col_type in column_mapping.items():
+                    if col not in df.columns:
+                        continue
+                    if col_type == 'string':
+                        record[col] = self.data_cleaner.clean_string_field(row.get(col))
+                    elif col_type == 'numeric':
+                        record[col] = self.data_cleaner.clean_numeric_field(row.get(col))
+                    elif col_type == 'integer':
+                        record[col] = self.data_cleaner.clean_integer_field(row.get(col))
+                    elif col_type == 'date':
+                        record[col] = self.data_cleaner.clean_date_field(row.get(col))
+                    else:
+                        record[col] = row.get(col)
+                processed_data.append(record)
+
+            logger.info(f"✅ Movimientos Tributarios: {len(processed_data)} registros")
+            return processed_data
+        except Exception as e:
+            logger.error(f"❌ Error procesando Movimientos Tributarios {file_path}: {e}")
+            return []
     
     def insert_control_asociados(self):
         """Insertar cédulas únicas en control_asociados"""

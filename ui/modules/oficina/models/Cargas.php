@@ -12,11 +12,22 @@ class Cargas {
         return (int)$this->conn->lastInsertId();
     }
 
-    public function listar(int $limit = 50): array {
-        $stmt = $this->conn->prepare("SELECT id, tipo, archivo_ruta, estado, mensaje_log, fecha_creacion, fecha_actualizacion FROM control_cargas ORDER BY id DESC LIMIT ?");
+    public function listar(int $limit = 20, int $offset = 0): array {
+        $sql = "SELECT id, tipo, archivo_ruta, estado, mensaje_log, fecha_creacion, fecha_actualizacion
+                FROM control_cargas
+                ORDER BY id DESC
+                LIMIT ? OFFSET ?";
+        $stmt = $this->conn->prepare($sql);
         $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+        $stmt->bindValue(2, $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    public function contar(): int {
+        $stmt = $this->conn->query("SELECT COUNT(*) AS cnt FROM control_cargas");
+        $row = $stmt->fetch();
+        return (int)($row['cnt'] ?? 0);
     }
 }
 
