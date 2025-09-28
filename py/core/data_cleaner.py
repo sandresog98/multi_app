@@ -103,6 +103,32 @@ class DataCleaner:
             logger.warning(f"⚠️ No se pudo convertir fecha '{value}': {e}")
             return None
 
+    def clean_time_field(self, value: Any) -> Optional[str]:
+        """Limpiar campo de hora a formato HH:MM:SS."""
+        if pd.isna(value) or value is None:
+            return None
+        try:
+            # Si viene como string u objeto datetime-like, normalizar con pandas
+            pd_time = pd.to_datetime(value, errors='coerce')
+            if pd.isna(pd_time):
+                # Intento manual simple HH:MM o HH:MM:SS
+                text = str(value).strip()
+                import re
+                m = re.match(r'^(\d{1,2}):(\d{2})(?::(\d{2}))?$', text)
+                if m:
+                    hh = int(m.group(1))
+                    mm = int(m.group(2))
+                    ss = int(m.group(3) or 0)
+                    hh = max(0, min(hh, 23))
+                    mm = max(0, min(mm, 59))
+                    ss = max(0, min(ss, 59))
+                    return f"{hh:02d}:{mm:02d}:{ss:02d}"
+                return None
+            return pd_time.strftime('%H:%M:%S')
+        except Exception as e:
+            logger.warning(f"⚠️ No se pudo convertir hora '{value}': {e}")
+            return None
+
     def clean_date_yyyymmdd(self, value: Any) -> Optional[str]:
         """Limpiar campo de fecha con formato estricto YYYYMMDD (acepta int o str)."""
         if pd.isna(value) or value is None:
@@ -154,6 +180,8 @@ class DataCleaner:
                     df[column] = df[column].apply(self.clean_date_field)
                 elif cleaning_type == 'date_yyyymmdd':
                     df[column] = df[column].apply(self.clean_date_yyyymmdd)
+                elif cleaning_type == 'time':
+                    df[column] = df[column].apply(self.clean_time_field)
                 elif cleaning_type == 'boolean':
                     df[column] = df[column].apply(self.clean_boolean_field)
         

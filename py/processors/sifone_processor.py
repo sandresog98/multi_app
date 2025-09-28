@@ -731,13 +731,16 @@ class SifoneProcessor(BaseProcessor):
                 'docref': 'string',
                 'fecham': 'date',
                 'detall': 'string',
+                'saldoi': 'numeric',
                 'debito': 'numeric',
                 'credit': 'numeric',
                 'saldof': 'numeric',
+                'base': 'numeric',
                 'usuari': 'string',
-                'saldoi': 'numeric',
                 'base': 'numeric',
                 'cencos': 'string',
+                'fecha': 'date',
+                'hora': 'time',
             }
 
             df = self.data_cleaner.clean_dataframe_columns(df, {k: v for k, v in column_mapping.items() if k in df.columns})
@@ -756,6 +759,8 @@ class SifoneProcessor(BaseProcessor):
                         record[col] = self.data_cleaner.clean_integer_field(row.get(col))
                     elif col_type == 'date':
                         record[col] = self.data_cleaner.clean_date_field(row.get(col))
+                    elif col_type == 'time':
+                        record[col] = self.data_cleaner.clean_time_field(row.get(col))
                     else:
                         record[col] = row.get(col)
                 processed_data.append(record)

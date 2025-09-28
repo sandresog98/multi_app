@@ -300,23 +300,25 @@ CREATE TABLE IF NOT EXISTS sifone_balance_prueba (
     longitud        INTEGER 
 );
 CREATE TABLE IF NOT EXISTS sifone_movimientos_tributarios (
-    cuenta          BIGINT,        
-    nombrc          VARCHAR(255),  
-    period          VARCHAR(7),    
-    cedula          VARCHAR(50),   
-    nombre          VARCHAR(255),  
-    compro          VARCHAR(20),   
-    numero          VARCHAR(50),   
-    docref          VARCHAR(50),   
-    fecham          DATE,          
-    detall          VARCHAR(255),  
-    debito          NUMERIC(18, 2),
-    credit          NUMERIC(18, 2),
-    saldof          NUMERIC(18, 2),
-    usuari          VARCHAR(100),  
-    saldoi          NUMERIC(18, 2),
-    base            NUMERIC(18, 2),
-    cencos          VARCHAR(50)    
+    cuenta          BIGINT,
+    nombrc          VARCHAR(255),
+    period          VARCHAR(7),
+    cedula          VARCHAR(50),
+    nombre          VARCHAR(255),
+    compro          VARCHAR(20),
+    numero          VARCHAR(50),
+    docref          VARCHAR(50),
+    fecham          DATE,
+    detall          VARCHAR(255),
+    saldoi          NUMERIC(18),
+    debito          NUMERIC(18),
+    credit          NUMERIC(18),
+    saldof          NUMERIC(18),
+    base            NUMERIC(18),
+    usuari          VARCHAR(100),
+    cencos          VARCHAR(50),
+    fecha           DATE,
+    hora            TIME
 );
 
 -- Tabla de usuarios para autenticación
