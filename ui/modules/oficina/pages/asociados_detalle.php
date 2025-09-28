@@ -34,6 +34,9 @@ foreach ($creditos as $c) {
 }
 $valorTotalMonetario = $valorProductosMensual + $valorPagoMinCreditos;
 
+// Nuevos datos desde sifone_balance_prueba
+$bp = $detalleModel->getBalancePruebaMonetarios($cedula);
+
 // Transacciones del asociado
 $tpage = (int)($_GET['tpage'] ?? 1);
 $txListado = $txModel->listTransacciones($cedula, $tpage, 10);
@@ -100,6 +103,14 @@ include '../../../views/layouts/header.php';
         <div class="col-md-6">
           <div class="card"><div class="card-header"><strong>Información monetaria</strong></div><div class="card-body">
             <div><strong><?php echo dict_label('sifone_asociados','aporte','Aportes'); ?>:</strong> <?php echo '$' . number_format((float)($info['aporte'] ?? 0), 0); ?></div>
+            <!--
+            <div><strong>Aportes Ordinarios:</strong> <?php echo '$' . number_format((float)($bp['aportes_ordinarios'] ?? 0), 0); ?></div>
+            -->
+            <div><strong>Revalorizaciones de aportes:</strong> <?php echo '$' . number_format((float)($bp['revalorizacion_aportes'] ?? 0), 0); ?></div>
+            <div><strong>Plan Futuro:</strong> <?php echo '$' . number_format((float)($bp['plan_futuro'] ?? 0), 0); ?></div>
+            <div><strong>Aportes Sociales:</strong> <?php echo '$' . number_format((float)($bp['aportes_sociales_2'] ?? 0), 0); ?></div>
+          </div></div>
+          <div class="card mt-2"><div class="card-header"><strong>Valor de pagos</strong></div><div class="card-body">
             <div><strong>Valor mensual de productos:</strong> <?php echo '$' . number_format($valorProductosMensual, 0); ?></div>
             <div><strong>Valor pago mínimo créditos:</strong> <?php echo '$' . number_format($valorPagoMinCreditos, 0); ?></div>
             <div><strong>Valor total:</strong> <?php echo '$' . number_format($valorTotalMonetario, 0); ?></div>

@@ -83,6 +83,47 @@ class DetalleAsociado {
         return $stmt->fetchAll();
     }
 
+    public function getBalancePruebaMonetarios(string $cedula): array {
+        $targets = [
+            'aportes ordinarios',
+            'Revalorizacion Aportes',
+            'PLAN FUTURO',
+            'APORTES SOCIALES 2',
+        ];
+
+        $placeholders = implode(',', array_fill(0, count($targets), '?'));
+        $sql = "SELECT LOWER(nombre) AS nombre, SUM(ABS(COALESCE(salant,0))) AS valor
+                FROM sifone_balance_prueba
+                WHERE cedula = ? AND nombre IN ($placeholders)
+                GROUP BY nombre";
+        $stmt = $this->conn->prepare($sql);
+        $params = array_merge([$cedula], $targets);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $map = [
+            'aportes ordinarios' => 'aportes_ordinarios',
+            'revalorizacion aportes' => 'revalorizacion_aportes',
+            'plan futuro' => 'plan_futuro',
+            'aportes sociales 2' => 'aportes_sociales_2',
+        ];
+
+        $result = [
+            'aportes_ordinarios' => 0.0,
+            'revalorizacion_aportes' => 0.0,
+            'plan_futuro' => 0.0,
+            'aportes_sociales_2' => 0.0,
+        ];
+
+        foreach ($rows as $r) {
+            $keyName = strtolower(trim((string)$r['nombre']));
+            if (isset($map[$keyName])) {
+                $result[$map[$keyName]] = (float)$r['valor'];
+            }
+        }
+        return $result;
+    }
+
     public function assignProduct(string $cedula, int $productoId, int $diaPago, float $montoPago): array {
         $range = $this->getProductRange($productoId);
         if (!$range) return ['success'=>false,'message'=>'Producto inválido'];
