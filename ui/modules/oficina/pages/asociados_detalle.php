@@ -171,6 +171,44 @@ include '../../../views/layouts/header.php';
       </div>
       <?php endif; ?>
 
+      <!-- Modal Movimientos Sifone -->
+      <div class="modal fade" id="modalMovSifone" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>Transacciones Sifone</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <?php $movs = $detalleModel->getMovimientosTributarios($cedula); ?>
+          <?php if (!empty($movs)): ?>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead class="table-light"><tr>
+                <th>Fecha</th>
+                <th class="text-end">Débito</th>
+                <th class="text-end">Crédito</th>
+                <th class="text-end">Saldo</th>
+                <th>Recibo Sifone</th>
+                <th>Producto Id</th>
+                <th>Producto</th>
+              </tr></thead>
+              <tbody>
+                <?php foreach ($movs as $m): ?>
+                <tr>
+                  <td><small><?php echo !empty($m['fecham']) ? date('d/m/Y', strtotime($m['fecham'])) : '-'; ?></small></td>
+                  <td class="text-end"><?php echo '$'.number_format((float)($m['debito'] ?? 0), 0); ?></td>
+                  <td class="text-end"><?php echo '$'.number_format((float)($m['credit'] ?? 0), 0); ?></td>
+                  <td class="text-end"><?php echo '$'.number_format((float)($m['saldof'] ?? 0), 0); ?></td>
+                  <td><?php echo htmlspecialchars($m['numero'] ?? ''); ?></td>
+                  <td><?php echo htmlspecialchars($m['cuenta'] ?? ''); ?></td>
+                  <td class="text-truncate" style="max-width:240px"><?php echo htmlspecialchars($m['nombrc'] ?? ''); ?></td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php else: ?>
+            <div class="text-muted">No hay transacciones Sifone para este asociado.</div>
+          <?php endif; ?>
+        </div>
+      </div></div></div>
+
       <div class="row g-3 mt-1">
         <div class="col-md-6">
           <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><strong>Información de productos</strong>
@@ -255,7 +293,9 @@ include '../../../views/layouts/header.php';
       <?php if (!empty($txListado['items'])): ?>
       <div class="row g-3 mt-1" id="txlist">
         <div class="col-12">
-          <div class="card"><div class="card-header"><strong>Transacciones creadas</strong></div><div class="card-body">
+          <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><strong>Transacciones creadas</strong>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalMovSifone"><i class="fas fa-list me-1"></i>Ver Transacciones Sifone</button>
+          </div><div class="card-body">
             <div class="table-responsive">
               <table class="table table-sm table-hover align-middle">
                 <thead class="table-light"><tr><th>ID</th><th>Origen</th><th>PSE/CONF</th><th>Recibo Sifone</th><th>Valor pago</th><th>Total asignado</th><th>Items</th><th>Fecha</th><th></th></tr></thead>

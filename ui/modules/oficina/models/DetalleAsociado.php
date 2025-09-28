@@ -168,4 +168,14 @@ class DetalleAsociado {
         if ($ok) return ['success'=>true,'message'=>'Asignación eliminada'];
         return ['success'=>false,'message'=>'No se pudo eliminar la asignación'];
     }
+
+    public function getMovimientosTributarios(string $cedula): array {
+        $sql = "SELECT fecham, debito, credit, saldof, numero, cuenta, nombrc
+                FROM sifone_movimientos_tributarios
+                WHERE cedula = ?
+                ORDER BY fecham DESC, cuenta DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$cedula]);
+        return $stmt->fetchAll();
+    }
 }
