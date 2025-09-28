@@ -170,10 +170,10 @@ class DetalleAsociado {
     }
 
     public function getMovimientosTributarios(string $cedula): array {
-        $sql = "SELECT fecham, debito, credit, saldof, numero, cuenta, nombrc
+        $sql = "SELECT fecha, hora, debito, credit, numero, cuenta, detall
                 FROM sifone_movimientos_tributarios
                 WHERE cedula = ?
-                ORDER BY fecham DESC, cuenta DESC";
+                ORDER BY fecha DESC, hora DESC, cuenta DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
         return $stmt->fetchAll();

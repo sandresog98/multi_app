@@ -183,17 +183,23 @@ include '../../../views/layouts/header.php';
                 <th>Fecha</th>
                 <th>Recibo Sifone</th>
                 <th>Producto Id</th>
-                <th>Producto</th>
+                <th>Detalle</th>
                 <th>Tipo</th>
                 <th class="text-end">Valor</th>
               </tr></thead>
               <tbody>
                 <?php foreach ($movs as $m): ?>
                 <tr>
-                  <td><small><?php echo !empty($m['fecham']) ? date('Y-m-d', strtotime($m['fecham'])) : '-'; ?></small></td>
+                  <td><small>
+                    <?php
+                      $f = !empty($m['fecha']) ? date('Y-m-d', strtotime($m['fecha'])) : '';
+                      $h = !empty($m['hora']) ? substr((string)$m['hora'], 0, 8) : '';
+                      echo trim(($f . ' ' . $h)) ?: '-';
+                    ?>
+                  </small></td>
                   <td><?php echo htmlspecialchars($m['numero'] ?? ''); ?></td>
                   <td><?php echo htmlspecialchars($m['cuenta'] ?? ''); ?></td>
-                  <td class="text-truncate" style="max-width:240px"><?php echo htmlspecialchars($m['nombrc'] ?? ''); ?></td>
+                  <td class="text-truncate" style="max-width:240px"><?php echo htmlspecialchars($m['detall'] ?? ''); ?></td>
                   <td>
                     <?php
                       $deb = (float)($m['debito'] ?? 0);
