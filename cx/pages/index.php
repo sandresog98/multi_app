@@ -18,13 +18,6 @@ body {
   background-attachment: fixed;
 }
 
-/* Footer transparente */
-.footer-nav {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
 /* Tarjeta de resumen financiero transparente */
 .card-link {
   background: rgba(255, 255, 255, 0.7) !important;

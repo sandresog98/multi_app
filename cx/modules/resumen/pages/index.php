@@ -39,12 +39,6 @@ body {
   background-attachment: fixed;
 }
 
-/* Footer transparente */
-.footer-nav {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
 </style>
     <main class="container py-3">
       <div class="row g-2 mb-2">
