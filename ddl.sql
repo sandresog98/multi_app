@@ -4,7 +4,7 @@ USE multiapptwo;
 -- Tabla de logs del sistema (eventos seleccionados)
 CREATE TABLE IF NOT EXISTS control_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT,
+    id_usuario VARCHAR(20),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     accion ENUM('login','crear','editar','eliminar') NOT NULL,
     modulo VARCHAR(50) NOT NULL,
@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS control_logs (
     INDEX idx_modulo (modulo),
     INDEX idx_usuario (id_usuario)
 );
+
+-- Modificar tabla existente para permitir cédulas de asociados
+ALTER TABLE control_logs MODIFY COLUMN id_usuario VARCHAR(20);
 
 -- Tablas de Sifone
 CREATE TABLE IF NOT EXISTS sifone_asociados (
