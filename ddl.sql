@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS control_logs (
     INDEX idx_usuario (id_usuario)
 );
 
--- Modificar tabla existente para permitir cédulas de asociados
-ALTER TABLE control_logs MODIFY COLUMN id_usuario VARCHAR(20);
-
 -- Tablas de Sifone
 CREATE TABLE IF NOT EXISTS sifone_asociados (
     cedula VARCHAR(20),
