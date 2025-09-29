@@ -1,6 +1,7 @@
 <?php
 require_once '../../../controllers/AuthController.php';
 require_once '../../../config/database.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 try{
@@ -77,7 +78,26 @@ try{
   }
 
   $pdo->commit();
+  
+  // Log de creación de venta
+  try {
+    (new Logger())->logCrear('tienda.ventas', 'Crear venta', [
+      'id' => $ventaId,
+      'tipo_cliente' => $tipo,
+      'asociado_cedula' => $tipo === 'asociado' ? ($input['asociado_cedula'] ?? null) : null,
+      'cliente_id' => $tipo === 'externo' ? (int)($input['cliente_id'] ?? 0) : null,
+      'total' => $total,
+      'items_count' => count($items),
+      'pagos_count' => count($pagos)
+    ]);
+  } catch (Throwable $ignored) {}
+  
   echo json_encode(['success'=>true,'id'=>$ventaId]);
-}catch(Throwable $e){ if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack(); http_response_code(400); echo json_encode(['success'=>false,'message'=>$e->getMessage()]); }
+}catch(Throwable $e){ 
+  if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack(); 
+  try { (new Logger())->logEditar('tienda.ventas', 'Error al crear venta', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
+  http_response_code(400); 
+  echo json_encode(['success'=>false,'message'=>$e->getMessage()]); 
+}
 
 

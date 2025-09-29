@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../controllers/BoleteriaController.php';
 require_once __DIR__ . '/../../../controllers/AuthController.php';
+require_once __DIR__ . '/../../../models/Logger.php';
 
 try {
     $auth = new AuthController();
@@ -16,8 +17,19 @@ try {
     if ($cedula === '') { throw new Exception('Cédula requerida'); }
     $permitidos = ['credito', 'regalo_cooperativa'];
     if (!in_array($metodo, $permitidos, true)) { throw new Exception('Método de venta inválido'); }
-    echo json_encode($c->boletas_vender($id, $cedula, $metodo));
+    
+    $result = $c->boletas_vender($id, $cedula, $metodo);
+    
+    // Log de venta de boleta
+    if ($result['success']) {
+        try {
+            (new Logger())->logEditar('boleteria.boletas', 'Vender boleta', null, ['id' => $id, 'cedula' => $cedula, 'metodo' => $metodo]);
+        } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result);
 } catch (Throwable $e) {
+    try { (new Logger())->logEditar('boleteria.boletas', 'Error al vender boleta', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

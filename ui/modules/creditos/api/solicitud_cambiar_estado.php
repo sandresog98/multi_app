@@ -3,6 +3,7 @@ require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../../../config/database.php';
 require_once '../controllers/CreditosController.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 
@@ -66,7 +67,16 @@ try {
       $data['archivo_libranza'] = $libranza;
       $data['numero_credito_sifone'] = $sifone;
     }
-    echo json_encode($ctrl->cambiarEstado($id,$estado,$data));
+    $result = $ctrl->cambiarEstado($id,$estado,$data);
+    
+    // Log de cambio de estado de solicitud
+    if ($result['success']) {
+      try {
+        (new Logger())->logEditar('creditos.solicitudes', 'Cambiar estado de solicitud', ['id' => $id], ['id' => $id, 'estado' => $estado, 'archivos' => $data]);
+      } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result);
   } else {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) { $input = $_POST; }
@@ -77,9 +87,20 @@ try {
     if (in_array($estado, ['Con Datacrédito','Con Estudio','Guardado'], true)) {
       throw new Exception('Este cambio de estado requiere adjuntar archivos');
     }
-    echo json_encode($ctrl->cambiarEstado($id,$estado,[]));
+    
+    $result = $ctrl->cambiarEstado($id,$estado,[]);
+    
+    // Log de cambio de estado de solicitud
+    if ($result['success']) {
+      try {
+        (new Logger())->logEditar('creditos.solicitudes', 'Cambiar estado de solicitud', ['id' => $id], ['id' => $id, 'estado' => $estado]);
+      } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result);
   }
 } catch (Throwable $e) {
+  try { (new Logger())->logEditar('creditos.solicitudes', 'Error al cambiar estado de solicitud', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
   http_response_code(400);
   echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
 }

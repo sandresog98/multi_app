@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../controllers/BoleteriaController.php';
 require_once __DIR__ . '/../../../controllers/AuthController.php';
+require_once __DIR__ . '/../../../models/Logger.php';
 
 try {
     $auth = new AuthController();
@@ -24,8 +25,16 @@ try {
     $c = new BoleteriaController();
     $res = $c->boletas_contabilizar($id, $comprobante);
     
+    // Log de contabilización de boleta
+    if ($res['success']) {
+        try {
+            (new Logger())->logEditar('boleteria.boletas', 'Contabilizar boleta', null, ['id' => $id, 'comprobante' => $comprobante]);
+        } catch (Throwable $ignored) {}
+    }
+    
     echo json_encode($res);
 } catch (Throwable $e) {
+    try { (new Logger())->logEditar('boleteria.boletas', 'Error al contabilizar boleta', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

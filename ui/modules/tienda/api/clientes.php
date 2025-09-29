@@ -1,6 +1,7 @@
 <?php
 require_once '../../../controllers/AuthController.php';
 require_once '../models/TiendaClientes.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 try{
@@ -25,7 +26,33 @@ try{
     $tel = trim($_POST['telefono'] ?? '');
     $mail = trim($_POST['email'] ?? '');
     if ($nombre===''||$doc==='') throw new Exception('Nombre y documento requeridos');
-    echo json_encode($model->guardar($id,$nombre,$doc,$tel,$mail)); return;
+    
+    $result = $model->guardar($id,$nombre,$doc,$tel,$mail);
+    
+    // Log de creación/edición de cliente
+    if ($result['success']) {
+      try {
+        if ($id === null) {
+          (new Logger())->logCrear('tienda.clientes', 'Crear cliente', [
+            'id' => $result['id'] ?? null,
+            'nombre' => $nombre,
+            'nit_cedula' => $doc,
+            'telefono' => $tel,
+            'email' => $mail
+          ]);
+        } else {
+          (new Logger())->logEditar('tienda.clientes', 'Actualizar cliente', ['id' => $id], [
+            'id' => $id,
+            'nombre' => $nombre,
+            'nit_cedula' => $doc,
+            'telefono' => $tel,
+            'email' => $mail
+          ]);
+        }
+      } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result); return;
   }
   if ($action==='eliminar') {
     $id = (int)($_POST['id'] ?? 0); if ($id<=0) throw new Exception('ID inválido');
@@ -34,7 +61,22 @@ try{
     $q = $pdo->prepare('SELECT COUNT(*) FROM tienda_venta WHERE cliente_id = ?');
     $q->execute([$id]);
     if ((int)$q->fetchColumn() > 0) throw new Exception('No se puede eliminar: el cliente tiene ventas asociadas');
-    echo json_encode($model->eliminar($id)); return;
+    
+    // Obtener datos del cliente antes de eliminar para el log
+    $clienteData = $pdo->prepare('SELECT * FROM tienda_clientes WHERE id = ?');
+    $clienteData->execute([$id]);
+    $clienteInfo = $clienteData->fetch(PDO::FETCH_ASSOC);
+    
+    $result = $model->eliminar($id);
+    
+    // Log de eliminación de cliente
+    if ($result['success']) {
+      try {
+        (new Logger())->logEliminar('tienda.clientes', 'Eliminar cliente', $clienteInfo);
+      } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result); return;
   }
   echo json_encode(['success'=>false,'message'=>'Acción no soportada']);
 }catch(Throwable $e){ http_response_code(400); echo json_encode(['success'=>false,'message'=>$e->getMessage()]); }

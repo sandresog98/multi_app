@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/../controllers/BoleteriaController.php';
 require_once __DIR__ . '/../../../controllers/AuthController.php';
+require_once __DIR__ . '/../../../models/Logger.php';
 
 try {
     $auth = new AuthController();
@@ -11,8 +12,19 @@ try {
     if (!is_array($input)) { $input = $_POST; }
     $id = (int)($input['id'] ?? 0);
     if ($id <= 0) { throw new Exception('ID inválido'); }
-    echo json_encode($c->boletas_desanular($id));
+    
+    $result = $c->boletas_desanular($id);
+    
+    // Log de desanulación de boleta
+    if ($result['success']) {
+        try {
+            (new Logger())->logEditar('boleteria.boletas', 'Desanular boleta', null, ['id' => $id]);
+        } catch (Throwable $ignored) {}
+    }
+    
+    echo json_encode($result);
 } catch (Throwable $e) {
+    try { (new Logger())->logEditar('boleteria.boletas', 'Error al desanular boleta', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

@@ -1,6 +1,7 @@
 <?php
 require_once '../../../controllers/AuthController.php';
 require_once '../../../config/database.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 try{
@@ -19,6 +20,11 @@ try{
   $chk2->execute([$id]);
   if ((int)$chk2->fetchColumn() > 0) throw new Exception('No se puede eliminar: sus pagos fueron usados como pago anterior en otra venta');
 
+  // Obtener datos de la venta antes de eliminar para el log
+  $ventaData = $pdo->prepare('SELECT * FROM tienda_venta WHERE id = ?');
+  $ventaData->execute([$id]);
+  $ventaInfo = $ventaData->fetch(PDO::FETCH_ASSOC);
+  
   $pdo->beginTransaction();
   // Liberar IMEIs vendidos en esta venta
   $q = $pdo->prepare('SELECT compra_imei_id FROM tienda_venta_detalle WHERE venta_id = ? AND compra_imei_id IS NOT NULL');
@@ -29,7 +35,18 @@ try{
   $pdo->prepare('DELETE FROM tienda_venta_detalle WHERE venta_id = ?')->execute([$id]);
   $pdo->prepare('DELETE FROM tienda_venta WHERE id = ?')->execute([$id]);
   $pdo->commit();
+  
+  // Log de eliminación de venta
+  try {
+    (new Logger())->logEliminar('tienda.ventas', 'Eliminar venta', $ventaInfo);
+  } catch (Throwable $ignored) {}
+  
   echo json_encode(['success'=>true]);
-}catch(Throwable $e){ if(isset($pdo)&&$pdo->inTransaction()) $pdo->rollBack(); http_response_code(400); echo json_encode(['success'=>false,'message'=>$e->getMessage()]); }
+}catch(Throwable $e){ 
+  if(isset($pdo)&&$pdo->inTransaction()) $pdo->rollBack(); 
+  try { (new Logger())->logEditar('tienda.ventas', 'Error al eliminar venta', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
+  http_response_code(400); 
+  echo json_encode(['success'=>false,'message'=>$e->getMessage()]); 
+}
 
 

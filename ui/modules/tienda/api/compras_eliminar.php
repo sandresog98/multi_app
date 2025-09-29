@@ -1,6 +1,7 @@
 <?php
 require_once '../../../controllers/AuthController.php';
 require_once '../../../config/database.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 try{
@@ -15,6 +16,11 @@ try{
   $qImei->execute([$id]);
   if ((int)$qImei->fetchColumn() > 0) throw new Exception('No se puede eliminar: hay IMEIs vendidos de esta compra');
 
+  // Obtener datos de la compra antes de eliminar para el log
+  $compraData = $pdo->prepare('SELECT * FROM tienda_compra WHERE id = ?');
+  $compraData->execute([$id]);
+  $compraInfo = $compraData->fetch(PDO::FETCH_ASSOC);
+
   $pdo->beginTransaction();
   // Borrar IMEIs
   $delImeis = $pdo->prepare('DELETE ci FROM tienda_compra_imei ci INNER JOIN tienda_compra_detalle cd ON cd.id=ci.compra_detalle_id WHERE cd.compra_id = ?');
@@ -23,7 +29,18 @@ try{
   $pdo->prepare('DELETE FROM tienda_compra_detalle WHERE compra_id = ?')->execute([$id]);
   $pdo->prepare('DELETE FROM tienda_compra WHERE id = ?')->execute([$id]);
   $pdo->commit();
+  
+  // Log de eliminación de compra
+  try {
+    (new Logger())->logEliminar('tienda.compras', 'Eliminar compra', $compraInfo);
+  } catch (Throwable $ignored) {}
+  
   echo json_encode(['success'=>true]);
-}catch(Throwable $e){ if(isset($pdo)&&$pdo->inTransaction()) $pdo->rollBack(); http_response_code(400); echo json_encode(['success'=>false,'message'=>$e->getMessage()]); }
+}catch(Throwable $e){ 
+  if(isset($pdo)&&$pdo->inTransaction()) $pdo->rollBack(); 
+  try { (new Logger())->logEditar('tienda.compras', 'Error al eliminar compra', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
+  http_response_code(400); 
+  echo json_encode(['success'=>false,'message'=>$e->getMessage()]); 
+}
 
 

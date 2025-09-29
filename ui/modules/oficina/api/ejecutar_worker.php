@@ -1,6 +1,7 @@
 <?php
 require_once '../../../controllers/AuthController.php';
 require_once '../models/Cargas.php';
+require_once '../../../models/Logger.php';
 
 header('Content-Type: application/json');
 
@@ -30,6 +31,15 @@ try {
             $mensaje .= '. Salida: ' . implode(' ', $output);
         }
         
+        // Log de ejecución exitosa del worker
+        try {
+            (new Logger())->logEditar('oficina.worker', 'Ejecutar worker', null, [
+                'comando' => $comando,
+                'return_code' => $returnCode,
+                'output' => $output
+            ]);
+        } catch (Throwable $ignored) {}
+        
         echo json_encode([
             'success' => true,
             'message' => $mensaje,
@@ -42,6 +52,16 @@ try {
             $errorMsg .= '. Error: ' . implode(' ', $output);
         }
         
+        // Log de error en ejecución del worker
+        try {
+            (new Logger())->logEditar('oficina.worker', 'Error al ejecutar worker', null, [
+                'comando' => $comando,
+                'return_code' => $returnCode,
+                'output' => $output,
+                'error' => $errorMsg
+            ]);
+        } catch (Throwable $ignored) {}
+        
         echo json_encode([
             'success' => false,
             'message' => $errorMsg,
@@ -51,6 +71,7 @@ try {
     }
     
 } catch (Throwable $e) {
+    try { (new Logger())->logEditar('oficina.worker', 'Error en ejecución de worker', null, ['error' => $e->getMessage()]); } catch (Throwable $ignored) {}
     http_response_code(400);
     echo json_encode([
         'success' => false,
