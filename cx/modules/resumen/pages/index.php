@@ -36,7 +36,28 @@ body {
   background: linear-gradient(rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.3)), url('../../../assets/img/imagen_motivacion.png');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Mejorar el comportamiento en móviles */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+    background-size: cover;
+    background-position: center top;
+  }
+  
+  .collapsible-content {
+    transition: all 0.3s ease;
+  }
+  
+  .section-card {
+    transition: all 0.3s ease;
+  }
 }
 
 </style>
