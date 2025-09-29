@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         background: #0ea5e9;
         min-height: 100vh; 
       }
-      .screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:16px; }
+      .screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:0; }
       .card-mobile { width:100%; max-width:420px; border:0; border-radius:16px; box-shadow: 0 12px 30px rgba(0,0,0,.18); overflow:hidden; background: white; }
       .card-header { 
         background: url('assets/img/imagen_motivacion.png');
