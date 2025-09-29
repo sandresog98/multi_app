@@ -26,10 +26,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <style>
-      body { background: #0ea5e9; min-height: 100vh; }
+      body { 
+        background: #0ea5e9;
+        min-height: 100vh; 
+      }
       .screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:16px; }
-      .card-mobile { width:100%; max-width:420px; border:0; border-radius:16px; box-shadow: 0 12px 30px rgba(0,0,0,.18); overflow:hidden; }
-      .card-header { background: linear-gradient(135deg,#0ea5e9,#2563eb); color:#fff; text-align:center; padding:24px; }
+      .card-mobile { width:100%; max-width:420px; border:0; border-radius:16px; box-shadow: 0 12px 30px rgba(0,0,0,.18); overflow:hidden; background: white; }
+      .card-header { 
+        background: url('assets/img/imagen_motivacion.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color:#fff; 
+        text-align:center; 
+        padding:24px; 
+        position: relative;
+        min-height: 200px;
+      }
+      .card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg,#0ea5e9,#2563eb);
+        opacity: 0.6;
+        z-index: 1;
+      }
+      .card-header img,
+      .card-header .fw-semibold {
+        position: relative;
+        z-index: 2;
+      }
       .form-section { padding:20px; }
       .btn-primary { background:#0ea5e9; border-color:#0ea5e9; }
       .btn-primary:active, .btn-primary:hover { background:#0284c7; border-color:#0284c7; }
