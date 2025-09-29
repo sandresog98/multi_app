@@ -346,8 +346,14 @@ FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CUR
 
 CREATE TABLE IF NOT EXISTS control_asociados (
     cedula VARCHAR(20) UNIQUE PRIMARY KEY,
+    password_hash VARCHAR(255) NULL,
+    password_set_at TIMESTAMP NULL DEFAULT NULL,
+    reset_token VARCHAR(64) NULL,
+    reset_token_expires_at DATETIME NULL,
     estado_activo BOOLEAN DEFAULT TRUE,
-    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_reset_token (reset_token),
+    INDEX idx_estado_activo (estado_activo)
 );
 -- Triggers control_asociados
 DROP TRIGGER IF EXISTS control_asociados_bu;
