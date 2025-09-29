@@ -1,7 +1,7 @@
 <?php
 // Redirección simple a la carpeta UI
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-$target = ($base ? $base : '') . '/ui/';
+$target = ($base ? $base : '') . '/cx/';
 header('Location: ' . $target, true, 302);
 ?>
 <!DOCTYPE html>
