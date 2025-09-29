@@ -30,179 +30,20 @@ $heroTitle = 'Resumen Financiero';
 $heroSubtitle = 'Consulta tus aportes, créditos y productos.';
 include __DIR__ . '/../../../views/layouts/header.php';
 ?>
+<link rel="stylesheet" href="../assets/css/resumen.css">
 <style>
-/* Estilos mejorados inspirados en UI */
-.collapsible-header {
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.3s ease;
-  padding: 15px 20px;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 15px 15px 0 0;
-  border: 1px solid #dee2e6;
-  border-bottom: none;
-  margin-bottom: 0;
-}
-.collapsible-header:hover {
-  background: linear-gradient(135deg, #e9ecef, #dee2e6);
-  transform: translateY(-1px);
-}
-.collapsible-content {
-  display: none;
-  transition: all 0.3s ease;
-  border-radius: 0 0 15px 15px;
-  border: 1px solid #dee2e6;
-  border-top: none;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-.collapsible-content.show {
-  display: block;
-}
-.collapsible-icon {
-  transition: transform 0.3s ease;
-  color: #6c757d;
-}
-.collapsible-icon.rotated {
-  transform: rotate(180deg);
-  color: #0ea5e9;
+body {
+  background: linear-gradient(rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.3)), url('../../../assets/img/imagen_motivacion.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
-/* Mejoras en las tarjetas */
-.section-card {
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-.section-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.section-title {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #495057;
-  margin: 0;
-}
-
-/* Mejoras en los KPIs */
-.kpi-card {
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
-}
-.kpi-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-.kpi-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0ea5e9;
-  font-size: 1.2rem;
-}
-.kpi-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #212529;
-  line-height: 1.2;
-}
-.kpi-label {
-  font-size: 0.8rem;
-  color: #6c757d;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Mejoras en los campos */
-.kv {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f1f3f4;
-}
-.kv:last-child {
-  border-bottom: none;
-}
-.k {
-  font-weight: 600 !important;
-  color: #495057;
-  font-size: 0.9rem;
-}
-.v {
-  color: #212529;
-  font-weight: 500;
-  text-align: right;
-  font-size: 0.9rem;
-}
-
-/* Mejoras en las tarjetas de crédito/productos */
-.info-card {
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
-  transition: all 0.3s ease;
-}
-.info-card:hover {
-  border-color: #0ea5e9;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
-}
-
-/* Estilos para la tabla de productos */
-.table-responsive {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-.table {
-  margin-bottom: 0;
-}
-.table thead th {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-bottom: 2px solid #dee2e6;
-  font-size: 0.9rem;
-  padding: 12px 15px;
-}
-.table tbody td {
-  padding: 12px 15px;
-  vertical-align: middle;
-  border-bottom: 1px solid #f1f3f4;
-}
-.table tbody tr:hover {
-  background-color: rgba(14, 165, 233, 0.05);
-}
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Resumen al final */
-.summary-section {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 12px;
-  padding: 15px;
-  margin-top: 20px;
-  border: 1px solid #dee2e6;
-}
-.summary-section .kv {
-  border-bottom: 1px solid #dee2e6;
-  padding: 10px 0;
-}
-.summary-section .kv:last-child {
-  border-bottom: none;
-  font-weight: 600;
-  color: #0ea5e9;
+/* Footer transparente */
+.footer-nav {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 </style>
     <main class="container py-3">
@@ -246,7 +87,7 @@ include __DIR__ . '/../../../views/layouts/header.php';
           <i class="fa-solid fa-user me-2 text-primary"></i> Información del asociado
           <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
         </div>
-        <div class="collapsible-content show" id="asociado">
+        <div class="collapsible-content" id="asociado">
           <div class="p-3">
             <div class="kv"><div class="k">Nombre</div><div class="v"><?php echo htmlspecialchars($info['nombre'] ?? $nombre); ?></div></div>
             <div class="kv"><div class="k">Cédula</div><div class="v"><?php echo htmlspecialchars($info['cedula'] ?? $cedula); ?></div></div>
@@ -263,7 +104,7 @@ include __DIR__ . '/../../../views/layouts/header.php';
           <i class="fa-solid fa-wallet me-2 text-primary"></i> Información monetaria
           <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
         </div>
-        <div class="collapsible-content show" id="monetaria">
+        <div class="collapsible-content" id="monetaria">
           <div class="p-3">
             <div class="kv"><div class="k">Aportes</div><div class="v"><?php echo '$' . number_format((float)($info['aporte'] ?? 0), 0); ?></div></div>
             <div class="kv"><div class="k">Revalorización de aportes</div><div class="v"><?php echo '$' . number_format((float)($bp['revalorizacion_aportes'] ?? 0), 0); ?></div></div>
@@ -279,7 +120,7 @@ include __DIR__ . '/../../../views/layouts/header.php';
           <i class="fa-solid fa-receipt me-2 text-primary"></i> Información crédito
           <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
         </div>
-        <div class="collapsible-content show" id="creditos">
+        <div class="collapsible-content" id="creditos">
           <div class="p-3">
             <?php foreach ($creditos as $c): ?>
               <div class="info-card">
@@ -304,7 +145,7 @@ include __DIR__ . '/../../../views/layouts/header.php';
           <i class="fa-solid fa-boxes-stacked me-2 text-primary"></i> Información de productos
           <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
         </div>
-        <div class="collapsible-content show" id="productos">
+        <div class="collapsible-content" id="productos">
           <div class="p-3">
             <?php if (empty($asignaciones)): ?>
               <div class="text-muted small text-center py-3">
@@ -317,16 +158,16 @@ include __DIR__ . '/../../../views/layouts/header.php';
                   <thead class="table-light">
                     <tr>
                       <th class="fw-bold">Producto</th>
-                      <th class="fw-bold text-center">Día Pago</th>
                       <th class="fw-bold text-end">Monto Pago</th>
+                      <th class="fw-bold text-center">Día Pago</th>
                     </tr>
                   </thead>
                   <tbody>
                     <?php foreach ($asignaciones as $ap): ?>
                       <tr>
                         <td><?php echo htmlspecialchars($ap['producto_nombre']); ?></td>
-                        <td class="text-center"><?php echo (int)$ap['dia_pago']; ?></td>
                         <td class="text-end fw-semibold"><?php echo '$' . number_format((float)$ap['monto_pago'], 0); ?></td>
+                        <td class="text-center"><?php echo (int)$ap['dia_pago']; ?></td>
                       </tr>
                     <?php endforeach; ?>
                   </tbody>

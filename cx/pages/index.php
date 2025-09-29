@@ -12,10 +12,24 @@ include __DIR__ . '/../views/layouts/header.php';
 ?>
 <style>
 body {
-  background: linear-gradient(rgba(14, 165, 233, 0.8), rgba(37, 99, 235, 0.8)), url('../assets/img/imagen_motivacion.png');
+  background: linear-gradient(rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.3)), url('../assets/img/imagen_motivacion.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
+}
+
+/* Footer transparente */
+.footer-nav {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Tarjeta de resumen financiero transparente */
+.card-link {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 </style>
     <main class="container py-3">
