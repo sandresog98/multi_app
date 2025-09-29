@@ -75,22 +75,22 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 .kpi-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #0ea5e9;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 .kpi-value {
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #212529;
   line-height: 1.2;
 }
 .kpi-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #6c757d;
   font-weight: 500;
   text-transform: uppercase;
