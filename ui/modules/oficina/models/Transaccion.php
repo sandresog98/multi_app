@@ -82,6 +82,7 @@ class Transaccion {
         if (!empty($pseFilters['fecha'])) { $pseWhere[] = 'DATE(p.fecha_hora_resolucion_de_la_transaccion) = ?'; $pseParams[] = $pseFilters['fecha']; }
         if (!empty($pseFilters['ref2'])) { $pseWhere[] = 'p.referencia_2 LIKE ?'; $pseParams[] = '%'.$pseFilters['ref2'].'%'; }
         if (!empty($pseFilters['ref3'])) { $pseWhere[] = 'p.referencia_3 LIKE ?'; $pseParams[] = '%'.$pseFilters['ref3'].'%'; }
+        if (!empty($pseFilters['pse_id'])) { $pseWhere[] = 'a.pse_id LIKE ?'; $pseParams[] = '%'.$pseFilters['pse_id'].'%'; }
         $pseEstado = $pseFilters['estado'] ?? '';
         if ($pseEstado === 'sin_asignar') { $pseWhere[] = 'COALESCE(u.utilizado,0) <= 0'; }
         else if ($pseEstado === 'parcial') { $pseWhere[] = 'COALESCE(u.utilizado,0) > 0 AND COALESCE(u.utilizado,0) < p.valor'; }
@@ -139,6 +140,8 @@ class Transaccion {
         if (!empty($cashFilters['fecha'])) { $cashWhere[] = 'b.fecha = ?'; $cashParams[] = $cashFilters['fecha']; }
         if (!empty($cashFilters['cedula'])) { $cashWhere[] = 'c.cedula LIKE ?'; $cashParams[] = '%'.$cashFilters['cedula'].'%'; }
         if (!empty($cashFilters['descripcion'])) { $cashWhere[] = 'b.descripcion LIKE ?'; $cashParams[] = '%'.$cashFilters['descripcion'].'%'; }
+        if (!empty($cashFilters['confiar_id'])) { $cashWhere[] = 'c.confiar_id LIKE ?'; $cashParams[] = '%'.$cashFilters['confiar_id'].'%'; }
+        if (!empty($cashFilters['tipo_transaccion'])) { $cashWhere[] = 'b.tipo_transaccion = ?'; $cashParams[] = $cashFilters['tipo_transaccion']; }
         $cashEstado = $cashFilters['estado'] ?? '';
         if ($cashEstado === 'sin_asignar') { $cashWhere[] = 'COALESCE(u.utilizado,0) <= 0'; }
         else if ($cashEstado === 'parcial') { $cashWhere[] = 'COALESCE(u.utilizado,0) > 0 AND COALESCE(u.utilizado,0) < b.valor_consignacion'; }

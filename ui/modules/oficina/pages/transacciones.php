@@ -21,9 +21,38 @@ $pagos = [];
 $listado = [];
 $tpage = (int)($_GET['tpage'] ?? 1);
 
+// Params de paginación/filtros para modales de pagos
+$psePage = max(1, (int)($_GET['pse_page'] ?? 1));
+$cashPage = max(1, (int)($_GET['cash_page'] ?? 1));
+$pseLimit = max(1, (int)($_GET['pse_limit'] ?? 50));
+$cashLimit = max(1, (int)($_GET['cash_limit'] ?? 50));
+$pseFecha = trim($_GET['pse_fecha'] ?? '');
+$pseRef2 = trim($_GET['pse_ref2'] ?? '');
+$pseRef3 = trim($_GET['pse_ref3'] ?? '');
+$pseEstado = $_GET['pse_estado'] ?? 'disp';
+// mapear 'disp/comp/todas' a backend: no_completado/completado/''
+$pseEstadoMap = $pseEstado==='disp' ? 'no_completado' : ($pseEstado==='comp' ? 'completado' : '');
+$pseFilters = [
+  'fecha' => $pseFecha !== '' ? $pseFecha : null,
+  'ref2' => $pseRef2 !== '' ? $pseRef2 : null,
+  'ref3' => $pseRef3 !== '' ? $pseRef3 : null,
+  'estado' => $pseEstadoMap !== '' ? $pseEstadoMap : null,
+];
+$cashFecha = trim($_GET['cash_fecha'] ?? '');
+$cashCedula = trim($_GET['cash_cedula'] ?? '');
+$cashDesc = trim($_GET['cash_desc'] ?? '');
+$cashEstado = $_GET['cash_estado'] ?? 'disp';
+$cashEstadoMap = $cashEstado==='disp' ? 'no_completado' : ($cashEstado==='comp' ? 'completado' : '');
+$cashFilters = [
+  'fecha' => $cashFecha !== '' ? $cashFecha : null,
+  'cedula' => $cashCedula !== '' ? $cashCedula : null,
+  'descripcion' => $cashDesc !== '' ? $cashDesc : null,
+  'estado' => $cashEstadoMap !== '' ? $cashEstadoMap : null,
+];
+
 if ($cedula !== '') {
   $resumen = $model->getResumenPorAsociado($cedula);
-  $pagos = $model->getPagosDisponibles();
+  $pagos = $model->getPagosDisponibles($psePage, $pseLimit, $cashPage, $cashLimit, $pseFilters, $cashFilters);
   $detModel = new DetalleAsociado();
   $asociadoInfo = $detModel->getAsociadoInfo($cedula);
 }
@@ -321,18 +350,18 @@ include '../../../views/layouts/header.php';
     <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>PSE relacionados</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
       <form class="mb-2" onsubmit="return false">
-        <div class="row g-2">
-          <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
-          <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="Cédula"></div>
-          <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="Nombre"></div>
+          <div class="row g-2">
+            <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha" value="<?php echo htmlspecialchars($pseFecha); ?>"></div>
+            <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="Cédula" value="<?php echo htmlspecialchars($pseRef2); ?>"></div>
+            <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="Nombre" value="<?php echo htmlspecialchars($pseRef3); ?>"></div>
         </div>
         <div class="row g-2 mt-1">
-          <div class="col-md-3"><label class="form-label small">CUS ID</label><input class="form-control form-control-sm" id="pseFiltroId" placeholder="CUS ID"></div>
+            <div class="col-md-3"><label class="form-label small">CUS ID</label><input class="form-control form-control-sm" id="pseFiltroId" placeholder="CUS ID" value="<?php echo htmlspecialchars($_GET['pse_id'] ?? ''); ?>"></div>
           <div class="col-md-2"><label class="form-label small">Estado</label>
             <select class="form-select form-select-sm" id="pseFiltroEstado">
-              <option value="disp" selected>Disponibles</option>
-              <option value="comp">Completadas</option>
-              <option value="todas">Todas</option>
+              <option value="disp" <?php echo ($pseEstado==='disp')?'selected':''; ?>>Disponibles</option>
+              <option value="comp" <?php echo ($pseEstado==='comp')?'selected':''; ?>>Completadas</option>
+              <option value="todas" <?php echo ($pseEstado==='todas')?'selected':''; ?>>Todas</option>
             </select>
           </div>
           <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPse()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
@@ -345,6 +374,17 @@ include '../../../views/layouts/header.php';
           </tbody>
         </table>
       </div>
+      <?php $pm = $pagos['pse_meta'] ?? null; if ($pm && (($pm['pages'] ?? 1) > 1)): $pages=$pm['pages']; $cur=$pm['current_page']; ?>
+        <nav>
+          <ul class="pagination justify-content-center pagination-sm">
+            <?php for ($i=1; $i<=$pages; $i++): ?>
+              <li class="page-item <?php echo $i==$cur?'active':''; ?>">
+                <a class="page-link" href="?cedula=<?php echo urlencode($cedula); ?>&pse_page=<?php echo $i; ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>&pse_fecha=<?php echo urlencode($pseFecha); ?>&pse_ref2=<?php echo urlencode($pseRef2); ?>&pse_ref3=<?php echo urlencode($pseRef3); ?>&pse_estado=<?php echo urlencode($pseEstado); ?>&open_modal=pse#modalPse"><?php echo $i; ?></a>
+              </li>
+            <?php endfor; ?>
+          </ul>
+        </nav>
+      <?php endif; ?>
     </div>
   </div></div>
   </div>
@@ -355,26 +395,26 @@ include '../../../views/layouts/header.php';
     <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>Cash/QR confirmados</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
       <form class="mb-2" onsubmit="return false">
-        <div class="row g-2">
-          <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
-          <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula"></div>
-          <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
+          <div class="row g-2">
+            <div class="col-md-3"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha" value="<?php echo htmlspecialchars($cashFecha); ?>"></div>
+            <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula" value="<?php echo htmlspecialchars($cashCedula); ?>"></div>
+            <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción" value="<?php echo htmlspecialchars($cashDesc); ?>"></div>
         </div>
         <div class="row g-2 mt-1">
-          <div class="col-md-2"><label class="form-label small">Confiar ID</label><input class="form-control form-control-sm" id="cashFiltroId" placeholder="confiar_id"></div>
+            <div class="col-md-2"><label class="form-label small">Confiar ID</label><input class="form-control form-control-sm" id="cashFiltroId" placeholder="confiar_id" value="<?php echo htmlspecialchars($_GET['confiar_id'] ?? ''); ?>"></div>
           <div class="col-md-2"><label class="form-label small">Tipo</label>
             <select class="form-select form-select-sm" id="cashFiltroTipo">
-              <option value="">Todos</option>
-              <option value="Pago Efectivo">Pago Efectivo</option>
-              <option value="Pago QR">Pago QR</option>
-              <option value="Transf. Agencia Virtual">Transf. Agencia Virtual</option>
+              <option value="" <?php echo empty($_GET['cash_tipo'])?'selected':''; ?>>Todos</option>
+              <option value="Pago Efectivo" <?php echo (($_GET['cash_tipo'] ?? '')==='Pago Efectivo')?'selected':''; ?>>Pago Efectivo</option>
+              <option value="Pago QR" <?php echo (($_GET['cash_tipo'] ?? '')==='Pago QR')?'selected':''; ?>>Pago QR</option>
+              <option value="Transf. Agencia Virtual" <?php echo (($_GET['cash_tipo'] ?? '')==='Transf. Agencia Virtual')?'selected':''; ?>>Transf. Agencia Virtual</option>
             </select>
           </div>
           <div class="col-md-2"><label class="form-label small">Estado</label>
             <select class="form-select form-select-sm" id="cashFiltroEstado">
-              <option value="disp" selected>Disponibles</option>
-              <option value="comp">Completadas</option>
-              <option value="todas">Todas</option>
+              <option value="disp" <?php echo ($cashEstado==='disp')?'selected':''; ?>>Disponibles</option>
+              <option value="comp" <?php echo ($cashEstado==='comp')?'selected':''; ?>>Completadas</option>
+              <option value="todas" <?php echo ($cashEstado==='todas')?'selected':''; ?>>Todas</option>
             </select>
           </div>
           <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarCash()"><i class="fas fa-filter"></i>Filtrar</button></div>
@@ -388,6 +428,17 @@ include '../../../views/layouts/header.php';
           </tbody>
         </table>
       </div>
+      <?php $cm = $pagos['cash_meta'] ?? null; if ($cm && (($cm['pages'] ?? 1) > 1)): $pages=$cm['pages']; $cur=$cm['current_page']; ?>
+        <nav>
+          <ul class="pagination justify-content-center pagination-sm">
+            <?php for ($i=1; $i<=$pages; $i++): ?>
+              <li class="page-item <?php echo $i==$cur?'active':''; ?>">
+                <a class="page-link" href="?cedula=<?php echo urlencode($cedula); ?>&cash_page=<?php echo $i; ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>&cash_fecha=<?php echo urlencode($cashFecha); ?>&cash_cedula=<?php echo urlencode($cashCedula); ?>&cash_desc=<?php echo urlencode($cashDesc); ?>&cash_estado=<?php echo urlencode($cashEstado); ?>&open_modal=cash#modalCash"><?php echo $i; ?></a>
+              </li>
+            <?php endfor; ?>
+          </ul>
+        </nav>
+      <?php endif; ?>
     </div>
   </div></div>
   </div>
@@ -519,41 +570,47 @@ function renderCashList(list){
 }
 
 function filtrarPse(){
-  const f = document.getElementById('pseFiltroFecha').value;
-  const ref2 = document.getElementById('pseFiltroRef2').value.trim();
-  const ref3 = document.getElementById('pseFiltroRef3').value.trim();
-  const pid = document.getElementById('pseFiltroId').value.trim();
-  const estSel = (document.getElementById('pseFiltroEstado')?.value || 'disp');
-  let list = pagosPse.slice();
-  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
-  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
-  if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
-  if (ref2) list = list.filter(r => String(r.referencia_2||'').includes(ref2));
-  if (ref3) list = list.filter(r => String(r.referencia_3||'').includes(ref3));
-  if (pid) list = list.filter(r => String(r.pse_id||'').includes(pid));
-  renderPseList(list);
+  const params = new URLSearchParams(window.location.search);
+  params.set('cedula', '<?php echo htmlspecialchars($cedula); ?>');
+  params.set('pse_fecha', document.getElementById('pseFiltroFecha').value || '');
+  params.set('pse_ref2', document.getElementById('pseFiltroRef2').value.trim());
+  params.set('pse_ref3', document.getElementById('pseFiltroRef3').value.trim());
+  params.set('pse_estado', document.getElementById('pseFiltroEstado').value || '');
+  params.set('pse_id', document.getElementById('pseFiltroId').value.trim());
+  params.set('pse_page', '1');
+  params.set('open_modal', 'pse');
+  window.location.search = params.toString();
 }
 function filtrarCash(){
-  const f = document.getElementById('cashFiltroFecha').value;
-  const ced = document.getElementById('cashFiltroCedula').value.trim();
-  const desc = document.getElementById('cashFiltroDesc').value.trim().toLowerCase();
-  const cid = document.getElementById('cashFiltroId').value.trim();
-  const tipo = document.getElementById('cashFiltroTipo').value;
-  const estSel = (document.getElementById('cashFiltroEstado')?.value || 'disp');
-  let list = pagosCash.slice();
-  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
-  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
-  if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
-  if (ced) list = list.filter(r => String(r.cedula_asignada||'').includes(ced));
-  if (desc) list = list.filter(r => String(r.descripcion||'').toLowerCase().includes(desc));
-  if (cid) list = list.filter(r => String(r.confiar_id||'').includes(cid));
-  if (tipo) list = list.filter(r => String(r.tipo_transaccion||'') === tipo);
-  renderCashList(list);
+  const params = new URLSearchParams(window.location.search);
+  params.set('cedula', '<?php echo htmlspecialchars($cedula); ?>');
+  params.set('cash_fecha', document.getElementById('cashFiltroFecha').value || '');
+  params.set('cash_cedula', document.getElementById('cashFiltroCedula').value.trim());
+  params.set('cash_desc', document.getElementById('cashFiltroDesc').value.trim());
+  params.set('confiar_id', document.getElementById('cashFiltroId').value.trim());
+  params.set('cash_tipo', document.getElementById('cashFiltroTipo').value || '');
+  params.set('cash_estado', document.getElementById('cashFiltroEstado').value || '');
+  params.set('cash_page', '1');
+  params.set('open_modal', 'cash');
+  window.location.search = params.toString();
 }
 
 // Inicializar listas al abrir modales
 document.getElementById('modalPse')?.addEventListener('shown.bs.modal', ()=> { filtrarPse(); });
 document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { filtrarCash(); });
+
+// Auto abrir modal si viene en GET
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const which = params.get('open_modal');
+  if (which === 'pse') {
+    const el = document.getElementById('modalPse');
+    if (el) new bootstrap.Modal(el).show();
+  } else if (which === 'cash') {
+    const el = document.getElementById('modalCash');
+    if (el) new bootstrap.Modal(el).show();
+  }
+})();
 
 async function guardarTransaccion(){
   const cedula = '<?php echo htmlspecialchars($cedula); ?>';
