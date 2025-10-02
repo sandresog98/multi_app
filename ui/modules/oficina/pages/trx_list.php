@@ -15,8 +15,32 @@ $cashPage = max(1, (int)($_GET['cash_page'] ?? 1));
 $pseLimit = max(1, (int)($_GET['pse_limit'] ?? 50));
 $cashLimit = max(1, (int)($_GET['cash_limit'] ?? 50));
 
-// Cargar pagos disponibles (incluye usado/restante) con paginación
-$pagos = $model->getPagosDisponibles($psePage, $pseLimit, $cashPage, $cashLimit);
+// Filtros PSE
+$pseFecha = trim($_GET['pse_fecha'] ?? '');
+$pseRef2 = trim($_GET['pse_ref2'] ?? '');
+$pseRef3 = trim($_GET['pse_ref3'] ?? '');
+$pseEstado = $_GET['pse_estado'] ?? 'no_completado';
+$pseFilters = [
+  'fecha' => $pseFecha !== '' ? $pseFecha : null,
+  'ref2' => $pseRef2 !== '' ? $pseRef2 : null,
+  'ref3' => $pseRef3 !== '' ? $pseRef3 : null,
+  'estado' => $pseEstado !== '' ? $pseEstado : null,
+];
+
+// Filtros Cash/QR
+$cashFecha = trim($_GET['cash_fecha'] ?? '');
+$cashCedula = trim($_GET['cash_cedula'] ?? '');
+$cashDesc = trim($_GET['cash_desc'] ?? '');
+$cashEstado = $_GET['cash_estado'] ?? 'no_completado';
+$cashFilters = [
+  'fecha' => $cashFecha !== '' ? $cashFecha : null,
+  'cedula' => $cashCedula !== '' ? $cashCedula : null,
+  'descripcion' => $cashDesc !== '' ? $cashDesc : null,
+  'estado' => $cashEstado !== '' ? $cashEstado : null,
+];
+
+// Cargar pagos disponibles (incluye usado/restante) con paginación y filtros en backend
+$pagos = $model->getPagosDisponibles($psePage, $pseLimit, $cashPage, $cashLimit, $pseFilters, $cashFilters);
 
 $pageTitle = 'Trx List - Oficina';
 $currentPage = 'trx_list';
@@ -43,20 +67,21 @@ include '../../../views/layouts/header.php';
           <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center"><strong>PSE relacionados</strong></div>
             <div class="card-body">
-              <form class="row g-2 mb-2" onsubmit="return false">
-                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha"></div>
-                <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" placeholder="Cédula"></div>
-                <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" placeholder="Nombre"></div>
+              <form class="row g-2 mb-2" method="GET">
+                <input type="hidden" name="tab" value="pse">
+                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="pseFiltroFecha" name="pse_fecha" value="<?php echo htmlspecialchars($pseFecha); ?>"></div>
+                <div class="col-md-3"><label class="form-label small">Cédula</label><input class="form-control form-control-sm" id="pseFiltroRef2" name="pse_ref2" placeholder="Cédula" value="<?php echo htmlspecialchars($pseRef2); ?>"></div>
+                <div class="col-md-3"><label class="form-label small">Nombre</label><input class="form-control form-control-sm" id="pseFiltroRef3" name="pse_ref3" placeholder="Nombre" value="<?php echo htmlspecialchars($pseRef3); ?>"></div>
                 <div class="col-md-2"><label class="form-label small">Estado</label>
-                  <select class="form-select form-select-sm" id="pseFiltroEstado">
-                    <option value="no_completado" selected>Activas (sin asignar / parcial)</option>
-                    <option value="sin_asignar">Sin asignar</option>
-                    <option value="parcial">Parcial</option>
-                    <option value="completado">Completado</option>
-                    <option value="">Todos</option>
+                  <select class="form-select form-select-sm" id="pseFiltroEstado" name="pse_estado">
+                    <option value="no_completado" <?php echo $pseEstado==='no_completado'?'selected':''; ?>>Activas (sin asignar / parcial)</option>
+                    <option value="sin_asignar" <?php echo $pseEstado==='sin_asignar'?'selected':''; ?>>Sin asignar</option>
+                    <option value="parcial" <?php echo $pseEstado==='parcial'?'selected':''; ?>>Parcial</option>
+                    <option value="completado" <?php echo $pseEstado==='completado'?'selected':''; ?>>Completado</option>
+                    <option value="" <?php echo $pseEstado===''?'selected':''; ?>>Todos</option>
                   </select>
                 </div>
-                <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarPseList()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+                <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
               </form>
               <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
@@ -87,7 +112,7 @@ include '../../../views/layouts/header.php';
                   <ul class="pagination justify-content-center pagination-sm">
                     <?php for ($i=1; $i<=$pages; $i++): ?>
                       <li class="page-item <?php echo $i==$cur?'active':''; ?>">
-                        <a class="page-link" href="?tab=pse&pse_page=<?php echo $i; ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>&cash_page=<?php echo (int)($cm['current_page'] ?? 1); ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="?tab=pse&pse_page=<?php echo $i; ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>&pse_fecha=<?php echo urlencode($pseFecha); ?>&pse_ref2=<?php echo urlencode($pseRef2); ?>&pse_ref3=<?php echo urlencode($pseRef3); ?>&pse_estado=<?php echo urlencode($pseEstado); ?>&cash_page=<?php echo (int)($cm['current_page'] ?? 1); ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>&cash_fecha=<?php echo urlencode($cashFecha); ?>&cash_cedula=<?php echo urlencode($cashCedula); ?>&cash_desc=<?php echo urlencode($cashDesc); ?>&cash_estado=<?php echo urlencode($cashEstado); ?>"><?php echo $i; ?></a>
                       </li>
                     <?php endfor; ?>
                   </ul>
@@ -101,20 +126,21 @@ include '../../../views/layouts/header.php';
           <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center"><strong>Cash/QR confirmados</strong></div>
             <div class="card-body">
-              <form class="row g-2 mb-2" onsubmit="return false">
-                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha"></div>
-                <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" placeholder="Cédula"></div>
-                <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" placeholder="Descripción"></div>
+              <form class="row g-2 mb-2" method="GET">
+                <input type="hidden" name="tab" value="cash">
+                <div class="col-md-2"><label class="form-label small">Fecha</label><input type="date" class="form-control form-control-sm" id="cashFiltroFecha" name="cash_fecha" value="<?php echo htmlspecialchars($cashFecha); ?>"></div>
+                <div class="col-md-3"><label class="form-label small">Cédula asignada</label><input class="form-control form-control-sm" id="cashFiltroCedula" name="cash_cedula" placeholder="Cédula" value="<?php echo htmlspecialchars($cashCedula); ?>"></div>
+                <div class="col-md-3"><label class="form-label small">Descripción</label><input class="form-control form-control-sm" id="cashFiltroDesc" name="cash_desc" placeholder="Descripción" value="<?php echo htmlspecialchars($cashDesc); ?>"></div>
                 <div class="col-md-2"><label class="form-label small">Estado</label>
-                  <select class="form-select form-select-sm" id="cashFiltroEstado">
-                    <option value="no_completado" selected>Activas (sin asignar / parcial)</option>
-                    <option value="sin_asignar">Sin asignar</option>
-                    <option value="parcial">Parcial</option>
-                    <option value="completado">Completado</option>
-                    <option value="">Todos</option>
+                  <select class="form-select form-select-sm" id="cashFiltroEstado" name="cash_estado">
+                    <option value="no_completado" <?php echo $cashEstado==='no_completado'?'selected':''; ?>>Activas (sin asignar / parcial)</option>
+                    <option value="sin_asignar" <?php echo $cashEstado==='sin_asignar'?'selected':''; ?>>Sin asignar</option>
+                    <option value="parcial" <?php echo $cashEstado==='parcial'?'selected':''; ?>>Parcial</option>
+                    <option value="completado" <?php echo $cashEstado==='completado'?'selected':''; ?>>Completado</option>
+                    <option value="" <?php echo $cashEstado===''?'selected':''; ?>>Todos</option>
                   </select>
                 </div>
-                <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100" onclick="filtrarCashList()"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
+                <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
               </form>
               <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
@@ -143,7 +169,7 @@ include '../../../views/layouts/header.php';
                   <ul class="pagination justify-content-center pagination-sm">
                     <?php for ($i=1; $i<=$pages; $i++): ?>
                       <li class="page-item <?php echo $i==$cur?'active':''; ?>">
-                        <a class="page-link" href="?tab=cash&cash_page=<?php echo $i; ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>&pse_page=<?php echo (int)($pm['current_page'] ?? 1); ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>"><?php echo $i; ?></a>
+                        <a class="page-link" href="?tab=cash&cash_page=<?php echo $i; ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>&cash_fecha=<?php echo urlencode($cashFecha); ?>&cash_cedula=<?php echo urlencode($cashCedula); ?>&cash_desc=<?php echo urlencode($cashDesc); ?>&cash_estado=<?php echo urlencode($cashEstado); ?>&pse_page=<?php echo (int)($pm['current_page'] ?? 1); ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>&pse_fecha=<?php echo urlencode($pseFecha); ?>&pse_ref2=<?php echo urlencode($pseRef2); ?>&pse_ref3=<?php echo urlencode($pseRef3); ?>&pse_estado=<?php echo urlencode($pseEstado); ?>"><?php echo $i; ?></a>
                       </li>
                     <?php endfor; ?>
                   </ul>

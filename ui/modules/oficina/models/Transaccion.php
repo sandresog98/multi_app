@@ -68,7 +68,7 @@ class Transaccion {
         return $resumen;
     }
 
-    public function getPagosDisponibles(int $psePage = 1, int $pseLimit = 50, int $cashPage = 1, int $cashLimit = 50): array {
+    public function getPagosDisponibles(int $psePage = 1, int $pseLimit = 50, int $cashPage = 1, int $cashLimit = 50, array $pseFilters = [], array $cashFilters = []): array {
         $psePage = max(1, (int)$psePage);
         $cashPage = max(1, (int)$cashPage);
         $pseLimit = max(1, (int)$pseLimit);
@@ -76,11 +76,37 @@ class Transaccion {
         $pseOffset = ($psePage - 1) * $pseLimit;
         $cashOffset = ($cashPage - 1) * $cashLimit;
 
+        // Construcción de filtros PSE
+        $pseWhere = [];
+        $pseParams = [];
+        if (!empty($pseFilters['fecha'])) { $pseWhere[] = 'DATE(p.fecha_hora_resolucion_de_la_transaccion) = ?'; $pseParams[] = $pseFilters['fecha']; }
+        if (!empty($pseFilters['ref2'])) { $pseWhere[] = 'p.referencia_2 LIKE ?'; $pseParams[] = '%'.$pseFilters['ref2'].'%'; }
+        if (!empty($pseFilters['ref3'])) { $pseWhere[] = 'p.referencia_3 LIKE ?'; $pseParams[] = '%'.$pseFilters['ref3'].'%'; }
+        $pseEstado = $pseFilters['estado'] ?? '';
+        if ($pseEstado === 'sin_asignar') { $pseWhere[] = 'COALESCE(u.utilizado,0) <= 0'; }
+        else if ($pseEstado === 'parcial') { $pseWhere[] = 'COALESCE(u.utilizado,0) > 0 AND COALESCE(u.utilizado,0) < p.valor'; }
+        else if ($pseEstado === 'completado') { $pseWhere[] = 'COALESCE(u.utilizado,0) >= p.valor'; }
+        else if ($pseEstado === 'no_completado') { $pseWhere[] = 'COALESCE(u.utilizado,0) < p.valor'; }
+        $pseWhereSql = empty($pseWhere) ? '' : ('WHERE '.implode(' AND ', $pseWhere));
+
         // Totales para paginación PSE
         $countPseSql = "SELECT COUNT(*) AS c
-                        FROM banco_asignacion_pse a
-                        JOIN banco_pse p ON p.pse_id = a.pse_id";
-        $countPse = (int)($this->conn->query($countPseSql)->fetch()['c'] ?? 0);
+                        FROM (
+                          SELECT a.pse_id
+                          FROM banco_asignacion_pse a
+                          JOIN banco_pse p ON p.pse_id = a.pse_id
+                          LEFT JOIN (
+                            SELECT ct.pse_id, SUM(d.valor_asignado) AS utilizado
+                            FROM control_transaccion ct
+                            JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+                            WHERE ct.pse_id IS NOT NULL
+                            GROUP BY ct.pse_id
+                          ) u ON u.pse_id = a.pse_id
+                          $pseWhereSql
+                        ) x";
+        $cStmtP = $this->conn->prepare($countPseSql);
+        $cStmtP->execute($pseParams);
+        $countPse = (int)($cStmtP->fetch()['c'] ?? 0);
 
         // PSE relacionados (paginado)
         $sqlPse = "SELECT a.pse_id,
@@ -100,18 +126,44 @@ class Transaccion {
                      WHERE ct.pse_id IS NOT NULL
                      GROUP BY ct.pse_id
                    ) u ON u.pse_id = a.pse_id
+                   $pseWhereSql
                    ORDER BY p.fecha_hora_resolucion_de_la_transaccion DESC
                    LIMIT ? OFFSET ?";
         $stmt1 = $this->conn->prepare($sqlPse);
-        $stmt1->execute([$pseLimit, $pseOffset]);
+        $stmt1->execute(array_merge($pseParams, [$pseLimit, $pseOffset]));
         $pse = $stmt1->fetchAll();
+
+        // Construcción de filtros Cash/QR
+        $cashWhere = ["c.estado <> 'no_valido'"];
+        $cashParams = [];
+        if (!empty($cashFilters['fecha'])) { $cashWhere[] = 'b.fecha = ?'; $cashParams[] = $cashFilters['fecha']; }
+        if (!empty($cashFilters['cedula'])) { $cashWhere[] = 'c.cedula LIKE ?'; $cashParams[] = '%'.$cashFilters['cedula'].'%'; }
+        if (!empty($cashFilters['descripcion'])) { $cashWhere[] = 'b.descripcion LIKE ?'; $cashParams[] = '%'.$cashFilters['descripcion'].'%'; }
+        $cashEstado = $cashFilters['estado'] ?? '';
+        if ($cashEstado === 'sin_asignar') { $cashWhere[] = 'COALESCE(u.utilizado,0) <= 0'; }
+        else if ($cashEstado === 'parcial') { $cashWhere[] = 'COALESCE(u.utilizado,0) > 0 AND COALESCE(u.utilizado,0) < b.valor_consignacion'; }
+        else if ($cashEstado === 'completado') { $cashWhere[] = 'COALESCE(u.utilizado,0) >= b.valor_consignacion'; }
+        else if ($cashEstado === 'no_completado') { $cashWhere[] = 'COALESCE(u.utilizado,0) < b.valor_consignacion'; }
+        $cashWhereSql = 'WHERE '.implode(' AND ', $cashWhere);
 
         // Totales para paginación Cash/QR (excluye no_válidos)
         $countCashSql = "SELECT COUNT(*) AS c
-                         FROM banco_confirmacion_confiar c
-                         JOIN banco_confiar b ON b.confiar_id = c.confiar_id
-                         WHERE c.estado <> 'no_valido'";
-        $countCash = (int)($this->conn->query($countCashSql)->fetch()['c'] ?? 0);
+                         FROM (
+                           SELECT c.confiar_id
+                           FROM banco_confirmacion_confiar c
+                           JOIN banco_confiar b ON b.confiar_id = c.confiar_id
+                           LEFT JOIN (
+                             SELECT ct.confiar_id, SUM(d.valor_asignado) AS utilizado
+                             FROM control_transaccion ct
+                             JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+                             WHERE ct.confiar_id IS NOT NULL
+                             GROUP BY ct.confiar_id
+                           ) u ON u.confiar_id = c.confiar_id
+                           $cashWhereSql
+                         ) x";
+        $cStmtC = $this->conn->prepare($countCashSql);
+        $cStmtC->execute($cashParams);
+        $countCash = (int)($cStmtC->fetch()['c'] ?? 0);
 
         // Cash/QR confirmados (paginado)
         $sqlCash = "SELECT c.confiar_id,
@@ -131,11 +183,11 @@ class Transaccion {
                       WHERE ct.confiar_id IS NOT NULL
                       GROUP BY ct.confiar_id
                     ) u ON u.confiar_id = c.confiar_id
-                    WHERE c.estado <> 'no_valido'
+                    $cashWhereSql
                     ORDER BY b.fecha DESC
                     LIMIT ? OFFSET ?";
         $stmt2 = $this->conn->prepare($sqlCash);
-        $stmt2->execute([$cashLimit, $cashOffset]);
+        $stmt2->execute(array_merge($cashParams, [$cashLimit, $cashOffset]));
         $cash = $stmt2->fetchAll();
 
         return [
