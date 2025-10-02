@@ -384,6 +384,147 @@ SQL;
     readfile($tmpXlsx);
     @unlink($tmpXlsx);
     exit;
+  } elseif ($type === 'transacciones') {
+    // Exportar transacciones con información bancaria y asignaciones
+    $sql = <<<SQL
+SELECT
+  t.id AS transaccion_id,
+  t.cedula,
+  sa.nombre AS asociado_nombre,
+  t.origen_pago,
+  t.pse_id,
+  t.confiar_id,
+  COALESCE(DATE(p.fecha_hora_resolucion_de_la_transaccion), b.fecha) AS fecha_banco,
+  t.valor_pago_total,
+  DATE(t.fecha_creacion) AS fecha_asignacion,
+  COALESCE(SUM(d.valor_asignado),0) AS valor_asignado,
+  t.recibo_caja_sifone
+FROM control_transaccion t
+LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
+LEFT JOIN banco_pse p ON p.pse_id = t.pse_id
+LEFT JOIN banco_confiar b ON b.confiar_id = t.confiar_id
+LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
+GROUP BY t.id
+ORDER BY fecha_banco DESC, t.id DESC
+SQL;
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+
+    if (ob_get_length()) { @ob_end_clean(); }
+
+    $rows = [];
+    $rows[] = [
+      'Fecha banco', 'Origen', 'ID banco', 'Valor pago', 'Asociado', 'Cédula',
+      'Valor asignado', 'Fecha asignación', 'Recibo Sifone', 'Tx interna'
+    ];
+
+    while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+      $idBanco = ($r['origen_pago'] === 'pse') ? ($r['pse_id'] ?? '') : ($r['confiar_id'] ?? '');
+      $rows[] = [
+        (string)($r['fecha_banco'] ?? ''),
+        (string)($r['origen_pago'] ?? ''),
+        (string)$idBanco,
+        (float)($r['valor_pago_total'] ?? 0),
+        (string)($r['asociado_nombre'] ?? ''),
+        (string)($r['cedula'] ?? ''),
+        (float)($r['valor_asignado'] ?? 0),
+        (string)($r['fecha_asignacion'] ?? ''),
+        (string)($r['recibo_caja_sifone'] ?? ''),
+        (int)($r['transaccion_id'] ?? 0)
+      ];
+    }
+
+    $tmpXlsx = tempnam(sys_get_temp_dir(), 'xlsx_');
+    if (!class_exists('ZipArchive')) {
+      if (ob_get_length()) { @ob_end_clean(); }
+      http_response_code(500);
+      header('Content-Type: text/plain; charset=UTF-8');
+      echo "Error: La extensión ZIP de PHP no está habilitada.\n";
+      echo "Habilítela en php.ini (extension=zip) y reinicie Apache.";
+      exit;
+    }
+    $zip = new ZipArchive();
+    $zip->open($tmpXlsx, ZipArchive::OVERWRITE);
+
+    $colLetter = function($i){
+      $i = (int)$i; $letters = '';
+      while ($i >= 0) { $letters = chr($i % 26 + 65) . $letters; $i = intdiv($i, 26) - 1; }
+      return $letters;
+    };
+    $xmlHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
+    $contentTypes = $xmlHeader.'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      .'<Default Extension="xml" ContentType="application/xml"/>'
+      .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+      .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+      .'</Types>';
+    $zip->addFromString('[Content_Types].xml', $contentTypes);
+
+    $rels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>'
+      .'</Relationships>';
+    $zip->addFromString('_rels/.rels', $rels);
+
+    $workbook = $xmlHeader.'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+      .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+      .'<sheets><sheet name="Transacciones" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    $zip->addFromString('xl/workbook.xml', $workbook);
+
+    $wbRels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+      .'</Relationships>';
+    $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
+
+    $widths = [12, 10, 22, 14, 36, 14, 16, 16, 18, 12];
+    $colsXml = '<cols>';
+    for ($i=0; $i<count($widths); $i++) {
+      $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
+    }
+    $colsXml .= '</cols>';
+    $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'.$colsXml.'<sheetData>';
+    for ($r = 0; $r < count($rows); $r++) {
+      $rowXml = '<row r="'.($r+1).'">';
+      $row = $rows[$r];
+      $isHeader = ($r === 0);
+      $commaCols = [3,6]; // Valor pago, Valor asignado
+      $stringCols = [0,1,2,4,5,7,8];
+      for ($c = 0; $c < count($row); $c++) {
+        $cellRef = $colLetter($c).($r+1);
+        $val = $row[$c];
+        if ($isHeader) {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (in_array($c, $commaCols, true)) {
+          $textVal = number_format((float)$val, 2, ',', '');
+          $safe = htmlspecialchars($textVal, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (in_array($c, $stringCols, true)) {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (is_numeric($val)) {
+          $rowXml .= '<c r="'.$cellRef.'"><v>'.(0+$val).'</v></c>';
+        } else {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        }
+      }
+      $rowXml .= '</row>';
+      $sheet .= $rowXml;
+    }
+    $sheet .= '</sheetData></worksheet>';
+    $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
+
+    $zip->close();
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="transacciones.xlsx"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    readfile($tmpXlsx);
+    @unlink($tmpXlsx);
+    exit;
   }
 }
 
@@ -430,6 +571,20 @@ include '../../../views/layouts/header.php';
             <input type="hidden" name="download" value="1">
             <input type="hidden" name="type" value="mora">
             <button class="btn btn-success w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLSX (asociados_mora.xlsx)</button>
+          </div>
+        </form>
+      </div></div>
+
+      <div class="card mt-3"><div class="card-body">
+        <div class="mb-2 text-muted">Exportar Transacciones</div>
+        <form class="row g-2" method="GET" target="_blank" rel="noopener">
+          <div class="col-md-7">
+            <div class="form-text">Descarga las transacciones con datos del banco, asignaciones y recibo Sifone.</div>
+          </div>
+          <div class="col-md-3 align-self-end">
+            <input type="hidden" name="download" value="1">
+            <input type="hidden" name="type" value="transacciones">
+            <button class="btn btn-outline-success w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLSX (transacciones.xlsx)</button>
           </div>
         </form>
       </div></div>
