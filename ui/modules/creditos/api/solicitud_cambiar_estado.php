@@ -34,8 +34,9 @@ try {
       } else {
         if (!preg_match('/\.(jpg|jpeg|png|pdf)$/', $lower)) { throw new Exception('Formato no permitido en ' . $field); }
       }
-      $subdir = 'uploads/creditos/' . date('Y') . '/' . date('m');
-      $absDir = getAbsolutePath($subdir);
+      // Metodología Boletería: guardar en ui/assets/uploads/creditos/YYYY/MM
+      $webSubdir = 'assets/uploads/creditos/' . date('Y') . '/' . date('m');
+      $absDir = __DIR__ . '/../../../' . $webSubdir;
       if (!is_dir($absDir)) {
         $mk = @mkdir($absDir, 0775, true);
         if (!$mk) {
@@ -61,7 +62,7 @@ try {
         try { (new Logger())->logEditar('creditos.solicitudes', 'Archivo no accesible tras move_uploaded_file', null, ['dest'=>$dest, 'field'=>$field]); } catch (Throwable $ignored) {}
         throw new Exception('Archivo no accesible tras guardar: ' . $field);
       }
-      return getBaseUrl() . $subdir . '/' . $filename;
+      return getBaseUrl() . $webSubdir . '/' . $filename;
     };
     if ($estado === 'Con Datacrédito') {
       $ruta = $saveFile('archivo_datacredito', true);
