@@ -48,6 +48,10 @@ try {
     $filename = $safe . '-' . uniqid() . '.' . $ext;
     $dest = rtrim($absDir,'/') . '/' . $filename;
     if (!move_uploaded_file($tmp, $dest)) { throw new Exception('No se pudo guardar archivo: ' . $field); }
+    if (!file_exists($dest)) {
+      try { (new Logger())->logEditar('creditos.solicitudes', 'Archivo no accesible tras move_uploaded_file', null, ['dest'=>$dest, 'field'=>$field]); } catch (Throwable $ignored) {}
+      throw new Exception('Archivo no accesible tras guardar: ' . $field);
+    }
     return getBaseUrl() . $subdirWeb . '/' . $filename;
   };
 
