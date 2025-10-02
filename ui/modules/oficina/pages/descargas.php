@@ -392,21 +392,27 @@ SELECT b.origen,
        b.fecha_banco,
        b.valor,
        b.tipo_transaccion,
-       t.id             AS transaccion_id,
+       COALESCE(ap.fecha_validacion, ac.fecha_validacion) AS fecha_validacion,
+       t.id                                               AS transaccion_id,
        t.cedula,
-       sa.nombre        AS asociado_nombre,
+       sa.nombre                                          AS asociado_nombre,
        t.valor_pago_total,
-       t.fecha_creacion AS fecha_asignacion,
+       t.fecha_creacion                                   AS fecha_asignacion,
        t.recibo_caja_sifone,
-       SUM(d.valor_asignado) AS valor_asignado
-FROM (SELECT 'pse' AS origen, pse_id AS id, valor, fecha_hora_resolucion_de_la_transaccion AS fecha_banco, 'PSE' AS tipo_transaccion
+       SUM(d.valor_asignado)                              AS valor_asignado
+FROM (SELECT 'pse'                                   AS origen,
+             pse_id                                  AS id,
+             valor,
+             fecha_hora_resolucion_de_la_transaccion AS fecha_banco,
+             'PSE'                                   AS tipo_transaccion
       FROM banco_pse
       WHERE estado = 'Aprobada'
       UNION ALL
       SELECT 'confiar' AS orgine, confiar_id, valor_consignacion, fecha, tipo_transaccion
       FROM banco_confiar
-      WHERE LENGTH(tipo_transaccion) > 0
-      ) AS b
+      WHERE LENGTH(tipo_transaccion) > 0) AS b
+         LEFT JOIN banco_asignacion_pse AS ap ON b.id = ap.pse_id
+         LEFT JOIN banco_confirmacion_confiar AS ac ON b.id = ac.confiar_id
          LEFT JOIN control_transaccion AS t ON b.id = t.pse_id
          LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
          LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
