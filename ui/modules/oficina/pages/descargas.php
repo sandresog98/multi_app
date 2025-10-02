@@ -399,25 +399,34 @@ SELECT b.origen,
        t.valor_pago_total,
        t.fecha_creacion                                   AS fecha_asignacion,
        t.recibo_caja_sifone,
-       SUM(d.valor_asignado)                              AS valor_asignado
-FROM (SELECT 'pse'                                   AS origen,
-             pse_id                                  AS id,
-             valor,
-             fecha_hora_resolucion_de_la_transaccion AS fecha_banco,
-             'PSE'                                   AS tipo_transaccion
-      FROM banco_pse
-      WHERE estado = 'Aprobada'
-      UNION ALL
-      SELECT 'confiar' AS orgine, confiar_id, valor_consignacion, fecha, tipo_transaccion
-      FROM banco_confiar
-      WHERE LENGTH(tipo_transaccion) > 0) AS b
-         LEFT JOIN banco_asignacion_pse AS ap ON b.id = ap.pse_id
-         LEFT JOIN banco_confirmacion_confiar AS ac ON b.id = ac.confiar_id
-         LEFT JOIN control_transaccion AS t ON b.id = t.pse_id
-         LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
-         LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
-GROUP BY b.valor, t.id, t.cedula, sa.nombre, t.valor_pago_total, t.fecha_creacion, t.recibo_caja_sifone
-ORDER BY b.fecha_banco
+       COALESCE(d.valor_asignado, 0)                      AS valor_asignado
+FROM (
+        SELECT 'pse' AS origen,
+               pse_id AS id,
+               valor,
+               fecha_hora_resolucion_de_la_transaccion AS fecha_banco,
+               'PSE' AS tipo_transaccion
+        FROM banco_pse
+        WHERE estado = 'Aprobada'
+        UNION ALL
+        SELECT 'confiar' AS origen,
+               confiar_id AS id,
+               valor_consignacion AS valor,
+               fecha AS fecha_banco,
+               tipo_transaccion
+        FROM banco_confiar
+        WHERE LENGTH(tipo_transaccion) > 0
+     ) AS b
+LEFT JOIN banco_asignacion_pse AS ap
+       ON (b.origen = 'pse' AND b.id = ap.pse_id)
+LEFT JOIN banco_confirmacion_confiar AS ac
+       ON (b.origen = 'confiar' AND b.id = ac.confiar_id)
+LEFT JOIN control_transaccion AS t
+       ON ( (b.origen = 'pse' AND t.pse_id = b.id)
+            OR (b.origen = 'confiar' AND t.confiar_id = b.id) )
+LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
+LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
+ORDER BY b.fecha_banco, b.id, t.id, d.id
 SQL;
 
     $stmt = $conn->prepare($sql);
@@ -432,12 +441,12 @@ SQL;
     ];
 
     while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
-      $idBanco = ($r['origen_pago'] === 'pse') ? ($r['pse_id'] ?? '') : ($r['confiar_id'] ?? '');
+      $idBanco = (string)($r['id'] ?? '');
       $rows[] = [
         (string)($r['fecha_banco'] ?? ''),
-        (string)($r['origen_pago'] ?? ''),
+        (string)($r['origen'] ?? ''),
         (string)$idBanco,
-        (float)($r['valor_pago_total'] ?? 0),
+        (float)($r['valor'] ?? 0),
         (string)($r['asociado_nombre'] ?? ''),
         (string)($r['cedula'] ?? ''),
         (float)($r['valor_asignado'] ?? 0),
