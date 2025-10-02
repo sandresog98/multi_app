@@ -569,6 +569,40 @@ function renderCashList(list){
   });
 }
 
+function renderPseFromInputs(){
+  let list = pagosPse.slice();
+  const f = document.getElementById('pseFiltroFecha')?.value || '';
+  const ref2 = (document.getElementById('pseFiltroRef2')?.value || '').trim();
+  const ref3 = (document.getElementById('pseFiltroRef3')?.value || '').trim();
+  const pid = (document.getElementById('pseFiltroId')?.value || '').trim();
+  const estSel = (document.getElementById('pseFiltroEstado')?.value || 'disp');
+  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
+  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
+  if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
+  if (ref2) list = list.filter(r => String(r.referencia_2||'').includes(ref2));
+  if (ref3) list = list.filter(r => String(r.referencia_3||'').includes(ref3));
+  if (pid) list = list.filter(r => String(r.pse_id||'').includes(pid));
+  renderPseList(list);
+}
+
+function renderCashFromInputs(){
+  let list = pagosCash.slice();
+  const f = document.getElementById('cashFiltroFecha')?.value || '';
+  const ced = (document.getElementById('cashFiltroCedula')?.value || '').trim();
+  const desc = (document.getElementById('cashFiltroDesc')?.value || '').trim().toLowerCase();
+  const cid = (document.getElementById('cashFiltroId')?.value || '').trim();
+  const tipo = document.getElementById('cashFiltroTipo')?.value || '';
+  const estSel = (document.getElementById('cashFiltroEstado')?.value || 'disp');
+  if (estSel === 'disp') { list = list.filter(r => Number(r.restante||0) > 0); }
+  else if (estSel === 'comp') { list = list.filter(r => Number(r.restante||0) <= 0); }
+  if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
+  if (ced) list = list.filter(r => String(r.cedula_asignada||'').includes(ced));
+  if (desc) list = list.filter(r => String(r.descripcion||'').toLowerCase().includes(desc));
+  if (cid) list = list.filter(r => String(r.confiar_id||'').includes(cid));
+  if (tipo) list = list.filter(r => String(r.tipo_transaccion||'') === tipo);
+  renderCashList(list);
+}
+
 function filtrarPse(){
   const params = new URLSearchParams(window.location.search);
   params.set('cedula', '<?php echo htmlspecialchars($cedula); ?>');
@@ -596,8 +630,8 @@ function filtrarCash(){
 }
 
 // Inicializar listas al abrir modales
-document.getElementById('modalPse')?.addEventListener('shown.bs.modal', ()=> { filtrarPse(); });
-document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { filtrarCash(); });
+document.getElementById('modalPse')?.addEventListener('shown.bs.modal', ()=> { renderPseFromInputs(); });
+document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { renderCashFromInputs(); });
 
 // Auto abrir modal si viene en GET
 (function(){
