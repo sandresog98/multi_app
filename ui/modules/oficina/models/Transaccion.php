@@ -68,8 +68,21 @@ class Transaccion {
         return $resumen;
     }
 
-    public function getPagosDisponibles(): array {
-        // PSE relacionados
+    public function getPagosDisponibles(int $psePage = 1, int $pseLimit = 50, int $cashPage = 1, int $cashLimit = 50): array {
+        $psePage = max(1, (int)$psePage);
+        $cashPage = max(1, (int)$cashPage);
+        $pseLimit = max(1, (int)$pseLimit);
+        $cashLimit = max(1, (int)$cashLimit);
+        $pseOffset = ($psePage - 1) * $pseLimit;
+        $cashOffset = ($cashPage - 1) * $cashLimit;
+
+        // Totales para paginación PSE
+        $countPseSql = "SELECT COUNT(*) AS c
+                        FROM banco_asignacion_pse a
+                        JOIN banco_pse p ON p.pse_id = a.pse_id";
+        $countPse = (int)($this->conn->query($countPseSql)->fetch()['c'] ?? 0);
+
+        // PSE relacionados (paginado)
         $sqlPse = "SELECT a.pse_id,
                            a.confiar_id,
                            p.valor,
@@ -87,10 +100,20 @@ class Transaccion {
                      WHERE ct.pse_id IS NOT NULL
                      GROUP BY ct.pse_id
                    ) u ON u.pse_id = a.pse_id
-                   ORDER BY p.fecha_hora_resolucion_de_la_transaccion DESC LIMIT 100";
-        $stmt1 = $this->conn->query($sqlPse);
+                   ORDER BY p.fecha_hora_resolucion_de_la_transaccion DESC
+                   LIMIT ? OFFSET ?";
+        $stmt1 = $this->conn->prepare($sqlPse);
+        $stmt1->execute([$pseLimit, $pseOffset]);
         $pse = $stmt1->fetchAll();
-        // Cash/QR confirmados (excluye no_válidos)
+
+        // Totales para paginación Cash/QR (excluye no_válidos)
+        $countCashSql = "SELECT COUNT(*) AS c
+                         FROM banco_confirmacion_confiar c
+                         JOIN banco_confiar b ON b.confiar_id = c.confiar_id
+                         WHERE c.estado <> 'no_valido'";
+        $countCash = (int)($this->conn->query($countCashSql)->fetch()['c'] ?? 0);
+
+        // Cash/QR confirmados (paginado)
         $sqlCash = "SELECT c.confiar_id,
                            b.valor_consignacion AS valor,
                            b.fecha,
@@ -109,10 +132,28 @@ class Transaccion {
                       GROUP BY ct.confiar_id
                     ) u ON u.confiar_id = c.confiar_id
                     WHERE c.estado <> 'no_valido'
-                    ORDER BY b.fecha DESC LIMIT 100";
-        $stmt2 = $this->conn->query($sqlCash);
+                    ORDER BY b.fecha DESC
+                    LIMIT ? OFFSET ?";
+        $stmt2 = $this->conn->prepare($sqlCash);
+        $stmt2->execute([$cashLimit, $cashOffset]);
         $cash = $stmt2->fetchAll();
-        return ['pse' => $pse, 'cash_qr' => $cash];
+
+        return [
+            'pse' => $pse,
+            'cash_qr' => $cash,
+            'pse_meta' => [
+                'total' => $countPse,
+                'pages' => $pseLimit > 0 ? (int)ceil($countPse / $pseLimit) : 1,
+                'current_page' => $psePage,
+                'limit' => $pseLimit
+            ],
+            'cash_meta' => [
+                'total' => $countCash,
+                'pages' => $cashLimit > 0 ? (int)ceil($countCash / $cashLimit) : 1,
+                'current_page' => $cashPage,
+                'limit' => $cashLimit
+            ]
+        ];
     }
 
     public function crearTransaccion(string $cedula, string $origen, ?string $pseId, ?string $confiarId, float $valorPago, array $detalles, ?int $usuarioId = null, ?string $reciboCajaSifone = null): array {

@@ -8,8 +8,15 @@ $auth->requireModule('oficina.trx_list');
 $currentUser = $auth->getCurrentUser();
 $model = new Transaccion();
 
-// Cargar pagos disponibles (incluye usado/restante)
-$pagos = $model->getPagosDisponibles();
+// Paginación y pestaña activa
+$tab = isset($_GET['tab']) ? ($_GET['tab'] === 'cash' ? 'cash' : 'pse') : 'pse';
+$psePage = max(1, (int)($_GET['pse_page'] ?? 1));
+$cashPage = max(1, (int)($_GET['cash_page'] ?? 1));
+$pseLimit = max(1, (int)($_GET['pse_limit'] ?? 50));
+$cashLimit = max(1, (int)($_GET['cash_limit'] ?? 50));
+
+// Cargar pagos disponibles (incluye usado/restante) con paginación
+$pagos = $model->getPagosDisponibles($psePage, $pseLimit, $cashPage, $cashLimit);
 
 $pageTitle = 'Trx List - Oficina';
 $currentPage = 'trx_list';
@@ -75,6 +82,17 @@ include '../../../views/layouts/header.php';
                   </tbody>
                 </table>
               </div>
+              <?php $pm = $pagos['pse_meta'] ?? null; $cm = $pagos['cash_meta'] ?? null; if ($pm && (($pm['pages'] ?? 1) > 1)): $pages=$pm['pages']; $cur=$pm['current_page']; ?>
+                <nav>
+                  <ul class="pagination justify-content-center pagination-sm">
+                    <?php for ($i=1; $i<=$pages; $i++): ?>
+                      <li class="page-item <?php echo $i==$cur?'active':''; ?>">
+                        <a class="page-link" href="?tab=pse&pse_page=<?php echo $i; ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>&cash_page=<?php echo (int)($cm['current_page'] ?? 1); ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>"><?php echo $i; ?></a>
+                      </li>
+                    <?php endfor; ?>
+                  </ul>
+                </nav>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -120,6 +138,17 @@ include '../../../views/layouts/header.php';
                   </tbody>
                 </table>
               </div>
+              <?php $pm = $pagos['pse_meta'] ?? null; $cm = $pagos['cash_meta'] ?? null; if ($cm && (($cm['pages'] ?? 1) > 1)): $pages=$cm['pages']; $cur=$cm['current_page']; ?>
+                <nav>
+                  <ul class="pagination justify-content-center pagination-sm">
+                    <?php for ($i=1; $i<=$pages; $i++): ?>
+                      <li class="page-item <?php echo $i==$cur?'active':''; ?>">
+                        <a class="page-link" href="?tab=cash&cash_page=<?php echo $i; ?>&cash_limit=<?php echo (int)($cm['limit'] ?? 50); ?>&pse_page=<?php echo (int)($pm['current_page'] ?? 1); ?>&pse_limit=<?php echo (int)($pm['limit'] ?? 50); ?>"><?php echo $i; ?></a>
+                      </li>
+                    <?php endfor; ?>
+                  </ul>
+                </nav>
+              <?php endif; ?>
             </div>
           </div>
         </div>
