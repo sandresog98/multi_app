@@ -46,12 +46,35 @@ class ExcelProcessor:
                     'id_persona': str
                 })
 
-            if header_row is not None:
-                df = pd.read_excel(file_path, skiprows=header_row, engine=engine, dtype=dtype_dict)
-            elif skiprows is not None:
-                df = pd.read_excel(file_path, skiprows=skiprows, engine=engine, dtype=dtype_dict)
-            else:
-                df = pd.read_excel(file_path, engine=engine, dtype=dtype_dict)
+            try:
+                if header_row is not None:
+                    df = pd.read_excel(file_path, skiprows=header_row, engine=engine, dtype=dtype_dict)
+                elif skiprows is not None:
+                    df = pd.read_excel(file_path, skiprows=skiprows, engine=engine, dtype=dtype_dict)
+                else:
+                    df = pd.read_excel(file_path, engine=engine, dtype=dtype_dict)
+            except Exception as e_read:
+                # Fallback: algunos .xls de Sifone son HTML/CSV con extensión .xls
+                if lower.endswith('.xls'):
+                    logger.warning(f"⚠️ Falló lectura .xls estándar ({e_read}). Probando como HTML...")
+                    try:
+                        tables = pd.read_html(file_path, header=0)
+                        if not tables:
+                            raise ValueError("Archivo .xls no contiene tablas HTML")
+                        df = tables[0]
+                    except Exception as e_html:
+                        logger.warning(f"⚠️ Falló lectura como HTML ({e_html}). Probando como CSV...")
+                        # Intento CSV con separadores comunes
+                        for sep in [';', '\t', ',']:
+                            try:
+                                df = pd.read_csv(file_path, sep=sep, engine='python')
+                                break
+                            except Exception:
+                                df = None
+                        if df is None:
+                            raise e_read
+                else:
+                    raise
             
             # Asegurar que las columnas de cédula sean string después de la lectura
             if preserve_cedula:
