@@ -36,15 +36,27 @@ try {
       }
       $subdir = 'uploads/creditos/' . date('Y') . '/' . date('m');
       $absDir = getAbsolutePath($subdir);
-      if (!is_dir($absDir)) { if (!mkdir($absDir, 0775, true)) { throw new Exception('No se pudo crear directorio'); } }
+      if (!is_dir($absDir)) {
+        $mk = @mkdir($absDir, 0775, true);
+        if (!$mk) {
+          try { (new Logger())->logEditar('creditos.solicitudes', 'Fallo mkdir en uploads', null, ['absDir'=>$absDir,'field'=>$field]); } catch (Throwable $ignored) {}
+          throw new Exception('No se pudo crear directorio destino de uploads');
+        }
+      }
       if (!is_writable($absDir)) { @chmod($absDir, 0777); }
-      if (!is_writable($absDir)) { throw new Exception('Directorio no escribible'); }
+      if (!is_writable($absDir)) {
+        try { (new Logger())->logEditar('creditos.solicitudes', 'Directorio no escribible', null, ['absDir'=>$absDir,'field'=>$field]); } catch (Throwable $ignored) {}
+        throw new Exception('Directorio de uploads no escribible');
+      }
       $base = pathinfo($lower, PATHINFO_FILENAME);
       $safe = preg_replace('/[^a-z0-9_-]+/', '-', $base) ?: 'archivo';
       $ext = pathinfo($lower, PATHINFO_EXTENSION);
       $filename = $safe . '-' . uniqid() . '.' . $ext;
       $dest = rtrim($absDir,'/') . '/' . $filename;
-      if (!move_uploaded_file($tmp, $dest)) { throw new Exception('No se pudo guardar archivo: ' . $field); }
+      if (!move_uploaded_file($tmp, $dest)) {
+        try { (new Logger())->logEditar('creditos.solicitudes', 'move_uploaded_file falló', null, ['tmp'=>$tmp,'dest'=>$dest,'field'=>$field]); } catch (Throwable $ignored) {}
+        throw new Exception('No se pudo guardar archivo: ' . $field);
+      }
       if (!file_exists($dest)) {
         try { (new Logger())->logEditar('creditos.solicitudes', 'Archivo no accesible tras move_uploaded_file', null, ['dest'=>$dest, 'field'=>$field]); } catch (Throwable $ignored) {}
         throw new Exception('Archivo no accesible tras guardar: ' . $field);
