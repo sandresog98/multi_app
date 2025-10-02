@@ -435,23 +435,37 @@ SQL;
 
     $rows = [];
     $rows[] = [
-      'Fecha banco', 'Origen', 'ID banco', 'Valor pago', 'Asociado', 'Cédula',
-      'Valor asignado', 'Fecha asignación', 'Recibo Sifone', 'Tx interna'
+      'origen',
+      'id',
+      'fecha_banco',
+      'valor',
+      'tipo_transaccion',
+      'fecha_validacion',
+      'transaccion_id',
+      'cedula',
+      'asociado_nombre',
+      'valor_pago_total',
+      'fecha_asignacion',
+      'recibo_caja_sifone',
+      'valor_asignado'
     ];
 
     while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
       $idBanco = (string)($r['id'] ?? '');
       $rows[] = [
-        (string)($r['fecha_banco'] ?? ''),
         (string)($r['origen'] ?? ''),
         (string)$idBanco,
+        (string)($r['fecha_banco'] ?? ''),
         (float)($r['valor'] ?? 0),
-        (string)($r['asociado_nombre'] ?? ''),
+        (string)($r['tipo_transaccion'] ?? ''),
+        (string)($r['fecha_validacion'] ?? ''),
+        (int)($r['transaccion_id'] ?? 0),
         (string)($r['cedula'] ?? ''),
-        (float)($r['valor_asignado'] ?? 0),
+        (string)($r['asociado_nombre'] ?? ''),
+        (float)($r['valor_pago_total'] ?? 0),
         (string)($r['fecha_asignacion'] ?? ''),
         (string)($r['recibo_caja_sifone'] ?? ''),
-        (int)($r['transaccion_id'] ?? 0)
+        (float)($r['valor_asignado'] ?? 0)
       ];
     }
 
@@ -497,7 +511,7 @@ SQL;
       .'</Relationships>';
     $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
 
-    $widths = [12, 10, 22, 14, 36, 14, 16, 16, 18, 12];
+    $widths = [10, 22, 14, 14, 18, 16, 12, 16, 36, 16, 16, 18, 16];
     $colsXml = '<cols>';
     for ($i=0; $i<count($widths); $i++) {
       $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
@@ -508,8 +522,11 @@ SQL;
       $rowXml = '<row r="'.($r+1).'">';
       $row = $rows[$r];
       $isHeader = ($r === 0);
-      $commaCols = [3,6]; // Valor pago, Valor asignado
-      $stringCols = [0,1,2,4,5,7,8];
+      // Columnas numéricas con coma: valor (3), valor_pago_total (9), valor_asignado (12)
+      $commaCols = [3,9,12];
+      // Forzar texto para mantener formatos y ceros a la izquierda
+      // origen(0), id(1), fecha_banco(2), tipo_transaccion(4), fecha_validacion(5), cedula(7), asociado_nombre(8), fecha_asignacion(10), recibo(11)
+      $stringCols = [0,1,2,4,5,7,8,10,11];
       for ($c = 0; $c < count($row); $c++) {
         $cellRef = $colLetter($c).($r+1);
         $val = $row[$c];
