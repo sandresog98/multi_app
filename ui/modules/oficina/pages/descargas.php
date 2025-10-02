@@ -397,15 +397,14 @@ SELECT
   COALESCE(DATE(p.fecha_hora_resolucion_de_la_transaccion), b.fecha) AS fecha_banco,
   t.valor_pago_total,
   DATE(t.fecha_creacion) AS fecha_asignacion,
-  COALESCE(SUM(d.valor_asignado),0) AS valor_asignado,
+  COALESCE(d.valor_asignado,0) AS valor_asignado,
   t.recibo_caja_sifone
 FROM control_transaccion t
 LEFT JOIN control_transaccion_detalle d ON d.transaccion_id = t.id
 LEFT JOIN banco_pse p ON p.pse_id = t.pse_id
 LEFT JOIN banco_confiar b ON b.confiar_id = t.confiar_id
 LEFT JOIN sifone_asociados sa ON sa.cedula = t.cedula
-GROUP BY t.id
-ORDER BY fecha_banco DESC, t.id DESC
+ORDER BY fecha_banco DESC, t.id DESC, d.id ASC
 SQL;
 
     $stmt = $conn->prepare($sql);
