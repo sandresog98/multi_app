@@ -56,22 +56,34 @@ class ExcelProcessor:
             except Exception as e_read:
                 # Fallback: algunos .xls de Sifone son HTML/CSV con extensión .xls
                 if lower.endswith('.xls'):
-                    logger.warning(f"⚠️ Falló lectura .xls estándar ({e_read}). Probando como HTML...")
+                    logger.warning("⚠️ Falló lectura .xls estándar. Probando como HTML...")
+                    logger.exception(e_read)
                     try:
                         tables = pd.read_html(file_path, header=0)
                         if not tables:
                             raise ValueError("Archivo .xls no contiene tablas HTML")
                         df = tables[0]
                     except Exception as e_html:
-                        logger.warning(f"⚠️ Falló lectura como HTML ({e_html}). Probando como CSV...")
-                        # Intento CSV con separadores comunes
+                        logger.warning("⚠️ Falló lectura como HTML. Probando como CSV...")
+                        logger.exception(e_html)
+                        # Intento CSV con separadores comunes y codificaciones típicas
+                        df = None
+                        last_err = None
                         for sep in [';', '\t', ',']:
-                            try:
-                                df = pd.read_csv(file_path, sep=sep, engine='python')
+                            for enc in [None, 'latin-1', 'utf-8', 'cp1252']:
+                                try:
+                                    df = pd.read_csv(file_path, sep=sep, engine='python', encoding=enc, on_bad_lines='skip')
+                                    if df is not None:
+                                        logger.info(f"📄 Leído como CSV con sep='{sep}' encoding='{enc or 'auto'}'")
+                                        break
+                                except Exception as e_csv:
+                                    last_err = e_csv
+                                    df = None
+                            if df is not None:
                                 break
-                            except Exception:
-                                df = None
                         if df is None:
+                            if last_err is not None:
+                                logger.exception(last_err)
                             raise e_read
                 else:
                     raise
@@ -81,6 +93,10 @@ class ExcelProcessor:
                 df = self._ensure_cedula_columns_as_string(df)
             
             logger.info(f"✅ Archivo leído: {len(df)} filas, {len(df.columns)} columnas")
+            try:
+                logger.info(f"📋 Encabezados detectados: {list(df.columns)}")
+            except Exception:
+                pass
             return df
             
         except Exception as e:
