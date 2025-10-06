@@ -122,36 +122,39 @@ include '../../../views/layouts/header.php';
       <div class="row g-3 mt-1">
         <div class="col-12">
           <div class="card"><div class="card-header"><strong>Información crédito</strong></div><div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
+            <div class="table-responsive small">
+              <table class="table table-sm table-hover align-middle mb-0">
                 <thead class="table-light"><tr>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','numero','Crédito'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo Préstamo'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_aseguradora','plazo','Plazo'); ?></th>
-                  <th>Valor Cuota</th>
-                  <th>Cuotas Pendientes</th>
-                  <th><?php echo dict_label('sifone_cartera_aseguradora','tasa','Tasa Interés'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_aseguradora','carter','Deuda Capital'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_mora','diav','Días Mora'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_mora','sdomor','Saldo Mora'); ?></th>
-                  <th>Monto Cobranza</th>
-                  <th>Pago mínimo</th>
-                  <th><?php echo dict_label('sifone_cartera_mora','fechap','Fecha de Pago'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo'); ?></th>
+                  <th class="text-center"><?php echo dict_label('sifone_cartera_aseguradora','plazo','Cuotas'); ?></th>
+                  <th class="text-center">Pendientes</th>
+                  <th class="text-center text-nowrap">F. Inicio</th>
+                  <th class="text-center text-nowrap">F. Vencimiento</th>
+                  <th class="text-center text-nowrap">F. Pago</th>
+                  <th class="text-center">Días Mora</th>
+                  <th class="text-end">V. Capital</th>
+                  <th class="text-end">V. Cuota</th>
+                  <th class="text-end">V. Mora</th>
+                  <th class="text-end">Cobranza</th>
+                  <th class="text-end">Pago mínimo</th>
                 </tr></thead>
                 <tbody>
                   <?php foreach ($creditos as $c): ?>
                   <tr>
                     <td><?php echo htmlspecialchars($c['numero_credito']); ?></td>
                     <td><?php echo htmlspecialchars($c['tipo_prestamo']); ?></td>
-                    <td><?php echo (int)$c['plazo']; ?></td>
-                    <td><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
-                    <td><?php echo (int)($c['cuotas_pendientes'] ?? 0); ?></td>
-                    <td><?php echo number_format((float)$c['tasa'] * 100, 2) . '%'; ?></td>
-                    <td><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
-                    <td><?php echo (int)$c['dias_mora']; ?></td>
-                    <td><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></td>
-                    <td><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
-                    <td>
+                    <td class="text-center"><?php echo (int)$c['plazo']; ?></td>
+                    <td class="text-center"><?php echo (int)($c['cuotas_pendientes'] ?? 0); ?></td>
+                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_inicio']) ? date('d/m/Y', strtotime($c['fecha_inicio'])) : '-'; ?></td>
+                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_vencimiento']) ? date('d/m/Y', strtotime($c['fecha_vencimiento'])) : '-'; ?></td>
+                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
+                    <td class="text-center"><?php echo (int)$c['dias_mora']; ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
+                    <td class="text-end">
                       <?php
                         $__cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
                         $__saldoMora = (float)($c['saldo_mora'] ?? 0);
@@ -160,7 +163,6 @@ include '../../../views/layouts/header.php';
                         echo '$' . number_format($__pagoMin, 0);
                       ?>
                     </td>
-                    <td><?php echo $c['fecha_pago'] ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>
