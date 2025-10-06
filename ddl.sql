@@ -244,6 +244,7 @@ CREATE VIEW sifone_datacredito_vw AS
         c AS numero_credito,
         d AS nombre,
         f AS fecha_emision,
+        DATE_ADD(g, INTERVAL 1 MONTH) AS fecha_vencimiento,
         h as codeudor,
         m AS estado_credito,
         q AS fecha_pago,
