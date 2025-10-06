@@ -130,7 +130,7 @@ function buildTransitionControls(it){
   else if (estado==='En Espera' && isResp){ buttonsHtml = ctlBtns(['En Curso','Resuelto']); }
   else if (estado==='Resuelto' && isSol){ buttonsHtml = ctlBtns(['Aceptado','Rechazado']); }
   if (isResp && !['Aceptado','Rechazado','Resuelto'].includes(estado)) { buttonsHtml += `<button class="btn btn-outline-secondary btn-sm" id="btnReasignar"><i class="fas fa-user-tag me-1"></i>Reasignar</button>`; }
-  const commentBox = `<div class="input-group mb-2"><span class="input-group-text"><i class="fas fa-comment"></i></span><input id="transitionComment" class="form-control" placeholder="Comentario para la transición (obligatorio)"></div>`;
+  const commentBox = `<div class="input-group mb-2"><span class="input-group-text"><i class="fas fa-comment"></i></span><textarea id="transitionComment" class="form-control" rows="4" style="min-height: 96px;" placeholder="Comentario para la transición (obligatorio)"></textarea></div>`;
   const helpText = `<div class="text-muted small mb-2">Selecciona a qué estado cambiar.</div>`;
   const group = buttonsHtml ? `<div class="d-flex flex-wrap align-items-center gap-2 mb-2">${buttonsHtml}</div>` : '<div class="mb-2"><span class="text-muted">No hay acciones disponibles para tu usuario en este estado.</span></div>';
   return `${buttonsHtml?commentBox+helpText:''}${group}`;
