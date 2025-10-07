@@ -31,6 +31,7 @@ try {
             GROUP BY t.cedula
         ) ua
         INNER JOIN sifone_asociados a ON a.cedula = ua.cedula
+        INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
         LEFT JOIN (
             SELECT DISTINCT cedula FROM sifone_cartera_mora
         ) mor ON mor.cedula = a.cedula

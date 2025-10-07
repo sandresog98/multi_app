@@ -382,6 +382,7 @@ class Cobranza {
                 LEFT JOIN (
                     SELECT DISTINCT cedula FROM sifone_cartera_mora
                 ) mor ON mor.cedula = ua.cedula
+                INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
                 WHERE mor.cedula IS NULL
                   AND DATEDIFF(CURDATE(), ua.ultima_aporte) BETWEEN 30 AND 60
             ) a
@@ -396,6 +397,7 @@ class Cobranza {
                 LEFT JOIN (
                     SELECT DISTINCT cedula FROM sifone_cartera_mora
                 ) mor ON mor.cedula = ua.cedula
+                INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
                 WHERE mor.cedula IS NULL
                   AND DATEDIFF(CURDATE(), ua.ultima_aporte) BETWEEN 61 AND 90
             ) b
@@ -410,6 +412,7 @@ class Cobranza {
                 LEFT JOIN (
                     SELECT DISTINCT cedula FROM sifone_cartera_mora
                 ) mor ON mor.cedula = ua.cedula
+                INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
                 WHERE mor.cedula IS NULL
                   AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 91
             ) c
@@ -442,6 +445,7 @@ class Cobranza {
                 LEFT JOIN (
                     SELECT DISTINCT cedula FROM sifone_cartera_mora
                 ) mor ON mor.cedula = ua.cedula
+                INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
                 WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
             ) a
             LEFT JOIN (
@@ -471,6 +475,7 @@ class Cobranza {
                 LEFT JOIN (
                     SELECT DISTINCT cedula FROM sifone_cartera_mora
                 ) mor ON mor.cedula = ua.cedula
+                INNER JOIN control_asociados ca ON ca.cedula = ua.cedula AND ca.estado_activo = 1
                 WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
             ) a
             LEFT JOIN cobranza_comunicaciones c ON c.asociado_cedula = a.cedula AND c.tipo_origen = 'aportes'
