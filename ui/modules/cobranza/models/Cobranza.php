@@ -190,11 +190,27 @@ class Cobranza {
 	}
 
 	public function obtenerDetalleCompletoAsociado($cedula) {
-		// Información del asociado
-		$sqlAsociado = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
-		$stmtAsociado = $this->conn->prepare($sqlAsociado);
-		$stmtAsociado->execute([$cedula]);
-		$asociado = $stmtAsociado->fetch(PDO::FETCH_ASSOC);
+        // Información del asociado (prioriza vista consolidada)
+        $sqlAsociadoV = "SELECT cedula,
+                                 nombre_completo AS nombre,
+                                 celular        AS celula,
+                                 email          AS mail,
+                                 ciudad,
+                                 direccion      AS direcc,
+                                 fecha_nacimiento AS fecnac,
+                                 fecha_afiliacion AS fechai,
+                                 COALESCE(aportes_totales,0) AS aporte
+                          FROM sifone_resumen_asociados_vw
+                          WHERE cedula = ?";
+        $stmtAsociadoV = $this->conn->prepare($sqlAsociadoV);
+        $stmtAsociadoV->execute([$cedula]);
+        $asociado = $stmtAsociadoV->fetch(PDO::FETCH_ASSOC);
+        if (!$asociado) {
+            $sqlAsociado = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
+            $stmtAsociado = $this->conn->prepare($sqlAsociado);
+            $stmtAsociado->execute([$cedula]);
+            $asociado = $stmtAsociado->fetch(PDO::FETCH_ASSOC);
+        }
 
 		// Información de créditos (alineado con Oficina: asociados_detalle)
 		$sqlCreditos = "SELECT 
@@ -241,38 +257,57 @@ class Cobranza {
 		$stmtCreditos->execute([$cedula]);
 		$creditos = $stmtCreditos->fetchAll(PDO::FETCH_ASSOC);
 
-		// Información monetaria adicional desde sifone_balance_prueba
-		$bpTargets = [
-			'aportes ordinarios',
-			'Revalorizacion Aportes',
-			'PLAN FUTURO',
-			'APORTES SOCIALES 2',
-		];
-		$placeholders = implode(',', array_fill(0, count($bpTargets), '?'));
-		$sqlBp = "SELECT LOWER(nombre) AS nombre, SUM(ABS(COALESCE(salant,0))) AS valor
-				  FROM sifone_balance_prueba
-				  WHERE cedula = ? AND nombre IN ($placeholders)
-				  GROUP BY nombre";
-		$stmtBp = $this->conn->prepare($sqlBp);
-		$paramsBp = array_merge([$cedula], $bpTargets);
-		$stmtBp->execute($paramsBp);
-		$rowsBp = $stmtBp->fetchAll(PDO::FETCH_ASSOC);
-		$bpMap = [
-			'aportes ordinarios' => 'aportes_ordinarios',
-			'revalorizacion aportes' => 'revalorizacion_aportes',
-			'plan futuro' => 'plan_futuro',
-			'aportes sociales 2' => 'aportes_sociales_2',
-		];
-		$monetarios = [
-			'aportes_ordinarios' => 0.0,
-			'revalorizacion_aportes' => 0.0,
-			'plan_futuro' => 0.0,
-			'aportes_sociales_2' => 0.0,
-		];
-		foreach ($rowsBp as $r) {
-			$key = strtolower(trim((string)($r['nombre'] ?? '')));
-			if (isset($bpMap[$key])) { $monetarios[$bpMap[$key]] = (float)($r['valor'] ?? 0); }
-		}
+        // Información monetaria desde la vista consolidada (con fallback)
+        $monetarios = [];
+        $stmtMonV = $this->conn->prepare("SELECT COALESCE(aportes_totales,0) AS aportes_totales,
+                                                 COALESCE(aportes_incentivos,0) AS aportes_incentivos,
+                                                 COALESCE(aportes_revalorizaciones,0) AS aportes_revalorizaciones,
+                                                 COALESCE(plan_futuro,0) AS plan_futuro,
+                                                 COALESCE(bolsillos,0) AS bolsillos,
+                                                 COALESCE(bolsillos_incentivos,0) AS bolsillos_incentivos
+                                          FROM sifone_resumen_asociados_vw WHERE cedula = ?");
+        $stmtMonV->execute([$cedula]);
+        $monV = $stmtMonV->fetch(PDO::FETCH_ASSOC) ?: [];
+        if ($monV) {
+            $monetarios = [
+                'aportes_totales'          => (float)($monV['aportes_totales'] ?? 0),
+                'aportes_incentivos'       => (float)($monV['aportes_incentivos'] ?? 0),
+                'aportes_revalorizaciones' => (float)($monV['aportes_revalorizaciones'] ?? 0),
+                'plan_futuro'              => (float)($monV['plan_futuro'] ?? 0),
+                'bolsillos'                => (float)($monV['bolsillos'] ?? 0),
+                'bolsillos_incentivos'     => (float)($monV['bolsillos_incentivos'] ?? 0),
+            ];
+        } else {
+            // Fallback legacy (compatibilidad vieja UI)
+            $bpTargets = ['aportes ordinarios','Revalorizacion Aportes','PLAN FUTURO','APORTES SOCIALES 2'];
+            $placeholders = implode(',', array_fill(0, count($bpTargets), '?'));
+            $sqlBp = "SELECT LOWER(nombre) AS nombre, SUM(ABS(COALESCE(salant,0))) AS valor
+                      FROM sifone_balance_prueba
+                      WHERE cedula = ? AND nombre IN ($placeholders)
+                      GROUP BY nombre";
+            $stmtBp = $this->conn->prepare($sqlBp);
+            $paramsBp = array_merge([$cedula], $bpTargets);
+            $stmtBp->execute($paramsBp);
+            $rowsBp = $stmtBp->fetchAll(PDO::FETCH_ASSOC);
+            $bpMap = [
+                'aportes ordinarios' => 'aportes_totales',
+                'revalorizacion aportes' => 'aportes_revalorizaciones',
+                'plan futuro' => 'plan_futuro',
+                'aportes sociales 2' => 'aportes_incentivos'
+            ];
+            $monetarios = [
+                'aportes_totales' => 0.0,
+                'aportes_incentivos' => 0.0,
+                'aportes_revalorizaciones' => 0.0,
+                'plan_futuro' => 0.0,
+                'bolsillos' => 0.0,
+                'bolsillos_incentivos' => 0.0,
+            ];
+            foreach ($rowsBp as $r) {
+                $key = strtolower(trim((string)($r['nombre'] ?? '')));
+                if (isset($bpMap[$key])) { $monetarios[$bpMap[$key]] = (float)($r['valor'] ?? 0); }
+            }
+        }
 
 		// Información de productos asignados
 		$sqlProductos = "SELECT ap.id, ap.cedula, ap.producto_id, ap.dia_pago, ap.monto_pago, ap.estado_activo,
@@ -288,8 +323,8 @@ class Cobranza {
 		return [
 			'asociado' => $asociado,
 			'creditos' => $creditos,
-			'productos' => $productos,
-			'monetarios' => $monetarios
+            'productos' => $productos,
+            'monetarios' => $monetarios
 		];
 	}
 

@@ -6,10 +6,48 @@ class DetalleAsociado {
     public function __construct() { $this->conn = getConnection(); }
 
     public function getAsociadoInfo(string $cedula) {
-        $sql = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
+        // Prioriza la vista consolidada; si no hay fila, cae al origen legacy
+        $sqlV = "SELECT cedula,
+                        nombre_completo AS nombre,
+                        celular        AS celula,
+                        email          AS mail,
+                        ciudad,
+                        direccion      AS direcc,
+                        fecha_nacimiento AS fecnac,
+                        fecha_afiliacion AS fechai,
+                        COALESCE(aportes_totales,0) AS aporte
+                 FROM sifone_resumen_asociados_vw WHERE cedula = ?";
+        $stmtV = $this->conn->prepare($sqlV);
+        $stmtV->execute([$cedula]);
+        $row = $stmtV->fetch();
+        if ($row) return $row;
+        // Fallback
+        $sqlL = "SELECT cedula, nombre, celula, mail, ciudad, direcc, aporte, fecnac, fechai FROM sifone_asociados WHERE cedula = ?";
+        $stmtL = $this->conn->prepare($sqlL);
+        $stmtL->execute([$cedula]);
+        return $stmtL->fetch();
+    }
+
+    public function getMonetariosDesdeVista(string $cedula): array {
+        $sql = "SELECT 
+                        COALESCE(aportes_totales,0)           AS aportes_totales,
+                        COALESCE(aportes_incentivos,0)        AS aportes_incentivos,
+                        COALESCE(aportes_revalorizaciones,0)  AS aportes_revalorizaciones,
+                        COALESCE(plan_futuro,0)               AS plan_futuro,
+                        COALESCE(bolsillos,0)                  AS bolsillos,
+                        COALESCE(bolsillos_incentivos,0)       AS bolsillos_incentivos
+                FROM sifone_resumen_asociados_vw WHERE cedula = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
-        return $stmt->fetch();
+        $row = $stmt->fetch() ?: [];
+        return [
+            'aportes_totales'         => (float)($row['aportes_totales'] ?? 0),
+            'aportes_incentivos'      => (float)($row['aportes_incentivos'] ?? 0),
+            'aportes_revalorizaciones'=> (float)($row['aportes_revalorizaciones'] ?? 0),
+            'plan_futuro'             => (float)($row['plan_futuro'] ?? 0),
+            'bolsillos'               => (float)($row['bolsillos'] ?? 0),
+            'bolsillos_incentivos'    => (float)($row['bolsillos_incentivos'] ?? 0),
+        ];
     }
 
     public function getCreditos(string $cedula): array {
