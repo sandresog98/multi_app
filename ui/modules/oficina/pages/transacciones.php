@@ -14,6 +14,14 @@ $logger = new Logger();
 $message = '';
 $error = '';
 
+// Mensajes via querystring para flujos fetch → redirect GET
+if (isset($_GET['saved']) && $_GET['saved'] === '1') {
+  $message = 'Transacción creada';
+}
+if (isset($_GET['err']) && $_GET['err'] !== '') {
+  $error = $_GET['err'];
+}
+
 $cedula = trim($_GET['cedula'] ?? '');
 $resumen = [];
 $asociadoInfo = null;
@@ -73,11 +81,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $reciboCaja = trim($_POST['recibo_caja_sifone'] ?? '');
       if ($reciboCaja === '') { throw new Exception('El campo Recibo de caja Sifone es obligatorio'); }
       $res = $model->crearTransaccion($ced, $origen, $pseId, $confiarId, $valorPago, $detalles, (int)($currentUser['id'] ?? null), $reciboCaja);
+      if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+        header('Content-Type: application/json');
+        echo json_encode($res);
+        exit;
+      }
       if ($res['success']) { $message = 'Transacción creada'; $logger->logCrear('transacciones','Crear transacción', null, ['id'=>$res['id'],'cedula'=>$ced]); }
       else { $error = $res['message'] ?? 'No se pudo crear'; }
       // Recalcular vista si persiste en la misma página
       $cedula = $ced; $resumen = $model->getResumenPorAsociado($cedula); $pagos = $model->getPagosDisponibles();
-    } catch (Exception $e) { $error = $e->getMessage(); }
+    } catch (Exception $e) {
+      $error = $e->getMessage();
+      if (isset($_POST['ajax']) && $_POST['ajax'] === '1') {
+        header('Content-Type: application/json');
+        echo json_encode(['success'=>false,'message'=>$error]);
+        exit;
+      }
+    }
   } elseif ($action === 'eliminar') {
     try {
       $id = (int)($_POST['id'] ?? 0);
@@ -605,29 +625,12 @@ function renderCashFromInputs(){
 }
 
 function filtrarPse(){
-  const params = new URLSearchParams(window.location.search);
-  params.set('cedula', '<?php echo htmlspecialchars($cedula); ?>');
-  params.set('pse_fecha', document.getElementById('pseFiltroFecha').value || '');
-  params.set('pse_ref2', document.getElementById('pseFiltroRef2').value.trim());
-  params.set('pse_ref3', document.getElementById('pseFiltroRef3').value.trim());
-  params.set('pse_estado', document.getElementById('pseFiltroEstado').value || '');
-  params.set('pse_id', document.getElementById('pseFiltroId').value.trim());
-  params.set('pse_page', '1');
-  params.set('open_modal', 'pse');
-  window.location.search = params.toString();
+  // Filtrar en cliente sin recargar ni cerrar el modal
+  renderPseFromInputs();
 }
 function filtrarCash(){
-  const params = new URLSearchParams(window.location.search);
-  params.set('cedula', '<?php echo htmlspecialchars($cedula); ?>');
-  params.set('cash_fecha', document.getElementById('cashFiltroFecha').value || '');
-  params.set('cash_cedula', document.getElementById('cashFiltroCedula').value.trim());
-  params.set('cash_desc', document.getElementById('cashFiltroDesc').value.trim());
-  params.set('confiar_id', document.getElementById('cashFiltroId').value.trim());
-  params.set('cash_tipo', document.getElementById('cashFiltroTipo').value || '');
-  params.set('cash_estado', document.getElementById('cashFiltroEstado').value || '');
-  params.set('cash_page', '1');
-  params.set('open_modal', 'cash');
-  window.location.search = params.toString();
+  // Filtrar en cliente sin recargar ni cerrar el modal
+  renderCashFromInputs();
 }
 
 // Inicializar listas al abrir modales
@@ -649,6 +652,7 @@ document.getElementById('modalCash')?.addEventListener('shown.bs.modal', ()=> { 
 
 async function guardarTransaccion(){
   const cedula = '<?php echo htmlspecialchars($cedula); ?>';
+  if (!cedula) { alert('Primero busca y selecciona un asociado.'); return; }
   const origen = document.getElementById('origen').value;
   const pseId = document.getElementById('pseId').value || null;
   const confiarId = document.getElementById('confiarId').value || null;
@@ -688,17 +692,34 @@ async function guardarTransaccion(){
   let sum = 0; detalles.forEach(d=> sum+= (d.valor_asignado||0));
   if (sum > valorPago + 0.01) { alert('La suma asignada excede el valor del pago'); return; }
 
-  const form = new FormData();
-  form.append('action','crear');
-  form.append('cedula', cedula);
-  form.append('origen', origen);
-  form.append('pse_id', pseId||'');
-  form.append('confiar_id', confiarId||'');
-  form.append('valor_pago', String(valorPago));
-  form.append('detalles', JSON.stringify(detalles));
-  form.append('recibo_caja_sifone', reciboCaja);
-  const res = await fetch('', { method:'POST', body:form });
-  location.reload();
+  try {
+    const btn = document.querySelector('button.btn.btn-primary.btn-sm');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando…'; }
+    const form = new FormData();
+    form.append('action','crear');
+    form.append('ajax','1');
+    form.append('cedula', cedula);
+    form.append('origen', origen);
+    form.append('pse_id', pseId||'');
+    form.append('confiar_id', confiarId||'');
+    form.append('valor_pago', String(valorPago));
+    form.append('detalles', JSON.stringify(detalles));
+    form.append('recibo_caja_sifone', reciboCaja);
+    const res = await fetch(window.location.href, { method:'POST', body:form, credentials:'same-origin' });
+    let j = null; try { j = await res.json(); } catch {}
+    if (!res.ok || !(j && j.success)) {
+      const msg = (j && j.message) ? j.message : ('Error al guardar ('+res.status+')');
+      alert(msg);
+      if (btn){ btn.disabled=false; btn.textContent='Guardar'; }
+      return;
+    }
+    // Redirigir a GET con flag de éxito para mostrar mensaje
+    const params = new URLSearchParams(window.location.search);
+    params.set('saved','1');
+    window.location.search = params.toString();
+  } catch (e) {
+    alert('Error de red: '+String(e));
+  }
 }
 
 updatePagoBox();

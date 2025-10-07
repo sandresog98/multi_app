@@ -219,17 +219,47 @@ class Transaccion {
             if ($suma > $valorPago + 0.01) {
                 throw new Exception('La suma de valores asignados excede el valor del pago seleccionado');
             }
-            // Evitar reuso de pago
-            $stmtChk = null;
+            // Validar saldo disponible del pago (permite uso parcial hasta agotar)
             if ($origen === 'pse' && $pseId) {
-                $stmtChk = $this->conn->prepare("SELECT COUNT(*) c FROM control_transaccion WHERE pse_id = ?");
-                $stmtChk->execute([$pseId]);
+                $stmtSaldo = $this->conn->prepare(
+                    "SELECT p.valor AS total,
+                            COALESCE(u.utilizado,0) AS usado
+                     FROM banco_pse p
+                     LEFT JOIN (
+                       SELECT ct.pse_id, SUM(d.valor_asignado) AS utilizado
+                       FROM control_transaccion ct
+                       JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+                       WHERE ct.pse_id = ?
+                       GROUP BY ct.pse_id
+                     ) u ON u.pse_id = p.pse_id
+                     WHERE p.pse_id = ?"
+                );
+                $stmtSaldo->execute([$pseId, $pseId]);
+                $row = $stmtSaldo->fetch();
+                if (!$row) { throw new Exception('PSE no encontrado'); }
+                $restante = (float)$row['total'] - (float)$row['usado'];
+                if ($restante <= 0) { throw new Exception('El PSE no tiene saldo disponible'); }
+                if ($suma > $restante + 0.01) { throw new Exception('La suma asignada excede el saldo restante del PSE'); }
             } elseif ($origen === 'cash_qr' && $confiarId) {
-                $stmtChk = $this->conn->prepare("SELECT COUNT(*) c FROM control_transaccion WHERE confiar_id = ?");
-                $stmtChk->execute([$confiarId]);
-            }
-            if ($stmtChk && (int)($stmtChk->fetch()['c'] ?? 0) > 0) {
-                throw new Exception('El pago seleccionado ya fue utilizado en otra transacción');
+                $stmtSaldo = $this->conn->prepare(
+                    "SELECT b.valor_consignacion AS total,
+                            COALESCE(u.utilizado,0) AS usado
+                     FROM banco_confiar b
+                     LEFT JOIN (
+                       SELECT ct.confiar_id, SUM(d.valor_asignado) AS utilizado
+                       FROM control_transaccion ct
+                       JOIN control_transaccion_detalle d ON d.transaccion_id = ct.id
+                       WHERE ct.confiar_id = ?
+                       GROUP BY ct.confiar_id
+                     ) u ON u.confiar_id = b.confiar_id
+                     WHERE b.confiar_id = ?"
+                );
+                $stmtSaldo->execute([$confiarId, $confiarId]);
+                $row = $stmtSaldo->fetch();
+                if (!$row) { throw new Exception('CONF no encontrado'); }
+                $restante = (float)$row['total'] - (float)$row['usado'];
+                if ($restante <= 0) { throw new Exception('El CONF no tiene saldo disponible'); }
+                if ($suma > $restante + 0.01) { throw new Exception('La suma asignada excede el saldo restante del CONF'); }
             }
 
             // Insert cabecera
