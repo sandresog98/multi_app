@@ -207,6 +207,7 @@ include '../../../views/layouts/header.php';
                 <th>Fecha</th>
                 <th>Recibo Sifone</th>
                 <th>Producto Id</th>
+                <th>Cuenta</th>
                 <th>Detalle</th>
                 <th>Tipo</th>
                 <th class="text-end">Valor</th>
@@ -222,6 +223,7 @@ include '../../../views/layouts/header.php';
                     ?>
                   </small></td>
                   <td><?php echo htmlspecialchars($m['numero'] ?? ''); ?></td>
+                  <td><?php echo htmlspecialchars($m['cuenta'] ?? ''); ?></td>
                   <td><?php echo htmlspecialchars($m['cuenta'] ?? ''); ?></td>
                   <td class="text-truncate" style="max-width:240px"><?php echo htmlspecialchars($m['detall'] ?? ''); ?></td>
                   <td>
