@@ -290,6 +290,7 @@ FROM (
   GROUP BY t.cedula
 ) ua
 JOIN sifone_asociados sa ON sa.cedula = ua.cedula
+JOIN control_asociados ca ON ca.cedula = sa.cedula
 LEFT JOIN (
   SELECT DISTINCT cedula FROM sifone_cartera_mora
 ) mor ON mor.cedula = ua.cedula
@@ -321,7 +322,7 @@ LEFT JOIN (
   WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Plan Futuro'
   GROUP BY ap.cedula
 ) pf ON pf.cedula = sa.cedula
-WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
+WHERE ca.estado_activo = TRUE AND mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
 
 ORDER BY nombre_completo
 SQL;
