@@ -138,6 +138,7 @@ include '../../../views/layouts/header.php';
                   <th class="text-end">V. Mora</th>
                   <th class="text-end">Cobranza</th>
                   <th class="text-end">Pago mínimo</th>
+                  <th class="text-center">Codeudor</th>
                 </tr></thead>
                 <tbody>
                   <?php foreach ($creditos as $c): ?>
@@ -163,10 +164,31 @@ include '../../../views/layouts/header.php';
                         echo '$' . number_format($__pagoMin, 0);
                       ?>
                     </td>
+                    <td class="text-center">
+                      <?php if (!empty($c['codeudor_nombre']) || !empty($c['codeudor_celular']) || !empty($c['codeudor_email']) || !empty($c['codeudor_direccion'])): ?>
+                        <?php $modalId = 'codeudorModal_' . preg_replace('/[^A-Za-z0-9_\-]/','_', (string)$c['numero_credito']); ?>
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#<?php echo $modalId; ?>"><i class="fas fa-user-friends me-1"></i>Ver</button>
+                        <?php ob_start(); ?>
+                        <div class="modal fade" id="<?php echo $modalId; ?>" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content">
+                          <div class="modal-header"><h5 class="modal-title"><i class="fas fa-user-friends me-2"></i>Codeudor — Crédito <?php echo htmlspecialchars($c['numero_credito']); ?></h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                          <div class="modal-body">
+                            <div class="mb-1"><strong>Nombre:</strong> <?php echo htmlspecialchars($c['codeudor_nombre'] ?? ''); ?></div>
+                            <div class="mb-1"><strong>Teléfono:</strong> <?php echo htmlspecialchars($c['codeudor_celular'] ?? ''); ?></div>
+                            <div class="mb-1"><strong>Email:</strong> <?php echo htmlspecialchars($c['codeudor_email'] ?? ''); ?></div>
+                            <div class="mb-1"><strong>Dirección:</strong> <?php echo htmlspecialchars($c['codeudor_direccion'] ?? ''); ?></div>
+                          </div>
+                          <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+                        </div></div></div>
+                        <?php $codeudorModals[] = ob_get_clean(); ?>
+                      <?php else: ?>
+                        <span class="text-muted">—</span>
+                      <?php endif; ?>
+                    </td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>
               </table>
+              <?php echo isset($codeudorModals) ? implode('', $codeudorModals) : ''; ?>
             </div>
           </div></div>
         </div>

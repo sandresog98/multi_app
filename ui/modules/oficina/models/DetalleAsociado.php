@@ -23,6 +23,11 @@ class DetalleAsociado {
 					dv.cuotas_pendientes AS cuotas_pendientes,
 					dv.fecha_emision AS fecha_inicio,
 					dv.fecha_vencimiento AS fecha_vencimiento,
+					-- Datos de codeudor
+					dvco.nombre AS codeudor_nombre,
+					dvco.celular AS codeudor_celular,
+					dvco.email AS codeudor_email,
+					dvco.direccion AS codeudor_direccion,
 					m.sdomor AS saldo_mora,
 					m.diav AS dias_mora,
 					COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago,
@@ -42,6 +47,9 @@ class DetalleAsociado {
 				LEFT JOIN sifone_datacredito_vw dv
 					ON CAST(dv.cedula AS UNSIGNED) = CAST(a.cedula AS UNSIGNED)
 					   AND CAST(dv.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
+				LEFT JOIN sifone_datacredito_vw dvco
+					ON CAST(dvco.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
+				   AND dvco.codeudor = 1
 				WHERE a.cedula = ?
 				ORDER BY a.numero";
         $stmt = $this->conn->prepare($sql);

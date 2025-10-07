@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				const detalle = data.data;
 				let html = '';
 				
-				// Información del asociado
+                // Información del asociado
 				if (detalle.asociado) {
 					html += `
 						<div class="row g-3 mb-3">
@@ -291,62 +291,73 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div class="card-header"><strong>Información monetaria</strong></div>
                                     <div class="card-body">
                                         <div><strong>Aportes:</strong> $${Number(detalle.asociado.aporte || 0).toLocaleString('es-CO')}</div>
-                                        ${(()=>{
-                                            try {
-                                                const asignaciones = Array.isArray(detalle.productos)?detalle.productos:[];
-                                                const productosMensual = asignaciones.filter(p=>p.estado_activo).reduce((s,p)=>s+Number(p.monto_pago||0),0);
-                                                const creditos = Array.isArray(detalle.creditos)?detalle.creditos:[];
-                                                const pagoMinCred = creditos.reduce((s,c)=>{
-                                                    const cuotaBase = Number((c.valor_cuota ?? c.cuota) || 0);
-                                                    const saldoMora = Number(c.saldo_mora || 0);
-                                                    const montoCob = Number(c.monto_cobranza || 0);
-                                                    return s + ((saldoMora>0?saldoMora:cuotaBase) + montoCob);
-                                                },0);
-                                                const total = productosMensual + pagoMinCred;
-                                                return `
-                                                    <div><strong>Valor mensual de productos:</strong> $${productosMensual.toLocaleString('es-CO')}</div>
-                                                    <div><strong>Valor pago mínimo créditos:</strong> $${pagoMinCred.toLocaleString('es-CO')}</div>
-                                                    <div><strong>Valor total:</strong> $${total.toLocaleString('es-CO')}</div>
-                                                `;
-                                            } catch(e) { return ''; }
-                                        })()}
+                                        <div><strong>Revalorizaciones de aportes:</strong> $${Number(detalle.monetarios?.revalorizacion_aportes || 0).toLocaleString('es-CO')}</div>
+                                        <div><strong>Plan Futuro:</strong> $${Number(detalle.monetarios?.plan_futuro || 0).toLocaleString('es-CO')}</div>
+                                        <div><strong>Aportes Sociales:</strong> $${Number(detalle.monetarios?.aportes_sociales_2 || 0).toLocaleString('es-CO')}</div>
                                     </div>
 								</div>
+                                <div class="card mt-2">
+                                    <div class="card-header"><strong>Valor de pagos</strong></div>
+                                    <div class="card-body">
+                                        ${(()=>{
+                                            try{
+                                                const asignaciones = Array.isArray(detalle.productos)?detalle.productos:[];
+                                                const valorProductosMensual = asignaciones.filter(p=>p.estado_activo).reduce((s,p)=>s+Number(p.monto_pago||0),0);
+                                                const creditos = Array.isArray(detalle.creditos)?detalle.creditos:[];
+                                                const valorPagoMinCreditos = creditos.reduce((acc,c)=>{
+                                                    const cuotaBase = Number((c.valor_cuota ?? c.cuota) || 0);
+                                                    const saldoMora = Number(c.saldo_mora || 0);
+                                                    const montoCobranza = Number(c.monto_cobranza || 0);
+                                                    return acc + ((saldoMora>0?saldoMora:cuotaBase) + montoCobranza);
+                                                },0);
+                                                const valorTotalMonetario = valorProductosMensual + valorPagoMinCreditos;
+                                                return `
+                                                    <div><strong>Valor mensual de productos:</strong> $${valorProductosMensual.toLocaleString('es-CO')}</div>
+                                                    <div><strong>Valor pago mínimo créditos:</strong> $${valorPagoMinCreditos.toLocaleString('es-CO')}</div>
+                                                    <div><strong>Valor total:</strong> $${valorTotalMonetario.toLocaleString('es-CO')}</div>
+                                                `;
+                                            }catch(e){ return ''; }
+                                        })()}
+                                    </div>
+                                </div>
 							</div>
 						</div>
 					`;
 				}
 				
-				// Información de créditos
+                // Información de créditos (alineado con Oficina; mantenemos fila de codeudor)
 				if (detalle.creditos && detalle.creditos.length > 0) {
 					html += `
 						<div class="row g-3 mb-3">
 							<div class="col-12">
 								<div class="card">
 									<div class="card-header"><strong>Información crédito</strong></div>
-									<div class="card-body">
-										<div class="table-responsive">
-											<table class="table table-sm table-hover">
+                                    <div class="card-body">
+                                        <div class="table-responsive small">
+                                            <table class="table table-sm table-hover align-middle mb-0">
 												<thead class="table-light">
                                                     <tr>
                                                         <th>Crédito</th>
-                                                        <th>Tipo Préstamo</th>
-                                                        <th>Plazo</th>
-                                                        <th>Valor Cuota</th>
-                                                        <th>Cuotas Pendientes</th>
-                                                        <th>Tasa Interés</th>
-                                                        <th>Deuda Capital</th>
-                                                        <th>Días Mora</th>
-                                                        <th>Saldo Mora</th>
-                                                        <th>Monto Cobranza</th>
-                                                        <th>Pago mínimo</th>
-                                                        <th>Fecha de Pago</th>
+                                                        <th>Tipo</th>
+                                                        <th class="text-center">Cuotas</th>
+                                                        <th class="text-center">Pendientes</th>
+                                                        <th class="text-center text-nowrap">F. Inicio</th>
+                                                        <th class="text-center text-nowrap">F. Vencimiento</th>
+                                                        <th class="text-center text-nowrap">F. Pago</th>
+                                                        <th class="text-center">Días Mora</th>
+                                                        <th class="text-end">V. Capital</th>
+                                                        <th class="text-end">V. Cuota</th>
+                                                        <th class="text-end">V. Mora</th>
+                                                        <th class="text-end">Cobranza</th>
+                                                        <th class="text-end">Pago mínimo</th>
                                                     </tr>
 												</thead>
 												<tbody>
 					`;
 					
 					for (const credito of detalle.creditos) {
+                        const fInicio = credito.fecha_inicio ? new Date(credito.fecha_inicio).toLocaleDateString('es-CO') : '-';
+                        const fVence = credito.fecha_vencimiento ? new Date(credito.fecha_vencimiento).toLocaleDateString('es-CO') : '-';
                         const fechaPago = credito.fecha_pago ? new Date(credito.fecha_pago).toLocaleDateString('es-CO') : '-';
                         const valorCuota = Number((credito.valor_cuota ?? credito.cuota) || 0);
                         const cuotasPend = Number(credito.cuotas_pendientes || 0);
@@ -355,18 +366,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         const pagoMin = (saldoMora>0?saldoMora:valorCuota) + montoCob;
                         html += `
                             <tr>
-                                <td>${credito.numero_credito || ''}</td>
-                                <td>${credito.tipo_prestamo || ''}</td>
-                                <td>${Number(credito.plazo || 0)}</td>
-                                <td>$${valorCuota.toLocaleString('es-CO')}</td>
-                                <td>${cuotasPend}</td>
-                                <td>${(Number(credito.tasa || 0) * 100).toFixed(2)}%</td>
-                                <td>$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
-                                <td>${Number(credito.dias_mora || 0)}</td>
-                                <td>$${saldoMora.toLocaleString('es-CO')}</td>
-                                <td>$${montoCob.toLocaleString('es-CO')}</td>
-                                <td>$${pagoMin.toLocaleString('es-CO')}</td>
-                                <td>${fechaPago}</td>
+                                <td>${(credito.numero_credito || '').replace(/</g,'&lt;')}</td>
+                                <td>${(credito.tipo_prestamo || '').replace(/</g,'&lt;')}</td>
+                                <td class="text-center">${Number(credito.plazo || 0)}</td>
+                                <td class="text-center">${cuotasPend}</td>
+                                <td class="text-center text-nowrap">${fInicio}</td>
+                                <td class="text-center text-nowrap">${fVence}</td>
+                                <td class="text-center text-nowrap">${fechaPago}</td>
+                                <td class="text-center">${Number(credito.dias_mora || 0)}</td>
+                                <td class="text-end">$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${valorCuota.toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${saldoMora.toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${montoCob.toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${pagoMin.toLocaleString('es-CO')}</td>
                             </tr>
                             ${(credito.codeudor_nombre||credito.codeudor_celular||credito.codeudor_email||credito.codeudor_direccion)?`
                             <tr class="table-light">
@@ -378,8 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 					
 					html += `
-											</tbody>
-										</table>
+                                            </tbody>
+                                        </table>
 									</div>
 								</div>
 							</div>

@@ -206,6 +206,8 @@ class Cobranza {
 							a.valorc AS cuota,
 							dv.cuota AS valor_cuota,
 							dv.cuotas_pendientes AS cuotas_pendientes,
+							dv.fecha_emision AS fecha_inicio,
+							dv.fecha_vencimiento AS fecha_vencimiento,
 							m.sdomor AS saldo_mora,
 							m.diav AS dias_mora,
 							COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago,
@@ -239,6 +241,39 @@ class Cobranza {
 		$stmtCreditos->execute([$cedula]);
 		$creditos = $stmtCreditos->fetchAll(PDO::FETCH_ASSOC);
 
+		// Información monetaria adicional desde sifone_balance_prueba
+		$bpTargets = [
+			'aportes ordinarios',
+			'Revalorizacion Aportes',
+			'PLAN FUTURO',
+			'APORTES SOCIALES 2',
+		];
+		$placeholders = implode(',', array_fill(0, count($bpTargets), '?'));
+		$sqlBp = "SELECT LOWER(nombre) AS nombre, SUM(ABS(COALESCE(salant,0))) AS valor
+				  FROM sifone_balance_prueba
+				  WHERE cedula = ? AND nombre IN ($placeholders)
+				  GROUP BY nombre";
+		$stmtBp = $this->conn->prepare($sqlBp);
+		$paramsBp = array_merge([$cedula], $bpTargets);
+		$stmtBp->execute($paramsBp);
+		$rowsBp = $stmtBp->fetchAll(PDO::FETCH_ASSOC);
+		$bpMap = [
+			'aportes ordinarios' => 'aportes_ordinarios',
+			'revalorizacion aportes' => 'revalorizacion_aportes',
+			'plan futuro' => 'plan_futuro',
+			'aportes sociales 2' => 'aportes_sociales_2',
+		];
+		$monetarios = [
+			'aportes_ordinarios' => 0.0,
+			'revalorizacion_aportes' => 0.0,
+			'plan_futuro' => 0.0,
+			'aportes_sociales_2' => 0.0,
+		];
+		foreach ($rowsBp as $r) {
+			$key = strtolower(trim((string)($r['nombre'] ?? '')));
+			if (isset($bpMap[$key])) { $monetarios[$bpMap[$key]] = (float)($r['valor'] ?? 0); }
+		}
+
 		// Información de productos asignados
 		$sqlProductos = "SELECT ap.id, ap.cedula, ap.producto_id, ap.dia_pago, ap.monto_pago, ap.estado_activo,
 							   p.nombre as producto_nombre, p.valor_minimo, p.valor_maximo
@@ -253,7 +288,8 @@ class Cobranza {
 		return [
 			'asociado' => $asociado,
 			'creditos' => $creditos,
-			'productos' => $productos
+			'productos' => $productos,
+			'monetarios' => $monetarios
 		];
 	}
 
