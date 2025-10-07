@@ -443,6 +443,7 @@ CREATE TABLE IF NOT EXISTS cobranza_comunicaciones (
     fecha_comunicacion DATETIME NOT NULL,
     id_usuario INT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    tipo_origen VARCHAR(20) NOT NULL DEFAULT 'credito',
     KEY idx_cedula (asociado_cedula),
     KEY idx_fecha (fecha_comunicacion)
 );

@@ -8,7 +8,7 @@ $authController = new AuthController();
 $authController->requireModule('cobranza.comunicaciones');
 $currentUser = $authController->getCurrentUser();
 
-$pageTitle = 'Cobranza - Comunicaciones';
+$pageTitle = 'Cobranza - Comms Crédito';
 $currentPage = 'cobranza_comunicaciones';
 include '../../../views/layouts/header.php';
 ?>
@@ -41,7 +41,7 @@ function tiempoRelativo($fecha) {
 		<?php include '../../../views/layouts/sidebar.php'; ?>
 		<main class="col-12 main-content">
 			<div class="pt-3 pb-2 mb-3 border-bottom">
-				<h1 class="h2"><i class="fas fa-comments me-2"></i>Comunicaciones</h1>
+                <h1 class="h2"><i class="fas fa-comments me-2"></i>Comms Crédito</h1>
 			</div>
 
 			<?php
@@ -467,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.getElementById('histCedula').textContent = cedula;
 		document.getElementById('histContenido').innerHTML = 'Cargando...';
 		if (!cedula) { document.getElementById('histContenido').innerHTML = '<div class="text-danger small">Cédula no disponible.</div>'; return; }
-		fetch(`../api/cobranza_historial.php?cedula=${encodeURIComponent(cedula)}`)
+		fetch(`../api/cobranza_historial.php?cedula=${encodeURIComponent(cedula)}&tipo_origen=credito`)
 			.then(r => r.json()).then(data => {
 				const rows = data?.items || [];
 				if (!rows.length) {

@@ -368,6 +368,120 @@ class Cobranza {
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 
+    // Aportes: distribución por bandas de días sin aporte (30-60, 61-90, 91+)
+    public function distribucionAportesBandas() {
+        $sql = "
+            SELECT '30-60' AS banda, COUNT(*) AS asociados FROM (
+                SELECT ua.cedula, ua.ultima_aporte
+                FROM (
+                    SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+                    FROM sifone_movimientos_tributarios t
+                    WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+                    GROUP BY t.cedula
+                ) ua
+                LEFT JOIN (
+                    SELECT DISTINCT cedula FROM sifone_cartera_mora
+                ) mor ON mor.cedula = ua.cedula
+                WHERE mor.cedula IS NULL
+                  AND DATEDIFF(CURDATE(), ua.ultima_aporte) BETWEEN 30 AND 60
+            ) a
+            UNION ALL
+            SELECT '61-90' AS banda, COUNT(*) AS asociados FROM (
+                SELECT ua.cedula FROM (
+                    SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+                    FROM sifone_movimientos_tributarios t
+                    WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+                    GROUP BY t.cedula
+                ) ua
+                LEFT JOIN (
+                    SELECT DISTINCT cedula FROM sifone_cartera_mora
+                ) mor ON mor.cedula = ua.cedula
+                WHERE mor.cedula IS NULL
+                  AND DATEDIFF(CURDATE(), ua.ultima_aporte) BETWEEN 61 AND 90
+            ) b
+            UNION ALL
+            SELECT '91+' AS banda, COUNT(*) AS asociados FROM (
+                SELECT ua.cedula FROM (
+                    SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+                    FROM sifone_movimientos_tributarios t
+                    WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+                    GROUP BY t.cedula
+                ) ua
+                LEFT JOIN (
+                    SELECT DISTINCT cedula FROM sifone_cartera_mora
+                ) mor ON mor.cedula = ua.cedula
+                WHERE mor.cedula IS NULL
+                  AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 91
+            ) c
+        ";
+        $stmt = $this->conn->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Aportes: distribución última comunicación (tipo_origen='aportes') para asociados con 30+ días sin aporte y sin mora de crédito
+    public function distribucionUltimaComunicacionAportes() {
+        $sql = "SELECT rango, COUNT(1) AS asociados FROM (
+            SELECT 
+                a.cedula,
+                CASE 
+                    WHEN ultima IS NULL THEN 'Sin comunicación'
+                    WHEN DATEDIFF(CURDATE(), ultima) < 2 THEN 'Muy reciente'
+                    WHEN DATEDIFF(CURDATE(), ultima) < 5 THEN 'Reciente'
+                    WHEN DATEDIFF(CURDATE(), ultima) < 10 THEN 'Intermedia'
+                    WHEN DATEDIFF(CURDATE(), ultima) <= 20 THEN 'Lejana'
+                    ELSE 'Muy lejana'
+                END AS rango
+            FROM (
+                SELECT ua.cedula
+                FROM (
+                    SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+                    FROM sifone_movimientos_tributarios t
+                    WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+                    GROUP BY t.cedula
+                ) ua
+                LEFT JOIN (
+                    SELECT DISTINCT cedula FROM sifone_cartera_mora
+                ) mor ON mor.cedula = ua.cedula
+                WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
+            ) a
+            LEFT JOIN (
+                SELECT asociado_cedula, MAX(fecha_comunicacion) AS ultima
+                FROM cobranza_comunicaciones
+                WHERE tipo_origen = 'aportes'
+                GROUP BY asociado_cedula
+            ) cc ON cc.asociado_cedula = a.cedula
+        ) z GROUP BY rango";
+        $stmt = $this->conn->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Aportes: estados de última comunicación por asociado (tipo_origen='aportes')
+    public function estadosUltimaComunicacionAportes() {
+        $sql = "SELECT estado, COUNT(*) AS asociados FROM (
+            SELECT a.cedula,
+                   SUBSTRING_INDEX(GROUP_CONCAT(c.estado ORDER BY c.fecha_comunicacion DESC SEPARATOR '\n'), '\n', 1) AS estado
+            FROM (
+                SELECT ua.cedula
+                FROM (
+                    SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+                    FROM sifone_movimientos_tributarios t
+                    WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+                    GROUP BY t.cedula
+                ) ua
+                LEFT JOIN (
+                    SELECT DISTINCT cedula FROM sifone_cartera_mora
+                ) mor ON mor.cedula = ua.cedula
+                WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
+            ) a
+            LEFT JOIN cobranza_comunicaciones c ON c.asociado_cedula = a.cedula AND c.tipo_origen = 'aportes'
+            GROUP BY a.cedula
+        ) t
+        GROUP BY estado
+        ORDER BY asociados DESC";
+        $stmt = $this->conn->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 	public function comunicacionesPorTipoUltimosDias($dias = 30) {
 		$dias = (int)$dias;
 		$sql = "SELECT tipo_comunicacion AS tipo, COUNT(*) AS cantidad

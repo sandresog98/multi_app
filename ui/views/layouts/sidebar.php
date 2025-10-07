@@ -196,7 +196,7 @@
         </div>
         <?php endif; ?>
 
-        <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones']); ?>
+        <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones','cobranza_comunicaciones_aportes']); ?>
         <?php $canCobr = canAccess('cobranza') || canAccess('cobranza.resumen') || canAccess('cobranza.comunicaciones'); ?>
         <?php if ($canCobr): ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCobranza" role="button" aria-expanded="<?php echo $isCobranzaOpen ? 'true' : 'false'; ?>" aria-controls="menuCobranza">
@@ -210,7 +210,10 @@
             <?php endif; ?>
             <?php if (canAccess('cobranza') || canAccess('cobranza.comunicaciones')): ?>
             <a class="nav-link <?php echo $currentPage === 'cobranza_comunicaciones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cobranza/pages/comunicaciones.php">
-                <i class="fas fa-comments small me-2"></i>Comunicaciones
+                <i class="fas fa-comments small me-2"></i>Comms Crédito
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'cobranza_comunicaciones_aportes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cobranza/pages/comms_aportes.php">
+                <i class="fas fa-hand-holding-heart small me-2"></i>Comms Aportes
             </a>
             <?php endif; ?>
         </div>
@@ -294,7 +297,7 @@
             </a>
         </div>
 
-        <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones']); ?>
+        <?php $isCobranzaOpen = in_array(($currentPage ?? ''), ['cobranza','cobranza_comunicaciones','cobranza_comunicaciones_aportes']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCobranza" role="button" aria-expanded="<?php echo $isCobranzaOpen ? 'true' : 'false'; ?>" aria-controls="menuCobranza">
             <span><i class="fas fa-phone me-2"></i>Cobranza</span>
         </a>
@@ -303,7 +306,10 @@
                 <i class="fas fa-circle-notch small me-2"></i>Resumen
             </a>
             <a class="nav-link <?php echo $currentPage === 'cobranza_comunicaciones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cobranza/pages/comunicaciones.php">
-                <i class="fas fa-comments small me-2"></i>Comunicaciones
+                <i class="fas fa-comments small me-2"></i>Comms Crédito
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'cobranza_comunicaciones_aportes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cobranza/pages/comms_aportes.php">
+                <i class="fas fa-hand-holding-heart small me-2"></i>Comms Aportes
             </a>
         </div>
         <?php endif; ?>

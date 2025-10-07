@@ -23,15 +23,16 @@ try {
 	if (!$cedula || !$tipo || !$estado || !$fecha) throw new Exception('Datos incompletos');
 	if (!in_array($estado, $allowedEstados, true)) throw new Exception('Estado inválido');
 
-	$model = new Comunicacion();
-	$id = $model->crear($cedula, $tipo, $estado, $comentario, $fecha, (int)($user['id'] ?? null));
+    $tipoOrigen = trim($_POST['tipo_origen'] ?? ''); if ($tipoOrigen==='') { $tipoOrigen = 'credito'; }
+    $model = new Comunicacion();
+    $id = $model->crear($cedula, $tipo, $estado, $comentario, $fecha, (int)($user['id'] ?? null), $tipoOrigen);
 
 	// Snapshot de detalle de mora (best-effort)
 	try {
 		$db = getConnection();
 		$db->beginTransaction();
 		$co = new Cobranza();
-		$detalle = $co->obtenerDetalleCompletoAsociado($cedula);
+        $detalle = $co->obtenerDetalleCompletoAsociado($cedula);
 		$aportesMonto = (float)($detalle['asociado']['aporte'] ?? 0);
 		$creditos = $detalle['creditos'] ?? [];
 		$stmtDM = $db->prepare("INSERT INTO cobranza_detalle_mora (comunicacion_id, asociado_cedula, aportes_monto, total_creditos, creado_por) VALUES (?, ?, ?, ?, ?)");

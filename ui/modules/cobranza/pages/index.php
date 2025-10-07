@@ -18,6 +18,10 @@ try { $rangos = $model->distribucionUltimaComunicacion(); } catch (Throwable $e)
 try { $top7 = $model->comunicacionesPorUsuario(7, 10); } catch (Throwable $e) { $top7 = []; }
 try { $top30 = $model->comunicacionesPorUsuario(30, 10); } catch (Throwable $e) { $top30 = []; }
 try { $estadosPorAsociado = $model->estadosUltimaComunicacionAsociado(); } catch (Throwable $e) { $estadosPorAsociado = []; }
+// Nuevos: aportes
+try { $apBandas = $model->distribucionAportesBandas(); } catch (Throwable $e) { $apBandas = []; }
+try { $apRangos = $model->distribucionUltimaComunicacionAportes(); } catch (Throwable $e) { $apRangos = []; }
+try { $apEstadosUlt = $model->estadosUltimaComunicacionAportes(); } catch (Throwable $e) { $apEstadosUlt = []; }
 
 // Orden y etiquetas para "Última comunicación"
 $ordenRangos = [
@@ -111,7 +115,7 @@ $colorEstadosUlt = [
 				</div>
 			</div>
 
-			<div class="row g-3 mt-1">
+            <div class="row g-3 mt-1">
 				<div class="col-lg-4">
 					<div class="card h-100">
 						<div class="card-header"><strong>Distribución por estado de mora</strong></div>
@@ -192,8 +196,8 @@ $colorEstadosUlt = [
 												<tbody>
 													<?php foreach ($estadosPorAsociado as $e): ?>
 													<tr>
-														<td style="color: <?php echo $colorEstadosUlt[$e['estado'] ?? 'Sin comunicación'] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td>
-														<td class="text-end"><?php echo (int)($e['asociados'] ?? 0); ?></td>
+                                                        <td style="color: <?php echo $colorEstadosUlt[$e['estado'] ?? 'Sin comunicación'] ?? '#6c757d'; ?>"><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td>
+                                                        <td class="text-end"><?php echo (int)($e['asociados'] ?? 0); ?></td>
 													</tr>
 													<?php endforeach; ?>
 												</tbody>
@@ -201,7 +205,94 @@ $colorEstadosUlt = [
 										</div>
 									</div>
 									<div class="col-4">
-										<canvas id="miniChartEstadosUlt" height="110"></canvas>
+                                        <canvas id="miniChartEstadosUlt" height="110"></canvas>
+									</div>
+								</div>
+							<?php else: ?>
+								<div class="text-muted small">Sin datos.</div>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row g-3 mt-1">
+				<div class="col-lg-4">
+					<div class="card h-100">
+						<div class="card-header"><strong>Aportes: Días sin aporte</strong></div>
+						<div class="card-body">
+							<?php if (!empty($apBandas)): ?>
+								<div class="row align-items-center">
+									<div class="col-8">
+										<div class="table-responsive">
+											<table class="table table-sm align-middle mb-0">
+												<thead class="table-light"><tr><th>Rango</th><th class="text-end">Asociados</th></tr></thead>
+												<tbody>
+													<?php foreach ($apBandas as $b): ?>
+													<tr><td><?php echo htmlspecialchars($b['banda']); ?></td><td class="text-end"><?php echo (int)$b['asociados']; ?></td></tr>
+													<?php endforeach; ?>
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<div class="col-4">
+										<canvas id="miniChartApBandas" height="110"></canvas>
+									</div>
+								</div>
+							<?php else: ?>
+								<div class="text-muted small">Sin datos.</div>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4">
+					<div class="card h-100">
+						<div class="card-header"><strong>Aportes: Última comunicación</strong></div>
+						<div class="card-body">
+							<?php if (!empty($apRangos)): ?>
+								<div class="row align-items-center">
+									<div class="col-8">
+										<div class="table-responsive">
+											<table class="table table-sm align-middle mb-0">
+												<thead class="table-light"><tr><th>Rango</th><th class="text-end">Asociados</th></tr></thead>
+												<tbody>
+													<?php foreach ($apRangos as $r): ?>
+													<tr><td><?php echo htmlspecialchars($r['rango']); ?></td><td class="text-end"><?php echo (int)$r['asociados']; ?></td></tr>
+													<?php endforeach; ?>
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<div class="col-4">
+										<canvas id="miniChartApRangos" height="110"></canvas>
+									</div>
+								</div>
+							<?php else: ?>
+								<div class="text-muted small">Sin datos.</div>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-4">
+					<div class="card h-100">
+						<div class="card-header"><strong>Aportes: Estados por usuario</strong></div>
+						<div class="card-body">
+							<?php if (!empty($apEstadosUlt)): ?>
+								<div class="row align-items-center">
+									<div class="col-8">
+										<div class="table-responsive">
+											<table class="table table-sm align-middle mb-0">
+												<thead class="table-light"><tr><th>Estado</th><th class="text-end">Asociados</th></tr></thead>
+												<tbody>
+													<?php foreach ($apEstadosUlt as $e): ?>
+													<tr><td><?php echo htmlspecialchars($e['estado'] ?? 'Sin comunicación'); ?></td><td class="text-end"><?php echo (int)($e['asociados'] ?? 0); ?></td></tr>
+													<?php endforeach; ?>
+												</tbody>
+											</table>
+										</div>
+									</div>
+									<div class="col-4">
+										<canvas id="miniChartApEstadosUlt" height="110"></canvas>
 									</div>
 								</div>
 							<?php else: ?>
@@ -258,6 +349,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const bandas = <?php echo json_encode($bandas, JSON_UNESCAPED_UNICODE); ?>;
   const rangos = <?php echo json_encode($rangos, JSON_UNESCAPED_UNICODE); ?>;
   const estadosUlt = <?php echo json_encode($estadosPorAsociado, JSON_UNESCAPED_UNICODE); ?>;
+  const apBandas = <?php echo json_encode($apBandas, JSON_UNESCAPED_UNICODE); ?>;
+  const apRangos = <?php echo json_encode($apRangos, JSON_UNESCAPED_UNICODE); ?>;
+  const apEstadosUlt = <?php echo json_encode($apEstadosUlt, JSON_UNESCAPED_UNICODE); ?>;
 
   (() => {
     const ctx = document.getElementById('miniChartBandas'); if (!ctx || !bandas?.length) return;
@@ -309,6 +403,35 @@ document.addEventListener('DOMContentLoaded', () => {
       'Comprometido a realizar el pago': '#0d6efd',
       'Sin respuesta': '#6c757d'
     };
+    const colors = labels.map(l => colorMap[l] || '#6c757d');
+    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
+  })();
+
+  // Aportes: Días sin aporte
+  (() => {
+    const ctx = document.getElementById('miniChartApBandas'); if (!ctx || !apBandas?.length) return;
+    const labels = apBandas.map(b => b.banda);
+    const data = apBandas.map(b => Number(b.asociados||0));
+    const colors = ['#0d6efd','#fd7e14','#dc3545'];
+    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, labels.length) }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
+  })();
+
+  // Aportes: Última comunicación
+  (() => {
+    const ctx = document.getElementById('miniChartApRangos'); if (!ctx || !apRangos?.length) return;
+    const labels = apRangos.map(r => r.rango);
+    const data = apRangos.map(r => Number(r.asociados||0));
+    const colorMap = { 'Sin comunicación':'#dc3545','Muy reciente':'#198754','Reciente':'#0d6efd','Intermedia':'#fd7e14','Lejana':'#6c757d','Muy lejana':'#000000' };
+    const colors = labels.map(l => colorMap[l] || '#6c757d');
+    new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
+  })();
+
+  // Aportes: Estados por usuario
+  (() => {
+    const ctx = document.getElementById('miniChartApEstadosUlt'); if (!ctx || !apEstadosUlt?.length) return;
+    const labels = apEstadosUlt.map(e => e.estado || 'Sin comunicación');
+    const data = apEstadosUlt.map(e => Number(e.asociados||0));
+    const colorMap = { 'Sin comunicación':'#dc3545','Informa de pago realizado':'#198754','Comprometido a realizar el pago':'#0d6efd','Sin respuesta':'#6c757d' };
     const colors = labels.map(l => colorMap[l] || '#6c757d');
     new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors }] }, options: { plugins: { legend: { display: false } }, cutout: '70%' } });
   })();
