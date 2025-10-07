@@ -214,11 +214,13 @@ SQL;
     exit;
   } elseif ($type === 'mora') {
     $sql = <<<SQL
+-- Asociados en mora de crédito
 SELECT
   a.nombre AS nombre_completo,
   a.nombr1 AS nombre,
   sa.celula AS telefono,
   sa.mail AS email,
+  'crédito' AS segmento,
   COALESCE(m.sdomor, 0) AS saldo_mora,
   COALESCE(m.diav, 0) AS dias_mora,
   COALESCE(fb.monto, 0) AS fondo_bienestar,
@@ -264,7 +266,64 @@ LEFT JOIN (
   GROUP BY ap.cedula
 ) pf ON pf.cedula = sa.cedula
 WHERE ca.estado_activo = TRUE AND COALESCE(m.sdomor,0) > 0
-ORDER BY m.diav DESC, sa.cedula
+
+UNION ALL
+
+-- Asociados en mora de aportes (sin mora de crédito y con último aporte >= 30 días)
+SELECT
+  sa.nombre AS nombre_completo,
+  sa.nombre AS nombre,
+  sa.celula AS telefono,
+  sa.mail AS email,
+  'aportes' AS segmento,
+  0 AS saldo_mora,
+  DATEDIFF(CURDATE(), ua.ultima_aporte) AS dias_mora,
+  COALESCE(fb.monto, 0) AS fondo_bienestar,
+  COALESCE(ap.monto, 0) AS aportes,
+  COALESCE(bol.monto, 0) AS bolsillo,
+  COALESCE(pf.monto, 0) AS plan_futuro,
+  COALESCE(fb.monto, 0) + COALESCE(ap.monto, 0) + COALESCE(bol.monto, 0) + COALESCE(pf.monto, 0) AS total
+FROM (
+  SELECT t.cedula, MAX(t.fecham) AS ultima_aporte
+  FROM sifone_movimientos_tributarios t
+  WHERE t.cuenta = '31050501' AND COALESCE(t.credit,0) > 0
+  GROUP BY t.cedula
+) ua
+JOIN sifone_asociados sa ON sa.cedula = ua.cedula
+LEFT JOIN (
+  SELECT DISTINCT cedula FROM sifone_cartera_mora
+) mor ON mor.cedula = ua.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Fondo Bienestar'
+  GROUP BY ap.cedula
+) fb ON fb.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Aportes'
+  GROUP BY ap.cedula
+) ap ON ap.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Bolsillo'
+  GROUP BY ap.cedula
+) bol ON bol.cedula = sa.cedula
+LEFT JOIN (
+  SELECT ap.cedula, SUM(ap.monto_pago) AS monto
+  FROM control_asignacion_asociado_producto ap
+  JOIN control_productos p ON p.id = ap.producto_id
+  WHERE ap.estado_activo = TRUE AND p.estado_activo = TRUE AND p.nombre = 'Plan Futuro'
+  GROUP BY ap.cedula
+) pf ON pf.cedula = sa.cedula
+WHERE mor.cedula IS NULL AND DATEDIFF(CURDATE(), ua.ultima_aporte) >= 30
+
+ORDER BY nombre_completo
 SQL;
 
     $stmt = $conn->prepare($sql);
@@ -274,7 +333,7 @@ SQL;
 
     $xlsxRows = [];
     $xlsxRows[] = [
-      'Nombre Completo', 'Nombres', 'Telefono', 'Email', 'Saldo mora', 'dias mora',
+      'Nombre Completo', 'Nombres', 'Telefono', 'Email', 'Segmento', 'Saldo mora', 'dias mora',
       'Valor Fondo Bienestar', 'Valor Aportes', 'Valor Bolsillo', 'Valor Plan Futuro', 'Total'
     ];
 
@@ -284,6 +343,7 @@ SQL;
         (string)($row['nombre'] ?? ''),
         (string)($row['telefono'] ?? ''),
         (string)($row['email'] ?? ''),
+        (string)($row['segmento'] ?? ''),
         (float)($row['saldo_mora'] ?? 0),
         (int)($row['dias_mora'] ?? 0),
         (float)($row['fondo_bienestar'] ?? 0),
@@ -336,7 +396,7 @@ SQL;
       .'</Relationships>';
     $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
 
-    $widths = [18, 40, 22, 16, 12, 18, 16, 16, 16];
+    $widths = [18, 40, 22, 16, 16, 12, 18, 16, 16, 16, 16, 16];
     $colsXml = '<cols>';
     for ($i=0; $i<count($widths); $i++) {
       $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
@@ -347,8 +407,8 @@ SQL;
       $rowXml = '<row r="'.($r+1).'">';
       $row = $xlsxRows[$r];
       $isHeader = ($r === 0);
-      $commaCols = [3,5,6,7,8];
-      $stringCols = [0,1,2];
+      $commaCols = [5,7,8,9,10,11];
+      $stringCols = [0,1,2,3,4];
       for ($c = 0; $c < count($row); $c++) {
         $cellRef = $colLetter($c).($r+1);
         $val = $row[$c];
