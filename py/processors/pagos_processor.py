@@ -164,6 +164,10 @@ class PagosProcessor(BaseProcessor):
             if 'pago qr' in desc:
                 return 'Pago QR'
             # Aceptar variantes con/ sin acento, mayúsculas, etc.
+            # Nuevo tipo: Cheque
+            # Coincide con descripciones tipo "Consignacion en Cuenta Cheque"
+            if 'consignacion en cuenta cheque' in desc_norm:
+                return 'Cheque'
             if 'consignacion en cuenta efectivo' in desc_norm:
                 return 'Pago Efectivo'
             if 'consignacion por transf. agencia virtual' in desc_norm:

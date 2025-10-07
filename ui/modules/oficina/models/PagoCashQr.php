@@ -10,13 +10,15 @@ class PagoCashQr {
         $where = [];
         $params = [];
 
-        $tipoFilter = "((c.tipo_transaccion IN ('Pago Efectivo','Pago QR','Transf. Agencia Virtual')) OR (c.tipo_transaccion IS NULL AND ((c.descripcion LIKE '%Consignacion Efectivo%' AND c.valor_consignacion > 0) OR (c.descripcion LIKE '%Pago QR%' AND c.valor_consignacion > 0) OR (c.descripcion LIKE '%Consignacion por Transf. Agencia Virtual%' AND c.valor_consignacion > 0))))";
+        $tipoFilter = "((c.tipo_transaccion IN ('Pago Efectivo','Pago QR','Transf. Agencia Virtual','Cheque')) OR (c.tipo_transaccion IS NULL AND ((c.descripcion LIKE '%Consignacion Efectivo%' AND c.valor_consignacion > 0) OR (c.descripcion LIKE '%Pago QR%' AND c.valor_consignacion > 0) OR (c.descripcion LIKE '%Consignacion por Transf. Agencia Virtual%' AND c.valor_consignacion > 0) OR (c.descripcion LIKE '%Consignacion en Cuenta Cheque%' AND c.valor_consignacion > 0))))";
         if ($tipo === 'efectivo') {
             $tipoFilter = "((c.tipo_transaccion = 'Pago Efectivo') OR (c.tipo_transaccion IS NULL AND c.descripcion LIKE '%Consignacion Efectivo%' AND c.valor_consignacion > 0))";
         } elseif ($tipo === 'qr') {
             $tipoFilter = "((c.tipo_transaccion = 'Pago QR') OR (c.tipo_transaccion IS NULL AND c.descripcion LIKE '%Pago QR%' AND c.valor_consignacion > 0))";
         } elseif ($tipo === 'transf_av') {
             $tipoFilter = "((c.tipo_transaccion = 'Transf. Agencia Virtual') OR (c.tipo_transaccion IS NULL AND c.descripcion LIKE '%Consignacion por Transf. Agencia Virtual%' AND c.valor_consignacion > 0))";
+        } elseif ($tipo === 'cheque') {
+            $tipoFilter = "((c.tipo_transaccion = 'Cheque') OR (c.tipo_transaccion IS NULL AND c.descripcion LIKE '%Consignacion en Cuenta Cheque%' AND c.valor_consignacion > 0))";
         }
         $where[] = $tipoFilter;
 
@@ -48,6 +50,7 @@ class PagoCashQr {
                       WHEN (c.descripcion LIKE '%Pago QR%' AND c.valor_consignacion > 0) THEN 'Pago QR'
                       WHEN (c.descripcion LIKE '%Consignacion Efectivo%' AND c.valor_consignacion > 0) THEN 'Pago Efectivo'
                       WHEN (c.descripcion LIKE '%Consignacion por Transf. Agencia Virtual%' AND c.valor_consignacion > 0) THEN 'Transf. Agencia Virtual'
+                      WHEN (c.descripcion LIKE '%Consignacion en Cuenta Cheque%' AND c.valor_consignacion > 0) THEN 'Cheque'
                       ELSE NULL
                     END AS tipo_transaccion,
                     a.cedula AS asignado_cedula,

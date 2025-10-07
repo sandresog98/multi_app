@@ -32,11 +32,13 @@ $cashFecha = trim($_GET['cash_fecha'] ?? '');
 $cashCedula = trim($_GET['cash_cedula'] ?? '');
 $cashDesc = trim($_GET['cash_desc'] ?? '');
 $cashEstado = $_GET['cash_estado'] ?? 'no_completado';
+$cashTipo = trim($_GET['cash_tipo'] ?? '');
 $cashFilters = [
   'fecha' => $cashFecha !== '' ? $cashFecha : null,
   'cedula' => $cashCedula !== '' ? $cashCedula : null,
   'descripcion' => $cashDesc !== '' ? $cashDesc : null,
   'estado' => $cashEstado !== '' ? $cashEstado : null,
+  'tipo_transaccion' => $cashTipo !== '' ? $cashTipo : null,
 ];
 
 // Cargar pagos disponibles (incluye usado/restante) con paginación y filtros en backend
@@ -138,6 +140,15 @@ include '../../../views/layouts/header.php';
                     <option value="parcial" <?php echo $cashEstado==='parcial'?'selected':''; ?>>Parcial</option>
                     <option value="completado" <?php echo $cashEstado==='completado'?'selected':''; ?>>Completado</option>
                     <option value="" <?php echo $cashEstado===''?'selected':''; ?>>Todos</option>
+                  </select>
+                </div>
+                <div class="col-md-2"><label class="form-label small">Tipo</label>
+                  <select class="form-select form-select-sm" id="cashFiltroTipo" name="cash_tipo">
+                    <option value="" <?php echo $cashTipo===''?'selected':''; ?>>Todos</option>
+                    <option value="Pago Efectivo" <?php echo $cashTipo==='Pago Efectivo'?'selected':''; ?>>Pago Efectivo</option>
+                    <option value="Pago QR" <?php echo $cashTipo==='Pago QR'?'selected':''; ?>>Pago QR</option>
+                    <option value="Transf. Agencia Virtual" <?php echo $cashTipo==='Transf. Agencia Virtual'?'selected':''; ?>>Transf. Agencia Virtual</option>
+                    <option value="Cheque" <?php echo $cashTipo==='Cheque'?'selected':''; ?>>Cheque</option>
                   </select>
                 </div>
                 <div class="col-md-2 align-self-end"><button class="btn btn-sm btn-outline-primary w-100"><i class="fas fa-filter me-1"></i>Filtrar</button></div>
@@ -267,6 +278,7 @@ function filtrarCashList(){
   const ced = document.getElementById('cashFiltroCedula').value.trim();
   const desc = document.getElementById('cashFiltroDesc').value.trim().toLowerCase();
   const est = document.getElementById('cashFiltroEstado').value;
+  const tipo = (document.getElementById('cashFiltroTipo')?.value || '').trim();
   let list = pagosCash.slice();
   if (f) list = list.filter(r => (r.fecha||'').startsWith(f));
   if (ced) list = list.filter(r => String(r.cedula_asignada||'').includes(ced));
@@ -275,6 +287,7 @@ function filtrarCashList(){
   else if (est === 'sin_asignar') list = list.filter(r => Number(r.utilizado||0) <= 0);
   else if (est === 'parcial') list = list.filter(r => { const v=Number(r.valor||0), u=Number(r.utilizado||0); return u>0 && u<v; });
   else if (est === 'completado') list = list.filter(r => Number(r.utilizado||0) >= Number(r.valor||0));
+  if (tipo) list = list.filter(r => String(r.tipo_transaccion||'') === tipo);
   renderCash(list);
 }
 

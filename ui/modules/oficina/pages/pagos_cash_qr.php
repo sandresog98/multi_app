@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $page = (int)($_GET['page'] ?? 1);
 $search = trim($_GET['search'] ?? '');
-$tipo = trim($_GET['tipo'] ?? 'all'); // all | efectivo | qr
+$tipo = trim($_GET['tipo'] ?? 'all'); // all | efectivo | qr | transf_av | cheque
 $asignacion = trim($_GET['asignacion'] ?? ''); // '' | asignados | no_asignados
 $data = $model->listConfiar($page, 20, $search, $tipo, $asignacion);
 
@@ -99,6 +99,7 @@ include '../../../views/layouts/header.php';
             <option value="efectivo" <?php echo $tipo==='efectivo'?'selected':''; ?>>Solo Efectivo</option>
             <option value="qr" <?php echo $tipo==='qr'?'selected':''; ?>>Solo QR</option>
             <option value="transf_av" <?php echo $tipo==='transf_av'?'selected':''; ?>>Solo Transf. Agencia Virtual</option>
+            <option value="cheque" <?php echo $tipo==='cheque'?'selected':''; ?>>Solo Cheque</option>
           </select>
         </div>
         <div class="col-md-3">
@@ -132,7 +133,7 @@ include '../../../views/layouts/header.php';
                   <div class="small text-muted"><?php echo htmlspecialchars($row['descripcion']); ?></div>
                 </td>
                 <td><?php echo htmlspecialchars($row['fecha']); ?></td>
-                <td><span class="badge <?php echo ($row['tipo_transaccion']==='Pago Efectivo')?'bg-success':(($row['tipo_transaccion']==='Pago QR')?'bg-info':'bg-warning text-dark'); ?>"><?php echo htmlspecialchars($row['tipo_transaccion']); ?></span></td>
+                <td><span class="badge <?php echo ($row['tipo_transaccion']==='Pago Efectivo')?'bg-success':(($row['tipo_transaccion']==='Pago QR')?'bg-info':(($row['tipo_transaccion']==='Cheque')?'bg-primary':'bg-warning text-dark')); ?>"><?php echo htmlspecialchars($row['tipo_transaccion']); ?></span></td>
                 <td><?php echo '$' . number_format((float)$row['valor_consignacion'], 0); ?></td>
                 <td>
                   <?php if (!empty($row['asignado_cedula'])): ?>

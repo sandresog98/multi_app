@@ -408,6 +408,7 @@ include '../../../views/layouts/header.php';
               <option value="Pago Efectivo" <?php echo (($_GET['cash_tipo'] ?? '')==='Pago Efectivo')?'selected':''; ?>>Pago Efectivo</option>
               <option value="Pago QR" <?php echo (($_GET['cash_tipo'] ?? '')==='Pago QR')?'selected':''; ?>>Pago QR</option>
               <option value="Transf. Agencia Virtual" <?php echo (($_GET['cash_tipo'] ?? '')==='Transf. Agencia Virtual')?'selected':''; ?>>Transf. Agencia Virtual</option>
+              <option value="Cheque" <?php echo (($_GET['cash_tipo'] ?? '')==='Cheque')?'selected':''; ?>>Cheque</option>
             </select>
           </div>
           <div class="col-md-2"><label class="form-label small">Estado</label>
