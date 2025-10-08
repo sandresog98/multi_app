@@ -41,7 +41,7 @@ async function loadVentas(){
       const tr=document.createElement('tr');
       const quien = v.tipo_cliente==='asociado' ? ('Asociado · '+escapeHtml(v.asociado_cedula||'')) : ('Cliente · '+escapeHtml(v.cliente_nombre||''));
       const btnEliminar = (Number(v.reversiones||0) > 0 || Number(v.usada_como_pago_anterior||0) > 0) ? '<span class="text-muted">Bloqueada</span>' : `<button class="btn btn-sm btn-outline-danger" onclick="eliminarVenta(${v.id})"><i class="fas fa-trash"></i></button>`;
-      tr.innerHTML = `<td>${v.id}</td><td>${escapeHtml(v.fecha_creacion||'')}</td><td>${quien}</td><td>$${Number(v.total||0).toLocaleString()}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verVenta(${v.id})"><i class="fas fa-eye"></i></button>${btnEliminar}</td>`;
+      tr.innerHTML = `<td>${v.id}</td><td>${escapeHtml(v.fecha_creacion||'')}</td><td>${quien}</td><td>$${Number(v.total||0).toLocaleString()}</td><td class="text-end"><button class="btn btn-sm btn-outline-info me-1" onclick="verVenta(${v.id})"><i class="fas fa-eye"></i></button><button class="btn btn-sm btn-outline-success me-1" onclick="generarPDF(${v.id})"><i class="fas fa-file-pdf"></i></button>${btnEliminar}</td>`;
       body.appendChild(tr);
     });
   }catch(e){ document.getElementById('tblFact').innerHTML='<tr><td colspan="5" class="text-danger">'+e+'</td></tr>'; }
@@ -68,6 +68,32 @@ async function verVenta(id){
 }
 
 async function eliminarVenta(id){ if(!confirm('¿Eliminar venta #'+id+'?')) return; const fd=new FormData(); fd.append('id',id); const res=await fetch('../api/ventas_eliminar.php',{method:'POST',body:fd}); const j=await res.json(); if(!j.success){ alert(j.message||'No se pudo eliminar'); return; } loadVentas(); }
+
+async function generarPDF(id){
+  try{
+    // Mostrar indicador de carga
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
+    // Generar y descargar PDF
+    window.open('../api/generar_factura_pdf.php?id=' + id, '_blank');
+    
+    // Restaurar botón
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }, 1000);
+    
+  }catch(e){
+    alert('Error al generar PDF: ' + e.message);
+    // Restaurar botón en caso de error
+    const btn = event.target;
+    btn.innerHTML = '<i class="fas fa-file-pdf"></i>';
+    btn.disabled = false;
+  }
+}
 
 document.addEventListener('DOMContentLoaded', loadVentas);
 </script>

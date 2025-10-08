@@ -44,7 +44,6 @@ desktop.ini
 
 # Archivos de dependencias
 node_modules/
-vendor/
 __pycache__/
 *.pyc
 *.pyo
