@@ -154,110 +154,89 @@ USE multiapptwo;
         intmora DECIMAL(15,2)
     );
     CREATE TABLE IF NOT EXISTS sifone_datacredito (
-    a INT,
-    b VARCHAR(255),
-    c INT,
-    d VARCHAR(255),
-    e INT,
-    f DATE,
-    g DATE,
-    h INT,
-    i INT,
-    j INT,
-    k INT,
-    l INT,
-    m VARCHAR(255),
-    n INT,
-    o DATE,
-    p VARCHAR(50),
-    q DATE,
-    r VARCHAR(50),
-    s VARCHAR(50),
-    t INT,
-    u INT,
-    v VARCHAR(50),
-    w DECIMAL(18, 2),
-    x DECIMAL(18, 2),
-    y DECIMAL(18, 2),
-    z DECIMAL(18, 2),
-    aa DECIMAL(18, 2),
-    ab DECIMAL(18, 2),
-    ac DECIMAL(18, 2),
-    ad DECIMAL(18, 2),
-    ae DECIMAL(18, 2),
-    af DECIMAL(18, 2),
-    ag VARCHAR(50),
-    ah DATE,
-    ai DATE,
-    aj VARCHAR(50),
-    ak VARCHAR(50),
-    al VARCHAR(255),
-    am VARCHAR(50),
-    an VARCHAR(50),
-    ao VARCHAR(255),
-    ap VARCHAR(50),
-    aq VARCHAR(50),
-    ar VARCHAR(255),
-    as1 VARCHAR(50),
-    at1 VARCHAR(50),
-    au VARCHAR(255),
-    av VARCHAR(50),
-    aw VARCHAR(50),
-    ax DATE,
-    ay DATE,
-    az VARCHAR(50),
-    ba VARCHAR(50),
-    bb VARCHAR(50),
-    bc INT,
-    bd DECIMAL(18, 2),
-    be DATE,
-    bf VARCHAR(50),
-    bg DATE,
-    bh INT,
-    bi DATE,
-    bj DATE,
-    bk DATE,
-    bl DATE,
-    bm DATE,
-    bn DATE,
-    bo VARCHAR(50),
-    bp DATE,
-    bq VARCHAR(50),
-    br VARCHAR(50),
-    bs VARCHAR(50),
-    bt VARCHAR(50),
-    bu VARCHAR(50),
-    bv DATE,
-    bw DATE,
-    bx VARCHAR(50),
-    by1 DATE,
-    bz VARCHAR(50),
-    ca DATE,
-    cb VARCHAR(50),
-    cc VARCHAR(50),
-    cd DATE
+        a INT,
+        b VARCHAR(255),
+        c INT,
+        d VARCHAR(255),
+        e INT,
+        f DATE,
+        g DATE,
+        h INT,
+        i INT,
+        j INT,
+        k INT,
+        l INT,
+        m VARCHAR(255),
+        n INT,
+        o DATE,
+        p VARCHAR(50),
+        q DATE,
+        r VARCHAR(50),
+        s VARCHAR(50),
+        t INT,
+        u INT,
+        v VARCHAR(50),
+        w DECIMAL(18, 2),
+        x DECIMAL(18, 2),
+        y DECIMAL(18, 2),
+        z DECIMAL(18, 2),
+        aa DECIMAL(18, 2),
+        ab DECIMAL(18, 2),
+        ac DECIMAL(18, 2),
+        ad DECIMAL(18, 2),
+        ae DECIMAL(18, 2),
+        af DECIMAL(18, 2),
+        ag VARCHAR(50),
+        ah DATE,
+        ai DATE,
+        aj VARCHAR(50),
+        ak VARCHAR(50),
+        al VARCHAR(255),
+        am VARCHAR(50),
+        an VARCHAR(50),
+        ao VARCHAR(255),
+        ap VARCHAR(50),
+        aq VARCHAR(50),
+        ar VARCHAR(255),
+        as1 VARCHAR(50),
+        at1 VARCHAR(50),
+        au VARCHAR(255),
+        av VARCHAR(50),
+        aw VARCHAR(50),
+        ax DATE,
+        ay DATE,
+        az VARCHAR(50),
+        ba VARCHAR(50),
+        bb VARCHAR(50),
+        bc INT,
+        bd DECIMAL(18, 2),
+        be DATE,
+        bf VARCHAR(50),
+        bg DATE,
+        bh INT,
+        bi DATE,
+        bj DATE,
+        bk DATE,
+        bl DATE,
+        bm DATE,
+        bn DATE,
+        bo VARCHAR(50),
+        bp DATE,
+        bq VARCHAR(50),
+        br VARCHAR(50),
+        bs VARCHAR(50),
+        bt VARCHAR(50),
+        bu VARCHAR(50),
+        bv DATE,
+        bw DATE,
+        bx VARCHAR(50),
+        by1 DATE,
+        bz VARCHAR(50),
+        ca DATE,
+        cb VARCHAR(50),
+        cc VARCHAR(50),
+        cd DATE
     );
-    DROP VIEW IF EXISTS sifone_datacredito_vw;
-    CREATE VIEW sifone_datacredito_vw AS
-        SELECT
-            b AS cedula,
-            c AS numero_credito,
-            d AS nombre,
-            f AS fecha_emision,
-            DATE_ADD(g, INTERVAL 1 MONTH) AS fecha_vencimiento,
-            h as codeudor,
-            m AS estado_credito,
-            q AS fecha_pago,
-            x AS desembolso_inicial,
-            z AS saldo_capital,
-            aa AS cuota,
-            ac AS cuotas_iniciales,
-            ad AS cuotas_pendientes,
-            az AS direccion,
-            ba AS email,
-            bb AS celular
-        FROM sifone_datacredito
-    ;
     CREATE TABLE IF NOT EXISTS sifone_balance_prueba (
         cuenta          VARCHAR(50),
         nombre          VARCHAR(255),
@@ -321,58 +300,6 @@ USE multiapptwo;
         fecha           DATE,
         hora            TIME
     );
-    DROP VIEW IF EXISTS sifone_resumen_asociados_vw;
-    CREATE VIEW sifone_resumen_asociados_vw AS
-        SELECT sa.cedula                                    AS cedula,
-            ca.estado_activo                                AS estado,
-            -- Información Personal
-            sa.fechai                                       AS fecha_afiliacion,
-            sa.nombre                                       AS nombre_completo,
-            sa.fecnac                                       AS fecha_nacimiento,
-            -- Información Contacto
-            sa.celula                                       AS celular,
-            sa.mail                                         AS email,
-            sa.direcc                                       AS direccion,
-            sa.ciudad                                       AS ciudad,
-            -- información monetaria
-            COALESCE(sa.aporte, 0)                          AS aportes_ordinarios,
-            COALESCE((
-                SELECT SUM(ABS(COALESCE(sbp.salant, 0)))
-                FROM sifone_balance_prueba sbp
-                WHERE sbp.cedula = sa.cedula
-                  AND sbp.nombre = 'APORTES SOCIALES 2'
-            ), 0)                                           AS aportes_sociales,
-            (COALESCE(sa.aporte, 0) + COALESCE((
-                SELECT SUM(ABS(COALESCE(sbp2.salant, 0)))
-                FROM sifone_balance_prueba sbp2
-                WHERE sbp2.cedula = sa.cedula
-                  AND sbp2.nombre = 'APORTES SOCIALES 2'
-            ), 0))                                          AS aportes_totales,
-            0                                               AS aportes_incentivos,
-            COALESCE((
-                SELECT SUM(ABS(COALESCE(sbp3.salant, 0)))
-                FROM sifone_balance_prueba sbp3
-                WHERE sbp3.cedula = sa.cedula
-                  AND sbp3.nombre = 'Revalorizacion Aportes'
-            ), 0)                                           AS aportes_revalorizaciones,
-            COALESCE((
-                SELECT SUM(ABS(COALESCE(sbp4.salant, 0)))
-                FROM sifone_balance_prueba sbp4
-                WHERE sbp4.cedula = sa.cedula
-                  AND sbp4.nombre = 'PLAN FUTURO'
-            ), 0)                                           AS plan_futuro,
-            COALESCE((
-                SELECT SUM(smt.credit)
-                FROM sifone_movimientos_tributarios smt
-                WHERE smt.cedula = sa.cedula
-                  AND smt.cuenta = '42309501'
-                  AND smt.fecham >= '2025-06-09'
-                  AND smt.credit > 0
-            ), 0)                                           AS bolsillos,
-            0                                               AS bolsillos_incentivos
-        FROM sifone_asociados AS sa
-            LEFT JOIN control_asociados AS ca ON ca.cedula = sa.cedula
-    ;
 
 
 -- Tabla de usuarios para autenticación
