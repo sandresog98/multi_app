@@ -135,16 +135,16 @@ include '../../../views/layouts/header.php';
               <table class="table table-sm table-hover align-middle mb-0">
                 <thead class="table-light"><tr>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','numero','Crédito'); ?></th>
-                  <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo'); ?></th>
-                  <th class="text-center"><?php echo dict_label('sifone_cartera_aseguradora','plazo','Cuotas'); ?></th>
+                  <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo Préstamo'); ?></th>
+                  <th class="text-center"><?php echo dict_label('sifone_cartera_aseguradora','plazo','Plazo'); ?></th>
                   <th class="text-center">Pendientes</th>
-                  <th class="text-center text-nowrap">F. Inicio</th>
-                  <th class="text-center text-nowrap">F. Vencimiento</th>
-                  <th class="text-center text-nowrap">F. Pago</th>
+                  <th class="text-center text-nowrap">Fecha Inicio</th>
+                  <th class="text-center text-nowrap">Fecha Vencimiento</th>
+                  <th class="text-center text-nowrap">Fecha Pago</th>
                   <th class="text-center">Días Mora</th>
-                  <th class="text-end">V. Capital</th>
-                  <th class="text-end">V. Cuota</th>
-                  <th class="text-end">V. Mora</th>
+                  <th class="text-end">Valor Cuota</th>
+                  <th class="text-end">Valor Mora</th>
+                  <th class="text-end">Desembolso Inicial</th>
                   <th class="text-end">Cobranza</th>
                   <th class="text-end">Pago mínimo</th>
                   <th class="text-center">Codeudor</th>
@@ -160,9 +160,9 @@ include '../../../views/layouts/header.php';
                     <td class="text-center text-nowrap"><?php echo !empty($c['fecha_vencimiento']) ? date('d/m/Y', strtotime($c['fecha_vencimiento'])) : '-'; ?></td>
                     <td class="text-center text-nowrap"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                     <td class="text-center"><?php echo (int)$c['dias_mora']; ?></td>
-                    <td class="text-end"><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['desembolso_inicial'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
                     <td class="text-end">
                       <?php
