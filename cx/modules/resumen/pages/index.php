@@ -13,6 +13,7 @@ $info = $model->getInfoBasica($cedula);
 $creditos = $model->getCreditos($cedula);
 $asignaciones = $model->getAsignaciones($cedula);
 $bp = $model->getBalancePrueba($cedula);
+$comisiones = $model->getComisiones($cedula);
 
 $valorProductosMensual = 0.0;
 foreach ($asignaciones as $ap) { $valorProductosMensual += (float)($ap['monto_pago'] ?? 0); }
@@ -63,7 +64,7 @@ body {
 </style>
     <main class="container py-3">
       <div class="row g-2 mb-2">
-        <div class="col-4">
+        <div class="col-6 col-md-3">
           <div class="card kpi-card p-2">
             <div class="d-flex align-items-center">
               <div class="kpi-icon me-2"><i class="fa-solid fa-bag-shopping"></i></div>
@@ -74,7 +75,7 @@ body {
             </div>
           </div>
         </div>
-        <div class="col-4">
+        <div class="col-6 col-md-3">
           <div class="card kpi-card p-2">
             <div class="d-flex align-items-center">
               <div class="kpi-icon me-2"><i class="fa-solid fa-credit-card"></i></div>
@@ -85,7 +86,18 @@ body {
             </div>
           </div>
         </div>
-        <div class="col-4">
+        <div class="col-6 col-md-3">
+          <div class="card kpi-card p-2">
+            <div class="d-flex align-items-center">
+              <div class="kpi-icon me-2"><i class="fa-solid fa-percentage"></i></div>
+              <div>
+                <div class="kpi-value"><?php echo '$' . number_format((float)($comisiones['comisiones'] ?? 0), 0); ?></div>
+                <div class="kpi-label">Comisiones</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
           <div class="card kpi-card p-2">
             <div class="d-flex align-items-center">
               <div class="kpi-icon me-2"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
@@ -125,6 +137,7 @@ body {
             <div class="kv"><div class="k">Revalorización de aportes</div><div class="v"><?php echo '$' . number_format((float)($bp['revalorizacion_aportes'] ?? 0), 0); ?></div></div>
             <div class="kv"><div class="k">Plan Futuro</div><div class="v"><?php echo '$' . number_format((float)($bp['plan_futuro'] ?? 0), 0); ?></div></div>
             <div class="kv"><div class="k">Aportes Sociales</div><div class="v"><?php echo '$' . number_format((float)($bp['aportes_sociales_2'] ?? 0), 0); ?></div></div>
+            <div class="kv"><div class="k">Comisiones</div><div class="v"><?php echo '$' . number_format((float)($comisiones['comisiones'] ?? 0), 0); ?></div></div>
           </div>
         </div>
       </div>
@@ -145,6 +158,7 @@ body {
                 <div class="kv"><div class="k">Valor Cuota</div><div class="v"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></div></div>
                 <div class="kv"><div class="k">Cuotas Pendientes</div><div class="v"><?php echo (int)($c['cuotas_pendientes'] ?? 0); ?></div></div>
                 <div class="kv"><div class="k">Deuda Capital</div><div class="v"><?php echo '$' . number_format((float)$c['deuda_capital'], 0); ?></div></div>
+                <div class="kv"><div class="k">Desembolso Inicial</div><div class="v"><?php echo '$' . number_format((float)($c['desembolso_inicial'] ?? 0), 0); ?></div></div>
                 <div class="kv"><div class="k">Días Mora</div><div class="v"><?php echo (int)$c['dias_mora']; ?></div></div>
                 <div class="kv"><div class="k">Saldo Mora</div><div class="v"><?php echo '$' . number_format((float)$c['saldo_mora'], 0); ?></div></div>
                 <div class="kv"><div class="k">Fecha de Pago</div><div class="v"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></div></div>

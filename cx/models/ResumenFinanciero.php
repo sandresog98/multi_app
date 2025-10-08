@@ -11,6 +11,19 @@ class ResumenFinanciero {
         return $stmt->fetch() ?: [];
     }
 
+    public function getComisiones(string $cedula): array {
+        $sql = "SELECT 
+                    COALESCE(comisiones, 0) AS comisiones
+                FROM sifone_resumen_asociados_vw 
+                WHERE cedula = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([$cedula]);
+        $result = $stmt->fetch();
+        return [
+            'comisiones' => (float)($result['comisiones'] ?? 0)
+        ];
+    }
+
     public function getCreditos(string $cedula): array {
         $sql = "SELECT 
                     a.numero AS numero_credito,
@@ -20,6 +33,7 @@ class ResumenFinanciero {
                     a.valorc AS cuota,
                     dv.cuota AS valor_cuota,
                     dv.cuotas_pendientes AS cuotas_pendientes,
+                    dv.desembolso_inicial,
                     m.sdomor AS saldo_mora,
                     m.diav AS dias_mora,
                     COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago
