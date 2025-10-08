@@ -264,7 +264,8 @@ class Cobranza {
                                                  COALESCE(aportes_revalorizaciones,0) AS aportes_revalorizaciones,
                                                  COALESCE(plan_futuro,0) AS plan_futuro,
                                                  COALESCE(bolsillos,0) AS bolsillos,
-                                                 COALESCE(bolsillos_incentivos,0) AS bolsillos_incentivos
+                                                 COALESCE(bolsillos_incentivos,0) AS bolsillos_incentivos,
+                                                 COALESCE(comisiones,0) AS comisiones
                                           FROM sifone_resumen_asociados_vw WHERE cedula = ?");
         $stmtMonV->execute([$cedula]);
         $monV = $stmtMonV->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -276,6 +277,7 @@ class Cobranza {
                 'plan_futuro'              => (float)($monV['plan_futuro'] ?? 0),
                 'bolsillos'                => (float)($monV['bolsillos'] ?? 0),
                 'bolsillos_incentivos'     => (float)($monV['bolsillos_incentivos'] ?? 0),
+                'comisiones'               => (float)($monV['comisiones'] ?? 0),
             ];
         } else {
             // Fallback legacy (compatibilidad vieja UI)
@@ -302,6 +304,7 @@ class Cobranza {
                 'plan_futuro' => 0.0,
                 'bolsillos' => 0.0,
                 'bolsillos_incentivos' => 0.0,
+                'comisiones' => 0.0,
             ];
             foreach ($rowsBp as $r) {
                 $key = strtolower(trim((string)($r['nombre'] ?? '')));

@@ -865,3 +865,18 @@ USE multiapptwo;
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         -- CONSTRAINT fk_tienda_rev_det FOREIGN KEY (venta_detalle_id) REFERENCES tienda_venta_detalle(id)
     );
+
+-- Oficina: Comisiones entre asociados (referidor y referido)
+    CREATE TABLE IF NOT EXISTS control_comisiones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        asociado_inicial_cedula VARCHAR(20) NOT NULL,
+        asociado_referido_cedula VARCHAR(20) NOT NULL,
+        fecha_comision DATE NOT NULL,
+        valor_ganado DECIMAL(12,2) NOT NULL,
+        observaciones TEXT NULL,
+        creado_por INT NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_ini (asociado_inicial_cedula),
+        KEY idx_ref (asociado_referido_cedula),
+        KEY idx_fecha (fecha_comision)
+    );

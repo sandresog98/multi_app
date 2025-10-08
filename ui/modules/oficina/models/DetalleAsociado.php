@@ -35,7 +35,8 @@ class DetalleAsociado {
                         COALESCE(aportes_revalorizaciones,0)  AS aportes_revalorizaciones,
                         COALESCE(plan_futuro,0)               AS plan_futuro,
                         COALESCE(bolsillos,0)                  AS bolsillos,
-                        COALESCE(bolsillos_incentivos,0)       AS bolsillos_incentivos
+                        COALESCE(bolsillos_incentivos,0)       AS bolsillos_incentivos,
+                        COALESCE(comisiones,0)                AS comisiones
                 FROM sifone_resumen_asociados_vw WHERE cedula = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
@@ -47,6 +48,7 @@ class DetalleAsociado {
             'plan_futuro'             => (float)($row['plan_futuro'] ?? 0),
             'bolsillos'               => (float)($row['bolsillos'] ?? 0),
             'bolsillos_incentivos'    => (float)($row['bolsillos_incentivos'] ?? 0),
+            'comisiones'              => (float)($row['comisiones'] ?? 0),
         ];
     }
 

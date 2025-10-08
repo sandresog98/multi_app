@@ -272,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div><strong>Revalorizaciones de aportes:</strong> $${Number(detalle.monetarios?.aportes_revalorizaciones || 0).toLocaleString('es-CO')}</div>
                 <div><strong>Plan Futuro:</strong> $${Number(detalle.monetarios?.plan_futuro || 0).toLocaleString('es-CO')}</div>
                 <div><strong>Bolsillos:</strong> $${Number(detalle.monetarios?.bolsillos || 0).toLocaleString('es-CO')} <small class="text-muted">(Incentivos: $${Number(detalle.monetarios?.bolsillos_incentivos || 0).toLocaleString('es-CO')})</small></div>
+                <div><strong>Comisiones:</strong> $${Number(detalle.monetarios?.comisiones || 0).toLocaleString('es-CO')}</div>
                 <div><strong>Último aporte:</strong> ${ultAporteStr}</div>
               </div></div>
               <div class="card mt-2"><div class="card-header"><strong>Valor de pagos</strong></div><div class="card-body">
