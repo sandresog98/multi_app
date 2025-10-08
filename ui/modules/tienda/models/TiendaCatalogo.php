@@ -86,10 +86,17 @@ class TiendaCatalogo {
     public function obtenerVentaCompleta(int $ventaId): ?array {
         try {
             // Obtener datos básicos de la venta
-            $sql = "SELECT v.*, c.nombre as cliente_nombre, c.telefono as cliente_telefono, 
-                           c.email as cliente_direccion, c.nit_cedula as cliente_documento
+            $sql = "SELECT v.*, 
+                           c.nombre as cliente_nombre, 
+                           c.telefono as cliente_telefono, 
+                           c.email as cliente_email, 
+                           c.nit_cedula as cliente_documento,
+                           sa.nombre as asociado_nombre,
+                           sa.celula as asociado_telefono,
+                           sa.mail as asociado_email
                     FROM tienda_venta v
                     LEFT JOIN tienda_clientes c ON c.id = v.cliente_id
+                    LEFT JOIN sifone_asociados sa ON sa.cedula = v.asociado_cedula
                     WHERE v.id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([$ventaId]);
@@ -112,14 +119,27 @@ class TiendaCatalogo {
                 $subtotal += ($producto['precio'] * $producto['cantidad']);
             }
             
+            // Determinar datos según tipo de cliente
+            if ($venta['tipo_cliente'] === 'asociado') {
+                $nombre = $venta['asociado_nombre'] ?? 'Asociado ' . $venta['asociado_cedula'];
+                $telefono = $venta['asociado_telefono'] ?? '';
+                $email = $venta['asociado_email'] ?? '';
+                $documento = $venta['asociado_cedula'] ?? '';
+            } else {
+                $nombre = $venta['cliente_nombre'] ?? 'Cliente General';
+                $telefono = $venta['cliente_telefono'] ?? '';
+                $email = $venta['cliente_email'] ?? '';
+                $documento = $venta['cliente_documento'] ?? '';
+            }
+            
             return [
                 'id' => $venta['id'],
                 'numero_factura' => 'FAC-' . str_pad($venta['id'], 6, '0', STR_PAD_LEFT),
                 'fecha_venta' => $venta['fecha_creacion'],
-                'cliente_nombre' => $venta['cliente_nombre'] ?? ($venta['tipo_cliente'] === 'asociado' ? 'Asociado ' . $venta['asociado_cedula'] : 'Cliente General'),
-                'cliente_telefono' => $venta['cliente_telefono'] ?? '',
-                'cliente_direccion' => $venta['cliente_direccion'] ?? '',
-                'cliente_documento' => $venta['cliente_documento'] ?? '',
+                'cliente_nombre' => $nombre,
+                'cliente_telefono' => $telefono,
+                'cliente_direccion' => $email, // Usar email como dirección
+                'cliente_documento' => $documento,
                 'productos' => $productos,
                 'subtotal' => $subtotal,
                 'total' => $venta['total'] ?? $subtotal

@@ -69,6 +69,32 @@ async function verVenta(id){
 
 async function eliminarVenta(id){ if(!confirm('¿Eliminar venta #'+id+'?')) return; const fd=new FormData(); fd.append('id',id); const res=await fetch('../api/ventas_eliminar.php',{method:'POST',body:fd}); const j=await res.json(); if(!j.success){ alert(j.message||'No se pudo eliminar'); return; } loadVentas(); }
 
+async function vistaPreviaPDF(id){
+  try{
+    // Mostrar indicador de carga
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
+    // Abrir vista previa en nueva pestaña
+    window.open('../api/vista_previa_pdf.php?id=' + id, '_blank');
+    
+    // Restaurar botón
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }, 1000);
+    
+  }catch(e){
+    alert('Error al generar vista previa: ' + e.message);
+    // Restaurar botón en caso de error
+    const btn = event.target;
+    btn.innerHTML = '<i class="fas fa-eye"></i>';
+    btn.disabled = false;
+  }
+}
+
 async function generarPDF(id){
   try{
     // Mostrar indicador de carga
