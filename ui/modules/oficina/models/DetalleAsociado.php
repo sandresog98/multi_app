@@ -29,6 +29,7 @@ class DetalleAsociado {
     }
 
     public function getMonetariosDesdeVista(string $cedula): array {
+        // Intentar con diferentes tipos de cédula para mayor compatibilidad
         $sql = "SELECT 
                         COALESCE(aportes_totales,0)           AS aportes_totales,
                         COALESCE(aportes_incentivos,0)        AS aportes_incentivos,
@@ -37,10 +38,17 @@ class DetalleAsociado {
                         COALESCE(bolsillos,0)                  AS bolsillos,
                         COALESCE(bolsillos_incentivos,0)       AS bolsillos_incentivos,
                         COALESCE(comisiones,0)                AS comisiones
-                FROM sifone_resumen_asociados_vw WHERE cedula = ?";
+                FROM sifone_resumen_asociados_vw 
+                WHERE CAST(cedula AS CHAR) = CAST(? AS CHAR)";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$cedula]);
         $row = $stmt->fetch() ?: [];
+        
+        // Debug: Log si no se encuentra el usuario
+        if (empty($row)) {
+            error_log("Usuario no encontrado en sifone_resumen_asociados_vw: $cedula");
+        }
+        
         return [
             'aportes_totales'         => (float)($row['aportes_totales'] ?? 0),
             'aportes_incentivos'      => (float)($row['aportes_incentivos'] ?? 0),
@@ -144,7 +152,7 @@ class DetalleAsociado {
         $placeholders = implode(',', array_fill(0, count($targets), '?'));
         $sql = "SELECT LOWER(nombre) AS nombre, SUM(ABS(COALESCE(salant,0))) AS valor
                 FROM sifone_balance_prueba
-                WHERE cedula = ? AND nombre IN ($placeholders)
+                WHERE CAST(cedula AS CHAR) = CAST(? AS CHAR) AND nombre IN ($placeholders)
                 GROUP BY nombre";
         $stmt = $this->conn->prepare($sql);
         $params = array_merge([$cedula], $targets);

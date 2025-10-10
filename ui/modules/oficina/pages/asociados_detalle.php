@@ -36,7 +36,7 @@ $valorTotalMonetario = $valorProductosMensual + $valorPagoMinCreditos;
 
 // Monetarios desde vista consolidada; fallback al cálculo anterior si viene vacío
 $bp = $detalleModel->getMonetariosDesdeVista($cedula);
-if (empty($bp['revalorizacion_aportes']) && empty($bp['plan_futuro']) && empty($bp['aportes_sociales_2'])) {
+if (empty($bp['aportes_revalorizaciones']) && empty($bp['plan_futuro']) && empty($bp['aportes_sociales_2'])) {
   $bp = $detalleModel->getBalancePruebaMonetarios($cedula);
 }
 

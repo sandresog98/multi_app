@@ -1,6 +1,6 @@
 DROP VIEW IF EXISTS sifone_aportes_sociales_vw;
 CREATE VIEW sifone_aportes_sociales_vw AS
-SELECT cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_sociales
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_sociales
 FROM sifone_balance_prueba
 WHERE nombre = 'APORTES SOCIALES 2'
 GROUP BY cedula
@@ -8,7 +8,7 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_aportes_revalorizaciones_vw;
 CREATE VIEW sifone_aportes_revalorizaciones_vw AS
-SELECT cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_revalorizaciones
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_revalorizaciones
 FROM sifone_balance_prueba
 WHERE nombre = 'Revalorizacion Aportes'
 GROUP BY cedula
@@ -16,7 +16,7 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_plan_futuro_vw;
 CREATE VIEW sifone_plan_futuro_vw AS
-SELECT cedula, SUM(ABS(COALESCE(salant, 0))) AS plan_futuro
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS plan_futuro
 FROM sifone_balance_prueba
 WHERE nombre = 'PLAN FUTURO'
 GROUP BY cedula
@@ -24,20 +24,20 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_bolsillos_vw;
 CREATE VIEW sifone_bolsillos_vw AS
-SELECT cedula, SUM(credit) AS bolsillos
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(credit) AS bolsillos
 FROM `sifone_movimientos_tributarios`
 WHERE cuenta = '42309501'
   AND fecham >= '2025-06-09'
   AND credit > 0
-GROUP BY cedula;
+GROUP BY cedula
 ;
 
 DROP VIEW IF EXISTS sifone_comisiones_vw;
 CREATE VIEW sifone_comisiones_vw AS
-SELECT asociado_inicial_cedula AS cedula
+SELECT CAST(asociado_inicial_cedula AS CHAR) AS cedula
      , SUM(valor_ganado) AS comisiones
 FROM control_comisiones
-GROUP BY cedula
+GROUP BY asociado_inicial_cedula
 ;
 
 DROP VIEW IF EXISTS sifone_resumen_asociados_vw;
@@ -65,10 +65,10 @@ SELECT sa.cedula                                    AS cedula,
        0                                            AS bolsillos_incentivos,
        COALESCE(smt_c.comisiones, 0)                AS comisiones
 FROM sifone_asociados AS sa
-         LEFT JOIN control_asociados AS ca ON ca.cedula = sa.cedula
-         LEFT JOIN sifone_aportes_sociales_vw AS sbp_as ON sbp_as.cedula = sa.cedula
-         LEFT JOIN sifone_aportes_revalorizaciones_vw AS sbp_ar ON sbp_ar.cedula = sa.cedula
-         LEFT JOIN sifone_plan_futuro_vw AS sbp_pf ON sbp_pf.cedula = sa.cedula
-         LEFT JOIN sifone_bolsillos_vw AS smt_b ON smt_b.cedula = sa.cedula
-         LEFT JOIN sifone_comisiones_vw AS smt_c ON smt_c.cedula = sa.cedula
+         LEFT JOIN control_asociados AS ca ON CAST(ca.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_aportes_sociales_vw AS sbp_as ON CAST(sbp_as.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_aportes_revalorizaciones_vw AS sbp_ar ON CAST(sbp_ar.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_plan_futuro_vw AS sbp_pf ON CAST(sbp_pf.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_bolsillos_vw AS smt_b ON CAST(smt_b.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_comisiones_vw AS smt_c ON CAST(smt_c.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
 ;

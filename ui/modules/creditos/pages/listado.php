@@ -218,17 +218,16 @@ async function abrirDetalle(id){
       const items = g.campos.filter(k=>it[k]).map(k=>{
         const href = escapeHtml(it[k]);
         const label = nombresCampo[k];
-        return `<div class=\"d-flex align-items-center\"><a class=\"btn btn-sm btn-outline-primary me-2\" href=\"${href}\" target=\"_blank\" title=\"Ver\"><i class=\"fas fa-eye\"></i></a><span>${label}</span></div>`;
+        return `<div class=\"list-group-item d-flex align-items-center justify-content-between\">
+          <div class=\"d-flex align-items-center\">
+            <a class=\"btn btn-sm btn-outline-primary me-2\" href=\"${href}\" target=\"_blank\" title=\"Ver\"><i class=\"fas fa-eye\"></i></a>
+            <span>${label}</span>
+          </div>
+          <button class=\"btn btn-sm btn-outline-secondary\" onclick=\"abrirEditarArchivo(${it.id},'${k}','${label}')\" title=\"Editar archivo\"><i class=\"fas fa-edit\"></i></button>
+        </div>`;
       });
       if(!items.length) return '';
-      // construir tabla de dos columnas
-      const filas = [];
-      for (let i=0; i<items.length; i+=2) {
-        const left = items[i];
-        const right = items[i+1] || '';
-        filas.push(`<tr><td class=\"w-50\">${left}</td><td class=\"w-50\">${right}</td></tr>`);
-      }
-      return `<div class=\"mb-2\"><h6 class=\"mb-1\">${g.titulo}</h6><div class=\"table-responsive\"><table class=\"table table-sm\"><tbody>${filas.join('')}</tbody></table></div></div>`;
+      return `<div class=\"mb-3\"><h6 class=\"mb-1\">${g.titulo}</h6><div class=\"list-group list-group-flush\">${items.join('')}</div></div>`;
     }).join('') || '<div class=\"text-muted\">Sin archivos</div>';
 
     // Historial como timeline (igual que Boletería)
@@ -253,13 +252,205 @@ async function abrirDetalle(id){
     }).join('')}</div>`) : '<div class=\"text-muted\">Sin historial</div>';
 
     const html = `<div class=\"modal fade\" id=\"mDetalle\" tabindex=\"-1\"><div class=\"modal-dialog modal-lg\"><div class=\"modal-content\"><div class=\"modal-header\"><h5 class=\"modal-title\">Detalle solicitud #${it.id}</h5><button class=\"btn-close\" data-bs-dismiss=\"modal\"></button></div><div class=\"modal-body\">`+
-      `<h6>Información</h6><div class=\"table-responsive\"><table class=\"table table-sm\"><tbody>${infoRows}</tbody></table></div>`+
+      `<h6>Información <button class=\"btn btn-sm btn-outline-primary ms-2\" onclick=\"abrirEditarInfo(${it.id})\"><i class=\"fas fa-edit me-1\"></i>Editar</button></h6><div class=\"table-responsive\"><table class=\"table table-sm\"><tbody>${infoRows}</tbody></table></div>`+
       `<h6>Archivos</h6>${bloquesArchivos}`+
       `<hr><h6>Historial</h6>${histHtml}`+
       `</div><div class=\"modal-footer\"><button class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cerrar</button></div></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', html);
     const el = document.getElementById('mDetalle'); const modal = new bootstrap.Modal(el); modal.show(); el.addEventListener('hidden.bs.modal',()=>el.remove());
   }catch(e){ alert('Error: '+e); }
+}
+
+// Función para editar información básica
+async function abrirEditarInfo(id){
+  try{
+    const res = await fetch('../api/solicitudes_detalle.php?id='+id);
+    const j = await res.json(); if(!(j&&j.success)){ alert(j.message||'Error'); return; }
+    const it = j.item||{};
+    
+    const html = `<div class="modal fade" id="mEditarInfo" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar información - Solicitud #${it.id}</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="formEditarInfo">
+              <input type="hidden" name="id" value="${it.id}">
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Nombres *</label>
+                    <input type="text" class="form-control" name="nombres" value="${escapeHtml(it.nombres||'')}" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Identificación *</label>
+                    <input type="text" class="form-control" name="identificacion" value="${escapeHtml(it.identificacion||'')}" required>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Celular *</label>
+                    <input type="text" class="form-control" name="celular" value="${escapeHtml(it.celular||'')}" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" name="email" value="${escapeHtml(it.email||'')}" required>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Monto deseado</label>
+                    <input type="number" class="form-control" name="monto_deseado" value="${it.monto_deseado||''}" step="0.01" min="0">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label class="form-label">Número crédito SIFONE</label>
+                    <input type="text" class="form-control" name="numero_credito_sifone" value="${escapeHtml(it.numero_credito_sifone||'')}">
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-primary" id="btnGuardarInfo">Guardar cambios</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+    const modalEl = document.getElementById('mEditarInfo');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    
+    modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove());
+    
+    document.getElementById('btnGuardarInfo').addEventListener('click', async () => {
+      const form = document.getElementById('formEditarInfo');
+      const formData = new FormData(form);
+      
+      try {
+        const res = await fetch('../api/solicitud_editar.php', {
+          method: 'POST',
+          body: formData
+        });
+        const j = await res.json();
+        
+        if (j && j.success) {
+          modal.hide();
+          load(); // Recargar la lista
+          alert('Información actualizada correctamente');
+        } else {
+          alert(j.message || 'Error al actualizar');
+        }
+      } catch (e) {
+        alert('Error: ' + e);
+      }
+    });
+    
+  } catch (e) {
+    alert('Error: ' + e);
+  }
+}
+
+// Función para editar archivo individual
+async function abrirEditarArchivo(id, campo, label){
+  try{
+    const res = await fetch('../api/solicitudes_detalle.php?id='+id);
+    const j = await res.json(); if(!(j&&j.success)){ alert(j.message||'Error'); return; }
+    const it = j.item||{};
+    
+    const archivoActual = it[campo];
+    const esPDF = campo.includes('pdf') || campo.includes('simulacion') || campo.includes('datacredito') || campo.includes('estudio') || campo.includes('pagare') || campo.includes('amortizacion') || campo.includes('libranza');
+    const accept = esPDF ? '.pdf' : '.jpg,.jpeg,.png,.pdf';
+    
+    const html = `<div class="modal fade" id="mEditarArchivo" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Editar archivo - ${label}</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            ${archivoActual ? `
+              <div class="mb-3">
+                <label class="form-label">Archivo actual</label>
+                <div class="d-flex align-items-center">
+                  <a class="btn btn-outline-primary me-2" href="${archivoActual}" target="_blank"><i class="fas fa-eye me-1"></i>Ver archivo actual</a>
+                  <span class="text-muted">${archivoActual.split('/').pop()}</span>
+                </div>
+              </div>
+            ` : ''}
+            
+            <form id="formEditarArchivo" enctype="multipart/form-data">
+              <input type="hidden" name="id" value="${id}">
+              <input type="hidden" name="campo" value="${campo}">
+              
+              <div class="mb-3">
+                <label class="form-label">${archivoActual ? 'Nuevo archivo (reemplazará el actual)' : 'Seleccionar archivo'}</label>
+                <input type="file" class="form-control" name="archivo" accept="${accept}" required>
+                <div class="form-text">
+                  ${esPDF ? 'Solo archivos PDF permitidos' : 'Formatos permitidos: JPG, JPEG, PNG, PDF'} - Máximo 5MB
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-primary" id="btnGuardarArchivo">Guardar archivo</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+    const modalEl = document.getElementById('mEditarArchivo');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    
+    modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove());
+    
+    document.getElementById('btnGuardarArchivo').addEventListener('click', async () => {
+      const form = document.getElementById('formEditarArchivo');
+      const formData = new FormData(form);
+      
+      try {
+        const res = await fetch('../api/solicitud_editar.php', {
+          method: 'POST',
+          body: formData
+        });
+        const j = await res.json();
+        
+        if (j && j.success) {
+          modal.hide();
+          load(); // Recargar la lista
+          alert('Archivo actualizado correctamente');
+        } else {
+          alert(j.message || 'Error al actualizar archivo');
+        }
+      } catch (e) {
+        alert('Error: ' + e);
+      }
+    });
+    
+  } catch (e) {
+    alert('Error: ' + e);
+  }
 }
 </script>
 
