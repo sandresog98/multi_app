@@ -224,6 +224,8 @@ class Cobranza {
 							dv.cuotas_pendientes AS cuotas_pendientes,
 							dv.fecha_emision AS fecha_inicio,
 							dv.fecha_vencimiento AS fecha_vencimiento,
+							dv.desembolso_inicial,
+							dv.saldo_capital,
 							m.sdomor AS saldo_mora,
 							m.diav AS dias_mora,
 							COALESCE(m.fechap, dv.fecha_pago) AS fecha_pago,

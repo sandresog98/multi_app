@@ -145,6 +145,7 @@ include '../../../views/layouts/header.php';
                   <th class="text-end">Valor Cuota</th>
                   <th class="text-end">Valor Mora</th>
                   <th class="text-end">Desembolso Inicial</th>
+                  <th class="text-end">Saldo Capital</th>
                   <th class="text-end">Cobranza</th>
                   <th class="text-end">Pago mínimo</th>
                   <th class="text-center">Codeudor</th>
@@ -163,6 +164,7 @@ include '../../../views/layouts/header.php';
                     <td class="text-end"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['desembolso_inicial'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_capital'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
                     <td class="text-end">
                       <?php

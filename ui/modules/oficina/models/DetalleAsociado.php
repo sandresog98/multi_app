@@ -72,6 +72,7 @@ class DetalleAsociado {
 					dv.fecha_emision AS fecha_inicio,
 					dv.fecha_vencimiento AS fecha_vencimiento,
 					dv.desembolso_inicial,
+					dv.saldo_capital,
 					-- Datos de codeudor
 					dvco.nombre AS codeudor_nombre,
 					dvco.celular AS codeudor_celular,

@@ -342,13 +342,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                                         <th>Tipo</th>
                                                         <th class="text-center">Cuotas</th>
                                                         <th class="text-center">Pendientes</th>
-                                                        <th class="text-center text-nowrap">F. Inicio</th>
-                                                        <th class="text-center text-nowrap">F. Vencimiento</th>
-                                                        <th class="text-center text-nowrap">F. Pago</th>
+                                                        <th class="text-center text-nowrap">Fecha Inicio</th>
+                                                        <th class="text-center text-nowrap">Fecha Vencimiento</th>
+                                                        <th class="text-center text-nowrap">Fecha Pago</th>
                                                         <th class="text-center">Días Mora</th>
-                                                        <th class="text-end">V. Capital</th>
-                                                        <th class="text-end">V. Cuota</th>
-                                                        <th class="text-end">V. Mora</th>
+                                                        <th class="text-end">Valor Capital</th>
+                                                        <th class="text-end">Desembolso Inicial</th>
+                                                        <th class="text-end">Saldo Capital</th>
+                                                        <th class="text-end">Valor Cuota</th>
+                                                        <th class="text-end">Valor Mora</th>
                                                         <th class="text-end">Cobranza</th>
                                                         <th class="text-end">Pago mínimo</th>
                                                     </tr>
@@ -376,6 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td class="text-center text-nowrap">${fechaPago}</td>
                                 <td class="text-center">${Number(credito.dias_mora || 0)}</td>
                                 <td class="text-end">$${Number(credito.deuda_capital || 0).toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${Number(credito.desembolso_inicial || 0).toLocaleString('es-CO')}</td>
+                                <td class="text-end">$${Number(credito.saldo_capital || 0).toLocaleString('es-CO')}</td>
                                 <td class="text-end">$${valorCuota.toLocaleString('es-CO')}</td>
                                 <td class="text-end">$${saldoMora.toLocaleString('es-CO')}</td>
                                 <td class="text-end">$${montoCob.toLocaleString('es-CO')}</td>
@@ -383,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                             ${(credito.codeudor_nombre||credito.codeudor_celular||credito.codeudor_email||credito.codeudor_direccion)?`
                             <tr class="table-light">
-                                <td colspan="12">
+                                <td colspan="14">
                                     <div class="small text-muted">Codeudor: <strong>${(credito.codeudor_nombre||'').replace(/</g,'&lt;')}</strong> · Teléfono: <strong>${(credito.codeudor_celular||'')}</strong> · Email: <strong>${(credito.codeudor_email||'')}</strong> · Dirección: <strong>${(credito.codeudor_direccion||'').replace(/</g,'&lt;')}</strong></div>
                                 </td>
                             </tr>`:''}

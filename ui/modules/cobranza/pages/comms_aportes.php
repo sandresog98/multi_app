@@ -283,8 +283,33 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       // Información de créditos (mismo formato compacto)
       if (detalle.creditos && detalle.creditos.length>0){
-        html += `<div class="row g-3 mb-3"><div class="col-12"><div class="card"><div class="card-header"><strong>Información crédito</strong></div><div class="card-body"><div class="table-responsive small"><table class="table table-sm table-hover align-middle mb-0"><thead class="table-light"><tr><th>Crédito</th><th>Tipo</th><th class="text-center">Cuotas</th><th class="text-center">Pendientes</th><th class="text-center text-nowrap">F. Inicio</th><th class="text-center text-nowrap">F. Vencimiento</th><th class="text-center text-nowrap">F. Pago</th><th class="text-center">Días Mora</th><th class="text-end">V. Capital</th><th class="text-end">V. Cuota</th><th class="text-end">V. Mora</th><th class="text-end">Cobranza</th><th class="text-end">Pago mínimo</th></tr></thead><tbody>` +
-        detalle.creditos.map(c=>{ const fI=c.fecha_inicio?new Date(c.fecha_inicio).toLocaleDateString('es-CO'):'-'; const fV=c.fecha_vencimiento?new Date(c.fecha_vencimiento).toLocaleDateString('es-CO'):'-'; const fP=c.fecha_pago?new Date(c.fecha_pago).toLocaleDateString('es-CO'):'-'; const vq=Number((c.valor_cuota??c.cuota)||0); const sM=Number(c.saldo_mora||0); const mc=Number(c.monto_cobranza||0); const pmin=(sM>0?sM:vq)+mc; return `<tr><td>${String(c.numero_credito||'').replace(/</g,'&lt;')}</td><td>${String(c.tipo_prestamo||'').replace(/</g,'&lt;')}</td><td class="text-center">${Number(c.plazo||0)}</td><td class="text-center">${Number(c.cuotas_pendientes||0)}</td><td class="text-center text-nowrap">${fI}</td><td class="text-center text-nowrap">${fV}</td><td class="text-center text-nowrap">${fP}</td><td class="text-center">${Number(c.dias_mora||0)}</td><td class="text-end">$${Number(c.deuda_capital||0).toLocaleString('es-CO')}</td><td class="text-end">$${vq.toLocaleString('es-CO')}</td><td class="text-end">$${sM.toLocaleString('es-CO')}</td><td class="text-end">$${mc.toLocaleString('es-CO')}</td><td class="text-end">$${pmin.toLocaleString('es-CO')}</td></tr>`; }).join('') + `</tbody></table></div></div></div></div></div>`;
+        html += `<div class="row g-3 mb-3"><div class="col-12"><div class="card"><div class="card-header"><strong>Información crédito</strong></div><div class="card-body"><div class="table-responsive small"><table class="table table-sm table-hover align-middle mb-0"><thead class="table-light"><tr><th>Crédito</th><th>Tipo</th><th class="text-center">Cuotas</th><th class="text-center">Pendientes</th><th class="text-center text-nowrap">Fecha Inicio</th><th class="text-center text-nowrap">Fecha Vencimiento</th><th class="text-center text-nowrap">Fecha Pago</th><th class="text-center">Días Mora</th><th class="text-end">Valor Capital</th><th class="text-end">Desembolso Inicial</th><th class="text-end">Saldo Capital</th><th class="text-end">Valor Cuota</th><th class="text-end">Valor Mora</th><th class="text-end">Cobranza</th><th class="text-end">Pago mínimo</th></tr></thead><tbody>` +
+        detalle.creditos.map(c=>{ 
+          const fI=c.fecha_inicio?new Date(c.fecha_inicio).toLocaleDateString('es-CO'):'-'; 
+          const fV=c.fecha_vencimiento?new Date(c.fecha_vencimiento).toLocaleDateString('es-CO'):'-'; 
+          const fP=c.fecha_pago?new Date(c.fecha_pago).toLocaleDateString('es-CO'):'-'; 
+          const vq=Number((c.valor_cuota??c.cuota)||0); 
+          const sM=Number(c.saldo_mora||0); 
+          const mc=Number(c.monto_cobranza||0); 
+          const pmin=(sM>0?sM:vq)+mc; 
+          return `<tr>
+            <td>${String(c.numero_credito||'').replace(/</g,'&lt;')}</td>
+            <td>${String(c.tipo_prestamo||'').replace(/</g,'&lt;')}</td>
+            <td class="text-center">${Number(c.plazo||0)}</td>
+            <td class="text-center">${Number(c.cuotas_pendientes||0)}</td>
+            <td class="text-center text-nowrap">${fI}</td>
+            <td class="text-center text-nowrap">${fV}</td>
+            <td class="text-center text-nowrap">${fP}</td>
+            <td class="text-center">${Number(c.dias_mora||0)}</td>
+            <td class="text-end">$${Number(c.deuda_capital||0).toLocaleString('es-CO')}</td>
+            <td class="text-end">$${Number(c.desembolso_inicial||0).toLocaleString('es-CO')}</td>
+            <td class="text-end">$${Number(c.saldo_capital||0).toLocaleString('es-CO')}</td>
+            <td class="text-end">$${vq.toLocaleString('es-CO')}</td>
+            <td class="text-end">$${sM.toLocaleString('es-CO')}</td>
+            <td class="text-end">$${mc.toLocaleString('es-CO')}</td>
+            <td class="text-end">$${pmin.toLocaleString('es-CO')}</td>
+          </tr>`; 
+        }).join('') + `</tbody></table></div></div></div></div></div>`;
       }
 
       body.innerHTML = html || '<div class="text-muted">Sin información.</div>';
