@@ -61,6 +61,17 @@ include '../../../views/layouts/header.php';
           </div></div>
           <div class="card"><div class="card-body">
             <div class="table-responsive"><table class="table table-sm table-hover align-middle"><thead class="table-light"><tr><th>Categoría</th><th>Marca</th><th>Nombre</th><th>Foto</th><th>Precios</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead><tbody id="tblProductos"></tbody></table></div>
+            <!-- Paginación -->
+            <nav aria-label="Paginación de productos" class="mt-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                  <span id="infoPaginacion">Mostrando 0 de 0 productos</span>
+                </div>
+                <ul class="pagination pagination-sm mb-0" id="paginacionProductos">
+                  <!-- Los botones de paginación se generarán dinámicamente -->
+                </ul>
+              </div>
+            </nav>
           </div></div>
         </div>
       </div>
@@ -117,6 +128,13 @@ const apiCatalogo = '<?php echo getBaseUrl(); ?>modules/tienda/api/catalogo.php'
 let productosCache = [];
 let categoriasCache = [];
 let marcasCache = [];
+let paginacionActual = {
+  pagina: 1,
+  total: 0,
+  total_paginas: 0,
+  por_pagina: 20
+};
+
 async function loadAll(){
   try {
     const res = await fetch(apiCatalogo + '?action=listar');
@@ -128,9 +146,48 @@ async function loadAll(){
     marcasCache = j.marcas||[];
     renderCategorias(categoriasCache);
     renderMarcas(marcasCache);
-    renderProductos(applyProductFilters());
     fillSelects(categoriasCache, marcasCache);
+    await loadProductosPaginado(1);
   } catch(e){ alert('Error de red al listar: '+e); }
+}
+
+async function loadProductosPaginado(pagina = 1) {
+  try {
+    const filtros = getFiltrosActuales();
+    const params = new URLSearchParams({
+      action: 'listar_paginado',
+      pagina: pagina,
+      por_pagina: 20,
+      ...filtros
+    });
+    
+    const res = await fetch(apiCatalogo + '?' + params);
+    const text = await res.text();
+    let j; try { j = JSON.parse(text); } catch(e){ alert('Respuesta inválida al listar paginado: '+ text.slice(0,200)); return; }
+    if (!res.ok || !j.success) { alert(j.message||('Error HTTP '+res.status)); return; }
+    
+    productosCache = j.productos||[];
+    paginacionActual = j.paginacion||{};
+    renderProductos(productosCache);
+    renderPaginacion();
+  } catch(e){ alert('Error de red al cargar productos: '+e); }
+}
+
+function getFiltrosActuales() {
+  const filtros = {};
+  const cat = document.getElementById('f_cat')?.value||'';
+  const mar = document.getElementById('f_marca')?.value||'';
+  const nom = (document.getElementById('f_nombre')?.value||'').trim();
+  const pmin = document.getElementById('f_pmin')?.value||'';
+  const pmax = document.getElementById('f_pmax')?.value||'';
+  
+  if (cat) filtros.categoria_id = cat;
+  if (mar) filtros.marca_id = mar;
+  if (nom) filtros.nombre = nom;
+  if (pmin) filtros.precio_min = pmin;
+  if (pmax) filtros.precio_max = pmax;
+  
+  return filtros;
 }
 function renderCategorias(list){
   const body = document.getElementById('tblCategorias'); body.innerHTML='';
@@ -179,6 +236,50 @@ function renderProductos(list){
     body.appendChild(tr);
   });
 }
+
+function renderPaginacion() {
+  const info = document.getElementById('infoPaginacion');
+  const paginacion = document.getElementById('paginacionProductos');
+  
+  if (!info || !paginacion) return;
+  
+  const inicio = ((paginacionActual.pagina - 1) * paginacionActual.por_pagina) + 1;
+  const fin = Math.min(paginacionActual.pagina * paginacionActual.por_pagina, paginacionActual.total);
+  
+  info.textContent = `Mostrando ${inicio}-${fin} de ${paginacionActual.total} productos`;
+  
+  paginacion.innerHTML = '';
+  
+  if (paginacionActual.total_paginas <= 1) return;
+  
+  // Botón anterior
+  const liPrev = document.createElement('li');
+  liPrev.className = `page-item ${paginacionActual.pagina <= 1 ? 'disabled' : ''}`;
+  liPrev.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${paginacionActual.pagina - 1})">Anterior</a>`;
+  paginacion.appendChild(liPrev);
+  
+  // Botones de páginas
+  const inicioPagina = Math.max(1, paginacionActual.pagina - 2);
+  const finPagina = Math.min(paginacionActual.total_paginas, paginacionActual.pagina + 2);
+  
+  for (let i = inicioPagina; i <= finPagina; i++) {
+    const li = document.createElement('li');
+    li.className = `page-item ${i === paginacionActual.pagina ? 'active' : ''}`;
+    li.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${i})">${i}</a>`;
+    paginacion.appendChild(li);
+  }
+  
+  // Botón siguiente
+  const liNext = document.createElement('li');
+  liNext.className = `page-item ${paginacionActual.pagina >= paginacionActual.total_paginas ? 'disabled' : ''}`;
+  liNext.innerHTML = `<a class="page-link" href="#" onclick="cambiarPagina(${paginacionActual.pagina + 1})">Siguiente</a>`;
+  paginacion.appendChild(liNext);
+}
+
+async function cambiarPagina(pagina) {
+  if (pagina < 1 || pagina > paginacionActual.total_paginas) return;
+  await loadProductosPaginado(pagina);
+}
 function editProductoById(id){
   const it = (productosCache||[]).find(p=>Number(p.id)===Number(id));
   if (!it){ alert('Producto no encontrado'); return; }
@@ -207,7 +308,7 @@ async function guardarCategoria(){
     if (!res.ok || !j.success){ alert(j.message||('Error HTTP '+res.status)); return; }
     limpiarCategoria();
     const el = document.getElementById('mCategoria'); const modal = bootstrap.Modal.getInstance(el); if (modal) modal.hide();
-    loadAll();
+    await loadAll();
   } catch(e){ alert('Error de red: '+e); }
 }
 function nuevoCategoria(){ limpiarCategoria(); const m=new bootstrap.Modal(document.getElementById('mCategoria')); m.show(); }
@@ -228,7 +329,7 @@ async function guardarMarca(){
     if (!res.ok || !j.success){ alert(j.message||('Error HTTP '+res.status)); return; }
     limpiarMarca();
     const el = document.getElementById('mMarca'); const modal = bootstrap.Modal.getInstance(el); if (modal) modal.hide();
-    loadAll();
+    await loadAll();
   } catch(e){ alert('Error de red: '+e); }
 }
 function nuevoMarca(){ limpiarMarca(); const m=new bootstrap.Modal(document.getElementById('mMarca')); m.show(); }
@@ -262,7 +363,7 @@ async function guardarProducto(){
     if (!res.ok || !j.success){ alert(j.message||('Error HTTP '+res.status)); return; }
     limpiarProducto();
     const el = document.getElementById('mProducto'); const modal = bootstrap.Modal.getInstance(el); if (modal) modal.hide();
-    loadAll();
+    await loadAll();
   } catch(e){ alert('Error de red: '+e); }
 }
 function nuevoProducto(){ limpiarProducto(); const m=new bootstrap.Modal(document.getElementById('mProducto')); m.show(); }
@@ -278,23 +379,18 @@ function limpiarProducto(){ document.getElementById('prod_id').value=''; documen
 document.addEventListener('DOMContentLoaded', loadAll);
 // Filtros productos
 document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('btnPFiltro')?.addEventListener('click', ()=>{ renderProductos(applyProductFilters()); });
-  document.getElementById('btnPLimpiar')?.addEventListener('click', ()=>{ document.getElementById('f_cat').value=''; document.getElementById('f_marca').value=''; document.getElementById('f_nombre').value=''; document.getElementById('f_pmin').value=''; document.getElementById('f_pmax').value=''; renderProductos(productosCache.slice()); });
+  document.getElementById('btnPFiltro')?.addEventListener('click', async ()=>{ 
+    await loadProductosPaginado(1); 
+  });
+  document.getElementById('btnPLimpiar')?.addEventListener('click', async ()=>{ 
+    document.getElementById('f_cat').value=''; 
+    document.getElementById('f_marca').value=''; 
+    document.getElementById('f_nombre').value=''; 
+    document.getElementById('f_pmin').value=''; 
+    document.getElementById('f_pmax').value=''; 
+    await loadProductosPaginado(1);
+  });
 });
-function applyProductFilters(){
-  let list = productosCache.slice();
-  const cat = document.getElementById('f_cat')?.value||'';
-  const mar = document.getElementById('f_marca')?.value||'';
-  const nom = (document.getElementById('f_nombre')?.value||'').trim().toLowerCase();
-  const pmin = parseFloat(document.getElementById('f_pmin')?.value||'');
-  const pmax = parseFloat(document.getElementById('f_pmax')?.value||'');
-  if (cat) list = list.filter(it=> String(it.categoria_id)===String(cat));
-  if (mar) list = list.filter(it=> String(it.marca_id)===String(mar));
-  if (nom) list = list.filter(it=> String(it.nombre||'').toLowerCase().includes(nom));
-  if (!isNaN(pmin)) list = list.filter(it=> Number(it.precio_venta_aprox||0) >= pmin);
-  if (!isNaN(pmax)) list = list.filter(it=> Number(it.precio_venta_aprox||0) <= pmax);
-  return list;
-}
 </script>
 
 <?php include '../../../views/layouts/footer.php'; ?>

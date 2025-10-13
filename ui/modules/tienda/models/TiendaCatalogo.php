@@ -61,6 +61,70 @@ class TiendaCatalogo {
         $stmt = $this->conn->query($sql);
         return $stmt->fetchAll() ?: [];
     }
+    
+    public function listarProductosPaginado(int $pagina = 1, int $porPagina = 20, array $filtros = []): array {
+        $offset = ($pagina - 1) * $porPagina;
+        
+        $where = [];
+        $params = [];
+        
+        // Aplicar filtros
+        if (!empty($filtros['categoria_id'])) {
+            $where[] = "p.categoria_id = ?";
+            $params[] = $filtros['categoria_id'];
+        }
+        if (!empty($filtros['marca_id'])) {
+            $where[] = "p.marca_id = ?";
+            $params[] = $filtros['marca_id'];
+        }
+        if (!empty($filtros['nombre'])) {
+            $where[] = "p.nombre LIKE ?";
+            $params[] = '%' . $filtros['nombre'] . '%';
+        }
+        if (!empty($filtros['precio_min'])) {
+            $where[] = "p.precio_venta_aprox >= ?";
+            $params[] = $filtros['precio_min'];
+        }
+        if (!empty($filtros['precio_max'])) {
+            $where[] = "p.precio_venta_aprox <= ?";
+            $params[] = $filtros['precio_max'];
+        }
+        
+        $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        
+        // Contar total de registros
+        $countSql = "SELECT COUNT(*) as total
+                     FROM tienda_producto p
+                     INNER JOIN tienda_categoria c ON c.id = p.categoria_id
+                     INNER JOIN tienda_marca m ON m.id = p.marca_id
+                     $whereClause";
+        $countStmt = $this->conn->prepare($countSql);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch()['total'];
+        
+        // Obtener productos paginados
+        $sql = "SELECT p.id, p.nombre, p.foto_url, p.descripcion, p.precio_compra_aprox, p.precio_venta_aprox, p.estado_activo,
+                       c.id AS categoria_id, c.nombre AS categoria,
+                       m.id AS marca_id, m.nombre AS marca
+                FROM tienda_producto p
+                INNER JOIN tienda_categoria c ON c.id = p.categoria_id
+                INNER JOIN tienda_marca m ON m.id = p.marca_id
+                $whereClause
+                ORDER BY c.nombre, m.nombre, p.nombre
+                LIMIT $porPagina OFFSET $offset";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $productos = $stmt->fetchAll() ?: [];
+        
+        return [
+            'productos' => $productos,
+            'total' => $total,
+            'pagina' => $pagina,
+            'por_pagina' => $porPagina,
+            'total_paginas' => ceil($total / $porPagina)
+        ];
+    }
     public function guardarProducto(?int $id, int $categoriaId, int $marcaId, string $nombre, ?string $fotoUrl, ?string $descripcion, ?float $precioCompra, ?float $precioVenta, bool $estadoActivo=true): array {
         if ($id) {
             $sets = "categoria_id=?, marca_id=?, nombre=?, descripcion=?, precio_compra_aprox=?, precio_venta_aprox=?, estado_activo=?";

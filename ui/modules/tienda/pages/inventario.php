@@ -8,28 +8,9 @@ $auth->requireModule('tienda.inventario');
 $currentUser = $auth->getCurrentUser();
 $pdo = getConnection();
 
-// Query inventario: totales por producto y detalle IMEIs disponibles
+// Obtener categorías y marcas para los filtros
 $cats = $pdo->query("SELECT id, nombre FROM tienda_categoria WHERE estado_activo = TRUE ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC) ?: [];
 $marcasList = $pdo->query("SELECT id, nombre FROM tienda_marca WHERE estado_activo = TRUE ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-$items = $pdo->query("SELECT p.id, p.nombre, p.foto_url, c.id AS categoria_id, c.nombre AS categoria, m.id AS marca_id, m.nombre AS marca,
-                             COALESCE(cd.ingresado,0) AS ingresado,
-                             COALESCE(vd.vendido,0) AS vendido,
-                             COALESCE(cd.ingresado,0) - COALESCE(vd.vendido,0) AS disponible
-                      FROM tienda_producto p
-                      INNER JOIN tienda_categoria c ON c.id=p.categoria_id
-                      INNER JOIN tienda_marca m ON m.id=p.marca_id
-                      LEFT JOIN (
-                        SELECT producto_id, SUM(cantidad) AS ingresado
-                        FROM tienda_compra_detalle
-                        GROUP BY producto_id
-                      ) cd ON cd.producto_id = p.id
-                      LEFT JOIN (
-                        SELECT producto_id,
-                               SUM(CASE WHEN compra_imei_id IS NULL THEN cantidad ELSE 1 END) AS vendido
-                        FROM tienda_venta_detalle
-                        GROUP BY producto_id
-                      ) vd ON vd.producto_id = p.id
-                      ORDER BY c.nombre, p.nombre")->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
 $pageTitle = 'Tienda - Inventario';
 $currentPage = 'tienda_inventario';
@@ -58,24 +39,22 @@ include '../../../views/layouts/header.php';
         <div class="table-responsive">
           <table class="table table-sm table-hover align-middle">
             <thead class="table-light"><tr><th>Categoría</th><th>Producto</th><th>Foto</th><th>Ingresado</th><th>Vendido</th><th>Disponible</th><th class="text-end">Acciones</th></tr></thead>
-            <tbody>
-              <?php foreach ($items as $r): ?>
-              <tr>
-                <td><?php echo htmlspecialchars($r['categoria'] ?? ''); ?></td>
-                <td><?php echo htmlspecialchars($r['nombre'] ?? ''); ?></td>
-                <td><?php if (!empty($r['foto_url'])): ?><a href="<?php echo htmlspecialchars($r['foto_url']); ?>" target="_blank"><img src="<?php echo htmlspecialchars($r['foto_url']); ?>" alt="foto" style="height:40px"></a><?php endif; ?></td>
-                <td><?php echo (int)($r['ingresado'] ?? 0); ?></td>
-                <td><?php echo (int)($r['vendido'] ?? 0); ?></td>
-                <td><?php echo (int)($r['disponible'] ?? 0); ?></td>
-                <td class="text-end">
-                  <button class="btn btn-sm btn-outline-info me-1" onclick="verDetalleProd(<?php echo (int)$r['id']; ?>,'<?php echo htmlspecialchars($r['nombre'],ENT_QUOTES); ?>')"><i class="fas fa-eye"></i> Detalle</button>
-                  <button class="btn btn-sm btn-outline-primary" onclick="verImeis(<?php echo (int)$r['id']; ?>)"><i class="fas fa-list"></i> IMEIs</button>
-                </td>
-              </tr>
-              <?php endforeach; ?>
+            <tbody id="tblInventario">
+              <!-- Los datos se cargarán dinámicamente -->
             </tbody>
           </table>
         </div>
+        <!-- Paginación -->
+        <nav aria-label="Paginación de inventario" class="mt-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+              <span id="infoPaginacionInv">Mostrando 0 de 0 productos</span>
+            </div>
+            <ul class="pagination pagination-sm mb-0" id="paginacionInventario">
+              <!-- Los botones de paginación se generarán dinámicamente -->
+            </ul>
+          </div>
+        </nav>
       </div></div>
 
     </main>
@@ -89,9 +68,49 @@ include '../../../views/layouts/header.php';
 </div></div></div>
 
 <script>
-const dataInv = <?php echo json_encode($items); ?>;
+const apiInventario = '../api/inventario_paginado.php';
+let paginacionActualInv = {
+  pagina: 1,
+  total: 0,
+  total_paginas: 0,
+  por_pagina: 20
+};
+
+async function loadInventarioPaginado(pagina = 1) {
+  try {
+    const filtros = getFiltrosInventarioActuales();
+    const params = new URLSearchParams({
+      pagina: pagina,
+      por_pagina: 20,
+      ...filtros
+    });
+    
+    const res = await fetch(apiInventario + '?' + params);
+    const text = await res.text();
+    let j; try { j = JSON.parse(text); } catch(e){ alert('Respuesta inválida al cargar inventario: '+ text.slice(0,200)); return; }
+    if (!res.ok || !j.success) { alert(j.message||('Error HTTP '+res.status)); return; }
+    
+    paginacionActualInv = j.paginacion||{};
+    renderInv(j.items||[]);
+    renderPaginacionInv();
+  } catch(e){ alert('Error de red al cargar inventario: '+e); }
+}
+
+function getFiltrosInventarioActuales() {
+  const filtros = {};
+  const nom = (document.getElementById('f_nombre').value||'').trim();
+  const cat = document.getElementById('f_cat').value||'';
+  const mar = document.getElementById('f_marca').value||'';
+  
+  if (nom) filtros.nombre = nom;
+  if (cat) filtros.categoria_id = cat;
+  if (mar) filtros.marca_id = mar;
+  
+  return filtros;
+}
+
 function renderInv(list){
-  const tbody = document.querySelector('table tbody');
+  const tbody = document.getElementById('tblInventario');
   tbody.innerHTML = '';
   if (!list || !list.length){ tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Sin resultados</td></tr>'; return; }
   list.forEach(r=>{
@@ -101,18 +120,68 @@ function renderInv(list){
     tbody.appendChild(tr);
   });
 }
-function escapeHtml(str){ return String(str||'').replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
-function filtrarInv(){
-  const nom = (document.getElementById('f_nombre').value||'').toLowerCase().trim();
-  const cat = document.getElementById('f_cat').value||'';
-  const mar = document.getElementById('f_marca').value||'';
-  let list = dataInv.slice();
-  if (nom) list = list.filter(x=> String(x.nombre||'').toLowerCase().includes(nom));
-  if (cat) list = list.filter(x=> String(x.categoria_id||'')===String(cat));
-  if (mar) list = list.filter(x=> String(x.marca_id||'')===String(mar));
-  renderInv(list);
+
+function renderPaginacionInv() {
+  const info = document.getElementById('infoPaginacionInv');
+  const paginacion = document.getElementById('paginacionInventario');
+  
+  if (!info || !paginacion) return;
+  
+  const inicio = ((paginacionActualInv.pagina - 1) * paginacionActualInv.por_pagina) + 1;
+  const fin = Math.min(paginacionActualInv.pagina * paginacionActualInv.por_pagina, paginacionActualInv.total);
+  
+  info.textContent = `Mostrando ${inicio}-${fin} de ${paginacionActualInv.total} productos`;
+  
+  paginacion.innerHTML = '';
+  
+  if (paginacionActualInv.total_paginas <= 1) return;
+  
+  // Botón anterior
+  const liPrev = document.createElement('li');
+  liPrev.className = `page-item ${paginacionActualInv.pagina <= 1 ? 'disabled' : ''}`;
+  liPrev.innerHTML = `<a class="page-link" href="#" onclick="cambiarPaginaInv(${paginacionActualInv.pagina - 1})">Anterior</a>`;
+  paginacion.appendChild(liPrev);
+  
+  // Botones de páginas
+  const inicioPagina = Math.max(1, paginacionActualInv.pagina - 2);
+  const finPagina = Math.min(paginacionActualInv.total_paginas, paginacionActualInv.pagina + 2);
+  
+  for (let i = inicioPagina; i <= finPagina; i++) {
+    const li = document.createElement('li');
+    li.className = `page-item ${i === paginacionActualInv.pagina ? 'active' : ''}`;
+    li.innerHTML = `<a class="page-link" href="#" onclick="cambiarPaginaInv(${i})">${i}</a>`;
+    paginacion.appendChild(li);
+  }
+  
+  // Botón siguiente
+  const liNext = document.createElement('li');
+  liNext.className = `page-item ${paginacionActualInv.pagina >= paginacionActualInv.total_paginas ? 'disabled' : ''}`;
+  liNext.innerHTML = `<a class="page-link" href="#" onclick="cambiarPaginaInv(${paginacionActualInv.pagina + 1})">Siguiente</a>`;
+  paginacion.appendChild(liNext);
 }
-function limpiarInv(){ document.getElementById('f_nombre').value=''; document.getElementById('f_cat').value=''; document.getElementById('f_marca').value=''; renderInv(dataInv); }
+
+async function cambiarPaginaInv(pagina) {
+  if (pagina < 1 || pagina > paginacionActualInv.total_paginas) return;
+  await loadInventarioPaginado(pagina);
+}
+
+function escapeHtml(str){ return String(str||'').replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
+
+async function filtrarInv(){
+  await loadInventarioPaginado(1);
+}
+
+async function limpiarInv(){ 
+  document.getElementById('f_nombre').value=''; 
+  document.getElementById('f_cat').value=''; 
+  document.getElementById('f_marca').value=''; 
+  await loadInventarioPaginado(1); 
+}
+
+// Cargar inventario al iniciar la página
+document.addEventListener('DOMContentLoaded', () => {
+  loadInventarioPaginado(1);
+});
 async function verImeis(productoId){
   try{
     const res = await fetch('../api/inventario_imeis.php?producto_id='+productoId);

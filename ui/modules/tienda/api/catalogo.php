@@ -23,6 +23,28 @@ try {
     ]);
     return;
   }
+  
+  if ($method === 'GET' && $action === 'listar_paginado') {
+    $pagina = (int)($_GET['pagina'] ?? 1);
+    $porPagina = (int)($_GET['por_pagina'] ?? 20);
+    $filtros = [];
+    
+    if (!empty($_GET['categoria_id'])) $filtros['categoria_id'] = (int)$_GET['categoria_id'];
+    if (!empty($_GET['marca_id'])) $filtros['marca_id'] = (int)$_GET['marca_id'];
+    if (!empty($_GET['nombre'])) $filtros['nombre'] = trim($_GET['nombre']);
+    if (!empty($_GET['precio_min'])) $filtros['precio_min'] = (float)$_GET['precio_min'];
+    if (!empty($_GET['precio_max'])) $filtros['precio_max'] = (float)$_GET['precio_max'];
+    
+    $resultado = $model->listarProductosPaginado($pagina, $porPagina, $filtros);
+    echo json_encode([
+      'success'=>true,
+      'categorias'=>$model->listarCategorias(),
+      'marcas'=>$model->listarMarcas(),
+      'productos'=>$resultado['productos'],
+      'paginacion'=>$resultado
+    ]);
+    return;
+  }
 
   if ($action === 'guardar_categoria') {
     $id = isset($_POST['id']) && $_POST['id']!=='' ? (int)$_POST['id'] : null;
