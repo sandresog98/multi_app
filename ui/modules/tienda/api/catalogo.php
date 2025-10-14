@@ -89,23 +89,47 @@ try {
       $tmp = $_FILES['foto']['tmp_name'];
       $size = (int)($_FILES['foto']['size'] ?? 0);
       $name = $_FILES['foto']['name'] ?? '';
+      
+      // Log para debugging
+      error_log("Tienda upload - Archivo: $name, Tamaño: $size, Tmp: $tmp");
+      
       if ($size <= 0) throw new Exception('Archivo vacío');
       if ($size > 2*1024*1024) throw new Exception('Foto supera 2MB');
       $lower = strtolower($name);
       if (!preg_match('/\.(png|jpg|jpeg)$/', $lower)) throw new Exception('Formato inválido (PNG/JPG/JPEG)');
-      $subdir = 'uploads/tienda/' . date('Y') . '/' . date('m');
-      $absDir = getAbsolutePath($subdir);
-      if (!is_dir($absDir)) { if (!mkdir($absDir, 0775, true)) throw new Exception('No se pudo crear directorio'); }
-      if (!is_writable($absDir)) { @chmod($absDir, 0777); }
-      if (!is_writable($absDir)) throw new Exception('Directorio no escribible');
+      
+      $subdir = 'assets/uploads/tienda/' . date('Y') . '/' . date('m');
+      $absDir = __DIR__ . '/../../../' . $subdir;
+      
+      error_log("Tienda upload - Directorio destino: $absDir");
+      
+      if (!is_dir($absDir)) { 
+        if (!mkdir($absDir, 0775, true)) throw new Exception('No se pudo crear directorio: ' . $absDir); 
+        error_log("Tienda upload - Directorio creado: $absDir");
+      }
+      if (!is_writable($absDir)) { 
+        @chmod($absDir, 0777); 
+        error_log("Tienda upload - Permisos cambiados a 0777 para: $absDir");
+      }
+      if (!is_writable($absDir)) throw new Exception('Directorio no escribible: ' . $absDir);
+      
       $base = pathinfo($lower, PATHINFO_FILENAME);
       $safe = preg_replace('/[^a-z0-9_-]+/', '-', $base) ?: 'foto';
       $ext = pathinfo($lower, PATHINFO_EXTENSION);
       $filename = $safe . '-' . uniqid() . '.' . $ext;
       $dest = rtrim($absDir,'/') . '/' . $filename;
-      if (!move_uploaded_file($tmp, $dest)) throw new Exception('No se pudo guardar foto');
+      
+      error_log("Tienda upload - Archivo destino: $dest");
+      
+      if (!move_uploaded_file($tmp, $dest)) throw new Exception('No se pudo guardar foto en: ' . $dest);
+      
+      // Verificar que el archivo se guardó correctamente
+      if (!file_exists($dest)) throw new Exception('Archivo no accesible tras guardar: ' . $dest);
+      
       // getBaseUrl() apunta a /ui/, y $subdir es relativo a /ui
       $fotoUrl = getBaseUrl() . $subdir . '/' . $filename;
+      
+      error_log("Tienda upload - URL final: $fotoUrl");
     }
     echo json_encode($model->guardarProducto($id,$categoriaId,$marcaId,$nombre,$fotoUrl,$descripcion,$precioCompra,$precioVenta,$estado));
     return;
