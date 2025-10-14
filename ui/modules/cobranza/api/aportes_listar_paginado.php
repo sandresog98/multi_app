@@ -88,7 +88,7 @@ try {
     $stmt->execute($paramsData);
     $rows = $stmt->fetchAll();
 
-    $countSql = "SELECT COUNT(1) AS total $fromSql $whereSql $havingSql";
+    $countSql = "SELECT COUNT(1) AS total FROM (SELECT a.cedula $fromSql $whereSql $havingSql) t";
     $stmtCount = $db->prepare($countSql);
     $stmtCount->execute($params);
     $total = (int)($stmtCount->fetch()['total'] ?? 0);

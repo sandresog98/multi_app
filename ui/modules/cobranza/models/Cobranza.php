@@ -24,11 +24,11 @@ class Cobranza {
 		if (!empty($filtros['estado'])) {
 			$estado = strtolower($filtros['estado']);
 			if ($estado === 'juridico') {
-				$having[] = 'max_diav >= 91';
+				$having[] = 'MAX(m.diav) >= 91';
 			} elseif ($estado === 'prejuridico' || $estado === 'prejurídico') {
-				$having[] = 'max_diav BETWEEN 61 AND 90';
+				$having[] = 'MAX(m.diav) BETWEEN 61 AND 90';
 			} elseif ($estado === 'persuasiva' || $estado === 'persuasivo') {
-				$having[] = 'max_diav <= 60';
+				$having[] = 'MAX(m.diav) <= 60';
 			}
 		}
 
@@ -104,9 +104,9 @@ class Cobranza {
 		$having = [];
 		if (!empty($filtros['estado'])) {
 			$estado = strtolower($filtros['estado']);
-			if ($estado === 'juridico') { $having[] = 'max_diav >= 91'; }
-			elseif ($estado === 'prejuridico' || $estado === 'prejurídico') { $having[] = 'max_diav BETWEEN 61 AND 90'; }
-			elseif ($estado === 'persuasiva' || $estado === 'persuasivo') { $having[] = 'max_diav <= 60'; }
+			if ($estado === 'juridico') { $having[] = 'MAX(m.diav) >= 91'; }
+			elseif ($estado === 'prejuridico' || $estado === 'prejurídico') { $having[] = 'MAX(m.diav) BETWEEN 61 AND 90'; }
+			elseif ($estado === 'persuasiva' || $estado === 'persuasivo') { $having[] = 'MAX(m.diav) <= 60'; }
 		}
 		if (!empty($filtros['rango'])) {
 			$rango = strtolower($filtros['rango']);
@@ -142,7 +142,6 @@ class Cobranza {
 			) car ON car.cedula = m.cedula
 			$whereSql
 			GROUP BY m.cedula, cc.ultima_comunicacion, cc.total_comunicaciones, car.total_cartera
-			$havingSql
 		";
 
 		$dataSql = "SELECT 
@@ -155,6 +154,7 @@ class Cobranza {
 			cc.total_comunicaciones,
 			car.total_cartera
 			$base
+			$havingSql
 			ORDER BY $col $dir
 			LIMIT ? OFFSET ?";
 		$stmt = $this->conn->prepare($dataSql);
@@ -163,7 +163,7 @@ class Cobranza {
 		$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		foreach ($rows as &$r) { $r['estado_mora'] = $this->clasificarEstadoMora((int)$r['max_diav']); }
 
-		$countSql = "SELECT COUNT(1) AS total FROM (SELECT m.cedula $base) t";
+		$countSql = "SELECT COUNT(1) AS total FROM (SELECT m.cedula $base $havingSql) t";
 		$countStmt = $this->conn->prepare($countSql);
 		$countStmt->execute($params);
 		$total = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
