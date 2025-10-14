@@ -184,7 +184,7 @@ include '../../../views/layouts/header.php';
                       </div>
                       <div class="mb-2">
                         <label class="form-label">Comprobante (imagen o URL)</label>
-                        <input type="file" class="form-control" name="comprobante" accept="image/*">
+                        <input type="file" class="form-control" name="comprobante" accept="image/*" onchange="validarImagen(this)">
                         <div class="form-text">Opcional: si no subes imagen, puedes pegar un enlace abajo.</div>
                         <input type="url" class="form-control mt-2" name="link" placeholder="https://...">
                       </div>
@@ -284,4 +284,39 @@ document.addEventListener('click', (e) => {
     }
   });
 });
+
+// Validación de imagen (similar a otros módulos)
+function validarImagen(input) {
+  if (!input.files || input.files.length === 0) return;
+  
+  const file = input.files[0];
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  
+  // Validar tamaño
+  if (file.size > maxSize) {
+    alert('La imagen excede el tamaño máximo (5 MB)');
+    input.value = '';
+    return;
+  }
+  
+  // Validar tipo de archivo
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    alert('Formato de imagen no permitido (solo jpg, png, gif, webp)');
+    input.value = '';
+    return;
+  }
+  
+  // Mostrar información del archivo
+  const sizeKB = Math.round(file.size / 1024);
+  const infoDiv = input.parentNode.querySelector('.file-info');
+  if (infoDiv) {
+    infoDiv.remove();
+  }
+  
+  const info = document.createElement('div');
+  info.className = 'file-info small text-success mt-1';
+  info.innerHTML = `✓ Archivo seleccionado: ${file.name} (${sizeKB} KB)`;
+  input.parentNode.appendChild(info);
+}
 </script>
