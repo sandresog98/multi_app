@@ -161,17 +161,20 @@ class DetalleAsociado {
         $rows = $stmt->fetchAll();
 
         $map = [
-            'aportes ordinarios' => 'aportes_ordinarios',
-            'revalorizacion aportes' => 'revalorizacion_aportes',
+            'aportes ordinarios' => 'aportes_totales',
+            'revalorizacion aportes' => 'aportes_revalorizaciones',
             'plan futuro' => 'plan_futuro',
-            'aportes sociales 2' => 'aportes_sociales_2',
+            'aportes sociales 2' => 'aportes_incentivos',
         ];
 
         $result = [
-            'aportes_ordinarios' => 0.0,
-            'revalorizacion_aportes' => 0.0,
+            'aportes_totales' => 0.0,
+            'aportes_incentivos' => 0.0,
+            'aportes_revalorizaciones' => 0.0,
             'plan_futuro' => 0.0,
-            'aportes_sociales_2' => 0.0,
+            'bolsillos' => 0.0,
+            'bolsillos_incentivos' => 0.0,
+            'comisiones' => 0.0,
         ];
 
         foreach ($rows as $r) {
