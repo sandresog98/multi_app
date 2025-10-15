@@ -1,3 +1,11 @@
+DROP VIEW IF EXISTS sifone_aportes_ordinarios_vw;
+CREATE VIEW sifone_aportes_ordinarios_vw AS
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_ordinarios
+FROM sifone_balance_prueba
+WHERE nombre = 'aportes ordinarios'
+GROUP BY cedula
+;
+
 DROP VIEW IF EXISTS sifone_aportes_sociales_vw;
 CREATE VIEW sifone_aportes_sociales_vw AS
 SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_sociales
@@ -54,9 +62,9 @@ SELECT sa.cedula                                    AS cedula,
        sa.direcc                                    AS direccion,
        sa.ciudad                                    AS ciudad,
        -- información monetaria
-       COALESCE(sa.aporte, 0)                       AS aportes_ordinarios,
+       COALESCE(sbp_ao.aportes_ordinarios, 0)       AS aportes_ordinarios,
        COALESCE(sbp_as.aportes_sociales, 0)         AS aportes_sociales,
-       (COALESCE(sa.aporte, 0) +
+       (COALESCE(sbp_ao.aportes_ordinarios, 0) +
         COALESCE(sbp_as.aportes_sociales, 0))       AS aportes_totales,
        0                                            AS aportes_incentivos,
        COALESCE(sbp_ar.aportes_revalorizaciones, 0) AS aportes_revalorizaciones,
@@ -66,6 +74,7 @@ SELECT sa.cedula                                    AS cedula,
        COALESCE(smt_c.comisiones, 0)                AS comisiones
 FROM sifone_asociados AS sa
          LEFT JOIN control_asociados AS ca ON CAST(ca.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
+         LEFT JOIN sifone_aportes_ordinarios_vw AS sbp_ao ON CAST(sbp_ao.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
          LEFT JOIN sifone_aportes_sociales_vw AS sbp_as ON CAST(sbp_as.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
          LEFT JOIN sifone_aportes_revalorizaciones_vw AS sbp_ar ON CAST(sbp_ar.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
          LEFT JOIN sifone_plan_futuro_vw AS sbp_pf ON CAST(sbp_pf.cedula AS CHAR) = CAST(sa.cedula AS CHAR)
