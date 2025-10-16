@@ -119,6 +119,11 @@ include '../../../views/layouts/header.php';
               <small class="text-muted">(Incentivos: <?php echo '$' . number_format((float)($bp['bolsillos_incentivos'] ?? 0), 0); ?>)</small>
             </div>
             <div><strong>Comisiones:</strong> <?php echo '$' . number_format((float)($bp['comisiones'] ?? 0), 0); ?></div>
+            <div>
+              <strong>Total Saldos a favor:</strong>
+              <?php echo '$' . number_format((float)($bp['total_saldos_favor'] ?? 0), 0); ?>
+              <small class="text-muted">(Incentivos: <?php echo '$' . number_format((float)($bp['total_incentivos'] ?? 0), 0); ?>)</small>
+            </div>
           </div></div>
           <div class="card mt-2"><div class="card-header"><strong>Valor de pagos</strong></div><div class="card-body">
             <div><strong>Valor mensual de productos:</strong> <?php echo '$' . number_format($valorProductosMensual, 0); ?></div>

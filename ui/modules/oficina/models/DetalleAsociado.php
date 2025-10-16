@@ -37,7 +37,9 @@ class DetalleAsociado {
                         COALESCE(plan_futuro,0)               AS plan_futuro,
                         COALESCE(bolsillos,0)                  AS bolsillos,
                         COALESCE(bolsillos_incentivos,0)       AS bolsillos_incentivos,
-                        COALESCE(comisiones,0)                AS comisiones
+                        COALESCE(comisiones,0)                AS comisiones,
+                        COALESCE(total_saldos_favor,0)         AS total_saldos_favor,
+                        COALESCE(total_incentivos,0)           AS total_incentivos
                 FROM sifone_resumen_asociados_vw 
                 WHERE CAST(cedula AS CHAR) = CAST(? AS CHAR)";
         $stmt = $this->conn->prepare($sql);
@@ -57,6 +59,8 @@ class DetalleAsociado {
             'bolsillos'               => (float)($row['bolsillos'] ?? 0),
             'bolsillos_incentivos'    => (float)($row['bolsillos_incentivos'] ?? 0),
             'comisiones'              => (float)($row['comisiones'] ?? 0),
+            'total_saldos_favor'      => (float)($row['total_saldos_favor'] ?? 0),
+            'total_incentivos'        => (float)($row['total_incentivos'] ?? 0),
         ];
     }
 
