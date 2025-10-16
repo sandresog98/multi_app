@@ -3,6 +3,7 @@ require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../../../config/database.php';
 require_once '../../../models/Logger.php';
+require_once '../../../utils/FileUploadManager.php';
 
 header('Content-Type: application/json');
 
@@ -21,49 +22,42 @@ try {
   $monto = $_POST['monto_deseado'] !== null ? (float)$_POST['monto_deseado'] : null;
   if (!$nombres || !$identificacion || !$celular || !$email || !$tipo) { throw new Exception('Datos requeridos incompletos'); }
 
-  // Helper guardado de archivo
-  $saveFile = function(string $field, bool $pdfOnly = false) {
-    if (!isset($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) { return null; }
-    $tmp = $_FILES[$field]['tmp_name'];
-    $size = (int)($_FILES[$field]['size'] ?? 0);
-    $name = $_FILES[$field]['name'] ?? '';
-    if ($size <= 0) { return null; }
-    if ($size > 5 * 1024 * 1024) { throw new Exception('Archivo supera 5MB: ' . $field); }
-    $lower = strtolower($name);
+  // Helper guardado de archivo usando FileUploadManager
+  $saveFile = function(string $field, bool $pdfOnly = false) use ($user) {
+    if (!isset($_FILES[$field]) || ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) { 
+      return null; 
+    }
+    
+    // Configurar opciones según el tipo de archivo
+    $options = [
+      'maxSize' => 5 * 1024 * 1024, // 5MB
+      'prefix' => 'credito_' . $field,
+      'userId' => $user['id'] ?? '',
+      'webPath' => getBaseUrl() . 'assets/uploads/creditos'
+    ];
+    
     if ($pdfOnly) {
-      if (!preg_match('/\.pdf$/', $lower)) { throw new Exception('Solo PDF permitido en ' . $field); }
+      $options['allowedExtensions'] = ['pdf'];
     } else {
-      if (!preg_match('/\.(jpg|jpeg|png|pdf)$/', $lower)) { throw new Exception('Formato no permitido en ' . $field); }
+      $options['allowedExtensions'] = ['jpg', 'jpeg', 'png', 'pdf'];
     }
-    // Metodología Boletería: guardar en ui/assets/uploads/creditos/YYYY/MM
-    $webSubdir = 'assets/uploads/creditos/' . date('Y') . '/' . date('m');
-    $absDir = __DIR__ . '/../../../' . $webSubdir;
-    if (!is_dir($absDir)) {
-      $mk = @mkdir($absDir, 0775, true);
-      if (!$mk) {
-        try { (new Logger())->logEditar('creditos.solicitudes', 'Fallo mkdir en uploads', null, ['absDir'=>$absDir,'field'=>$field]); } catch (Throwable $ignored) {}
-        throw new Exception('No se pudo crear directorio destino de uploads');
-      }
+    
+    // Directorio base para créditos
+    $baseDir = __DIR__ . '/../../../assets/uploads/creditos';
+    
+    try {
+      $result = FileUploadManager::saveUploadedFile($_FILES[$field], $baseDir, $options);
+      return $result['webUrl'];
+    } catch (Exception $e) {
+      try { 
+        (new Logger())->logEditar('creditos.solicitudes', 'Error guardando archivo', null, [
+          'field' => $field, 
+          'error' => $e->getMessage(),
+          'fileName' => $_FILES[$field]['name'] ?? 'unknown'
+        ]); 
+      } catch (Throwable $ignored) {}
+      throw new Exception('Error guardando archivo ' . $field . ': ' . $e->getMessage());
     }
-    if (!is_writable($absDir)) { @chmod($absDir, 0777); }
-    if (!is_writable($absDir)) {
-      try { (new Logger())->logEditar('creditos.solicitudes', 'Directorio no escribible', null, ['absDir'=>$absDir,'field'=>$field]); } catch (Throwable $ignored) {}
-      throw new Exception('Directorio de uploads no escribible');
-    }
-    $base = pathinfo($lower, PATHINFO_FILENAME);
-    $safe = preg_replace('/[^a-z0-9_-]+/', '-', $base) ?: 'archivo';
-    $ext = pathinfo($lower, PATHINFO_EXTENSION);
-    $filename = $safe . '-' . uniqid() . '.' . $ext;
-    $dest = rtrim($absDir,'/') . '/' . $filename;
-    if (!move_uploaded_file($tmp, $dest)) {
-      try { (new Logger())->logEditar('creditos.solicitudes', 'move_uploaded_file falló', null, ['tmp'=>$tmp,'dest'=>$dest,'field'=>$field]); } catch (Throwable $ignored) {}
-      throw new Exception('No se pudo guardar archivo: ' . $field);
-    }
-    if (!file_exists($dest)) {
-      try { (new Logger())->logEditar('creditos.solicitudes', 'Archivo no accesible tras move_uploaded_file', null, ['dest'=>$dest, 'field'=>$field]); } catch (Throwable $ignored) {}
-      throw new Exception('Archivo no accesible tras guardar: ' . $field);
-    }
-    return getBaseUrl() . $webSubdir . '/' . $filename;
   };
 
   $fields = [
