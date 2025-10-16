@@ -26,7 +26,7 @@
         }
         ?>
         <?php if (!empty($currentUser)): ?>
-        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','informaciones','oficina_comisiones']); ?>
+        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','informaciones','oficina_comisiones','tasas_interes','tasas_productos']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
         </a>
@@ -84,6 +84,16 @@
             <?php if (canAccess('oficina.comisiones')): ?>
             <a class="nav-link <?php echo $currentPage === 'oficina_comisiones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/comisiones.php">
                 <i class="fas fa-percentage small me-2"></i>Comisiones
+            </a>
+            <?php endif; ?>
+            <?php if (canAccess('oficina.tasas_interes')): ?>
+            <a class="nav-link <?php echo $currentPage === 'tasas_interes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/tasas_interes.php">
+                <i class="fas fa-percentage small me-2"></i>Tasas de Interés
+            </a>
+            <?php endif; ?>
+            <?php if (canAccess('oficina.tasas_productos')): ?>
+            <a class="nav-link <?php echo $currentPage === 'tasas_productos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/tasas_productos.php">
+                <i class="fas fa-box small me-2"></i>Tasas de Productos
             </a>
             <?php endif; ?>
         </div>
@@ -241,7 +251,7 @@
         </a>
         <?php endif; ?>
         <?php elseif (!empty($currentUser) && $role === 'oficina'): ?>
-        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','oficina_comisiones']); ?>
+        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','oficina_comisiones','tasas_interes','tasas_productos']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
         </a>
@@ -272,6 +282,12 @@
             </a>
             <a class="nav-link <?php echo $currentPage === 'oficina_comisiones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/comisiones.php">
                 <i class="fas fa-percentage small me-2"></i>Comisiones
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tasas_interes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/tasas_interes.php">
+                <i class="fas fa-percentage small me-2"></i>Tasas de Interés
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tasas_productos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/tasas_productos.php">
+                <i class="fas fa-box small me-2"></i>Tasas de Productos
             </a>
             <a class="nav-link <?php echo $currentPage === 'descargas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/descargas.php">
                 <i class="fas fa-download small me-2"></i>Descargas

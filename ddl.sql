@@ -880,3 +880,52 @@ USE multiapptwo;
         KEY idx_ref (asociado_referido_cedula),
         KEY idx_fecha (fecha_comision)
     );
+
+    -- Tabla para control de tasas de interés de créditos
+    CREATE TABLE IF NOT EXISTS control_tasas_creditos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre_credito VARCHAR(100) NOT NULL,
+        fecha_inicio DATE NOT NULL,
+        fecha_fin DATE NULL,
+        limite_meses INT NOT NULL,
+        tasa DECIMAL(8,4) NOT NULL DEFAULT 0.0000,
+        seguro_vida DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
+        seguro_deudores DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
+        estado_activo BOOLEAN DEFAULT TRUE,
+        creado_por INT NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actualizado_por INT NULL,
+        fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
+    );
+
+    -- Tabla para control de tasas de productos
+    CREATE TABLE IF NOT EXISTS control_tasas_productos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        producto_id INT NOT NULL,
+        fecha_inicio DATE NOT NULL,
+        fecha_fin DATE NULL,
+        tasa DECIMAL(8,4) NOT NULL DEFAULT 0.0000,
+        estado_activo BOOLEAN DEFAULT TRUE,
+        creado_por INT NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actualizado_por INT NULL,
+        fecha_actualizacion TIMESTAMP NULL DEFAULT NULL
+    );
+
+    -- Triggers para control_tasas_creditos
+    DROP TRIGGER IF EXISTS control_tasas_creditos_bu;
+    CREATE TRIGGER control_tasas_creditos_bu BEFORE UPDATE ON control_tasas_creditos
+    FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    
+    DROP TRIGGER IF EXISTS control_tasas_creditos_bi;
+    CREATE TRIGGER control_tasas_creditos_bi BEFORE INSERT ON control_tasas_creditos
+    FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+    -- Triggers para control_tasas_productos
+    DROP TRIGGER IF EXISTS control_tasas_productos_bu;
+    CREATE TRIGGER control_tasas_productos_bu BEFORE UPDATE ON control_tasas_productos
+    FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    
+    DROP TRIGGER IF EXISTS control_tasas_productos_bi;
+    CREATE TRIGGER control_tasas_productos_bi BEFORE INSERT ON control_tasas_productos
+    FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
