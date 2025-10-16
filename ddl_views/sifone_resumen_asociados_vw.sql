@@ -1,6 +1,6 @@
 DROP VIEW IF EXISTS sifone_aportes_ordinarios_vw;
 CREATE VIEW sifone_aportes_ordinarios_vw AS
-SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_ordinarios
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(nuesal, 0))) AS aportes_ordinarios
 FROM sifone_balance_prueba
 WHERE nombre = 'aportes ordinarios'
 GROUP BY cedula
@@ -9,7 +9,7 @@ GROUP BY cedula
 DROP VIEW IF EXISTS sifone_aportes_incentivos_vw;
 CREATE VIEW sifone_aportes_incentivos_vw AS
 SELECT m.cedula
-    , SUM(FLOOR((POW((1 + (t.tasa / 100)), (1/12)) - 1) * ABS(m.credit))) AS aportes_incentivos
+    , SUM(FLOOR((POW((1 + (t.tasa / 100)), (1/12)) - 1) * (ABS(m.credit) - ABS(m.debito)))) AS aportes_incentivos
 FROM sifone_movimientos_tributarios AS m
          INNER JOIN control_tasas_productos AS t
                     ON t.producto_id = 1 -- APORTES INCENTIVOS
@@ -20,7 +20,7 @@ GROUP BY m.cedula
 
 DROP VIEW IF EXISTS sifone_aportes_sociales_vw;
 CREATE VIEW sifone_aportes_sociales_vw AS
-SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_sociales
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(nuesal, 0))) AS aportes_sociales
 FROM sifone_balance_prueba
 WHERE nombre = 'APORTES SOCIALES 2'
 GROUP BY cedula
@@ -28,7 +28,7 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_aportes_revalorizaciones_vw;
 CREATE VIEW sifone_aportes_revalorizaciones_vw AS
-SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS aportes_revalorizaciones
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(nuesal, 0))) AS aportes_revalorizaciones
 FROM sifone_balance_prueba
 WHERE nombre = 'Revalorizacion Aportes'
 GROUP BY cedula
@@ -36,7 +36,7 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_plan_futuro_vw;
 CREATE VIEW sifone_plan_futuro_vw AS
-SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(salant, 0))) AS plan_futuro
+SELECT CAST(cedula AS CHAR) AS cedula, SUM(ABS(COALESCE(nuesal, 0))) AS plan_futuro
 FROM sifone_balance_prueba
 WHERE nombre = 'PLAN FUTURO'
 GROUP BY cedula
@@ -44,9 +44,10 @@ GROUP BY cedula
 
 DROP VIEW IF EXISTS sifone_bolsillos_vw;
 CREATE VIEW sifone_bolsillos_vw AS
-SELECT CAST(m.cedula AS CHAR)                                                             AS cedula
-     , SUM(m.credit)                                                                      AS bolsillos
-     , SUM(FLOOR((POW((1 + (COALESCE(t.tasa, 0) / 100)), (1 / 12)) - 1) * ABS(m.credit))) AS bolsillos_incentivos
+SELECT CAST(m.cedula AS CHAR)                                              AS cedula
+     , SUM(m.credit)                                                       AS bolsillos
+     , SUM(FLOOR((POW((1 + (COALESCE(t.tasa, 0) / 100)), (1 / 12)) - 1) * 
+      (ABS(m.credit) - ABS(m.debito))))                                     AS bolsillos_incentivos
 FROM `sifone_movimientos_tributarios` AS m
          LEFT JOIN control_tasas_productos AS t
                    ON t.producto_id = 2 -- BOLSILLOS
