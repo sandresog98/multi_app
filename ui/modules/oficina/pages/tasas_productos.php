@@ -224,7 +224,7 @@ include '../../../views/layouts/header.php';
             <div class="col-md-6">
               <label class="form-label">Tasa</label>
               <div class="input-group">
-                <input type="number" name="tasa" class="form-control" step="0.0001" min="0" value="0">
+                <input type="text" name="tasa" class="form-control decimal-input" placeholder="0.0000" value="0">
                 <span class="input-group-text">%</span>
               </div>
             </div>
@@ -285,7 +285,7 @@ include '../../../views/layouts/header.php';
             <div class="col-md-6">
               <label class="form-label">Tasa</label>
               <div class="input-group">
-                <input type="number" name="tasa" class="form-control" step="0.0001" min="0" 
+                <input type="text" name="tasa" class="form-control decimal-input" placeholder="0.0000" 
                        value="<?php echo $tasa['tasa']; ?>">
                 <span class="input-group-text">%</span>
               </div>
@@ -338,6 +338,44 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // Validación de campos decimales
+  const decimalInputs = document.querySelectorAll('.decimal-input');
+  decimalInputs.forEach(input => {
+    input.addEventListener('input', function() {
+      // Permitir solo números, punto decimal y comas
+      let value = this.value.replace(/[^0-9.,]/g, '');
+      
+      // Convertir comas a puntos
+      value = value.replace(',', '.');
+      
+      // Asegurar que solo haya un punto decimal
+      const parts = value.split('.');
+      if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+      }
+      
+      // Limitar a 4 decimales
+      if (parts.length === 2 && parts[1].length > 4) {
+        value = parts[0] + '.' + parts[1].substring(0, 4);
+      }
+      
+      this.value = value;
+    });
+    
+    input.addEventListener('blur', function() {
+      // Si está vacío, establecer a 0
+      if (this.value === '' || this.value === '.') {
+        this.value = '0';
+      }
+      
+      // Formatear con 4 decimales
+      const num = parseFloat(this.value);
+      if (!isNaN(num)) {
+        this.value = num.toFixed(4);
+      }
+    });
+  });
 });
 </script>
 
