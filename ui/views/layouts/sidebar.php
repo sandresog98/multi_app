@@ -133,13 +133,18 @@
 
         <?php $isCredOpen = in_array(($currentPage ?? ''), ['creditos','creditos_solicitudes','creditos_listado']); ?>
 
-        <?php $isTiendaOpen = in_array(($currentPage ?? ''), ['tienda_catalogo','tienda_facturacion','tienda_inventario','tienda_compras','tienda_ventas','tienda_clientes','tienda_reversiones']); ?>
-        <?php $canTienda = canAccess('tienda') || canAccess('tienda.catalogo') || canAccess('tienda.compras') || canAccess('tienda.inventario') || canAccess('tienda.clientes') || canAccess('tienda.ventas') || canAccess('tienda.facturacion') || canAccess('tienda.reversiones'); ?>
+        <?php $isTiendaOpen = in_array(($currentPage ?? ''), ['tienda','tienda_catalogo','tienda_facturacion','tienda_inventario','tienda_compras','tienda_ventas','tienda_clientes','tienda_reversiones']); ?>
+        <?php $canTienda = canAccess('tienda') || canAccess('tienda.resumen') || canAccess('tienda.catalogo') || canAccess('tienda.compras') || canAccess('tienda.inventario') || canAccess('tienda.clientes') || canAccess('tienda.ventas') || canAccess('tienda.facturacion') || canAccess('tienda.reversiones'); ?>
         <?php if ($canTienda): ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuTienda" role="button" aria-expanded="<?php echo $isTiendaOpen ? 'true' : 'false'; ?>" aria-controls="menuTienda">
             <span><i class="fas fa-store me-2"></i>Tienda</span>
         </a>
         <div class="collapse <?php echo $isTiendaOpen ? 'show' : ''; ?> ms-3" id="menuTienda">
+            <?php if (canAccess('tienda') || canAccess('tienda.resumen')): ?>
+            <a class="nav-link <?php echo $currentPage === 'tienda' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/index.php">
+                <i class="fas fa-circle-notch small me-2"></i>Resumen
+            </a>
+            <?php endif; ?>
             <?php if (canAccess('tienda') || canAccess('tienda.catalogo')): ?>
             <a class="nav-link <?php echo $currentPage === 'tienda_catalogo' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/catalogo.php">
                 <i class="fas fa-tags small me-2"></i>Catálogo
@@ -286,6 +291,37 @@
             </a>
             <a class="nav-link <?php echo $currentPage === 'boleteria_boletas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/boleteria/pages/boletas.php">
                 <i class="fas fa-ticket-alt small me-2"></i>Boletas
+            </a>
+        </div>
+
+        <?php $isTiendaOpen = in_array(($currentPage ?? ''), ['tienda','tienda_catalogo','tienda_facturacion','tienda_inventario','tienda_compras','tienda_ventas','tienda_clientes','tienda_reversiones']); ?>
+        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuTienda" role="button" aria-expanded="<?php echo $isTiendaOpen ? 'true' : 'false'; ?>" aria-controls="menuTienda">
+            <span><i class="fas fa-store me-2"></i>Tienda</span>
+        </a>
+        <div class="collapse <?php echo $isTiendaOpen ? 'show' : ''; ?> ms-3" id="menuTienda">
+            <a class="nav-link <?php echo $currentPage === 'tienda' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/index.php">
+                <i class="fas fa-circle-notch small me-2"></i>Resumen
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_catalogo' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/catalogo.php">
+                <i class="fas fa-tags small me-2"></i>Catálogo
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_compras' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/compras.php">
+                <i class="fas fa-truck-loading small me-2"></i>Compras
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_inventario' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/inventario.php">
+                <i class="fas fa-warehouse small me-2"></i>Inventario
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_clientes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/clientes.php">
+                <i class="fas fa-user-friends small me-2"></i>Clientes
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_ventas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/ventas.php">
+                <i class="fas fa-cash-register small me-2"></i>Ventas
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_facturacion' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/facturacion.php">
+                <i class="fas fa-file-invoice-dollar small me-2"></i>Facturación
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'tienda_reversiones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/reversiones.php">
+                <i class="fas fa-undo-alt small me-2"></i>Reversiones
             </a>
         </div>
 
