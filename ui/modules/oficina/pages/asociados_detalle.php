@@ -137,18 +137,17 @@ include '../../../views/layouts/header.php';
                 <thead class="table-light"><tr>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','numero','Crédito'); ?></th>
                   <th><?php echo dict_label('sifone_cartera_aseguradora','tipopr','Tipo Préstamo'); ?></th>
-                  <th class="text-center"><?php echo dict_label('sifone_cartera_aseguradora','plazo','Plazo'); ?></th>
-                  <th class="text-center">Pendientes</th>
                   <th class="text-center text-nowrap">Fecha Inicio</th>
                   <th class="text-center text-nowrap">Fecha Vencimiento</th>
-                  <th class="text-center text-nowrap">Fecha Pago</th>
-                  <th class="text-center">Días Mora</th>
+                  <th class="text-end">Valor Inicial</th>
+                  <th class="text-center">Cuotas</th>
                   <th class="text-end">Valor Cuota</th>
-                  <th class="text-end">Valor Mora</th>
-                  <th class="text-end">Desembolso Inicial</th>
-                  <th class="text-end">Saldo Capital</th>
+                  <th class="text-center">Días Mora</th>
+                  <th class="text-end">Saldo Mora</th>
                   <th class="text-end">Cobranza</th>
-                  <th class="text-end">Pago mínimo</th>
+                  <th class="text-end">Saldo Capital</th>
+                  <th class="text-end">Pago</th>
+                  <th class="text-center text-nowrap">Fecha Pago</th>
                   <th class="text-center">Codeudor</th>
                 </tr></thead>
                 <tbody>
@@ -156,17 +155,22 @@ include '../../../views/layouts/header.php';
                   <tr>
                     <td><?php echo htmlspecialchars($c['numero_credito']); ?></td>
                     <td><?php echo htmlspecialchars($c['tipo_prestamo']); ?></td>
-                    <td class="text-center"><?php echo (int)$c['plazo']; ?></td>
-                    <td class="text-center"><?php echo (int)($c['cuotas_pendientes'] ?? 0); ?></td>
                     <td class="text-center text-nowrap"><?php echo !empty($c['fecha_inicio']) ? date('d/m/Y', strtotime($c['fecha_inicio'])) : '-'; ?></td>
                     <td class="text-center text-nowrap"><?php echo !empty($c['fecha_vencimiento']) ? date('d/m/Y', strtotime($c['fecha_vencimiento'])) : '-'; ?></td>
-                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
-                    <td class="text-center"><?php echo (int)$c['dias_mora']; ?></td>
-                    <td class="text-end"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
-                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['desembolso_inicial'] ?? 0), 0); ?></td>
-                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_capital'] ?? 0), 0); ?></td>
+                    <td class="text-center">
+                      <?php
+                        $plazo = (int)$c['plazo'];
+                        $pendientes = (int)($c['cuotas_pendientes'] ?? 0);
+                        $actuales = $plazo - $pendientes;
+                        echo "$actuales/$plazo";
+                      ?>
+                    </td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['valor_cuota'] ?? $c['cuota'] ?? 0), 0); ?></td>
+                    <td class="text-center"><?php echo (int)$c['dias_mora']; ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_capital'] ?? 0), 0); ?></td>
                     <td class="text-end">
                       <?php
                         $__cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
@@ -176,6 +180,7 @@ include '../../../views/layouts/header.php';
                         echo '$' . number_format($__pagoMin, 0);
                       ?>
                     </td>
+                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                     <td class="text-center">
                       <?php if (!empty($c['codeudor_nombre']) || !empty($c['codeudor_celular']) || !empty($c['codeudor_email']) || !empty($c['codeudor_direccion'])): ?>
                         <?php $modalId = 'codeudorModal_' . preg_replace('/[^A-Za-z0-9_\-]/','_', (string)$c['numero_credito']); ?>
