@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de Productos - Cooperativa Multiunión</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -112,8 +115,9 @@
     <!-- Header -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-shop"></i> Catálogo de Productos
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="assets/img/logo_telmovil.png" alt="Telmovil" height="40" class="me-2">
+                <span>Catálogo de Productos</span>
             </a>
             
             <!-- Botones siempre visibles -->
@@ -243,6 +247,14 @@
         <!-- Contenido principal -->
         <div class="row">
             <div class="col-12">
+                <!-- Indicador de ordenamiento -->
+                <div id="sortIndicator" class="alert alert-light border-0 mb-3" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-sort-down me-2"></i>
+                        <span id="sortText">Ordenando por: </span>
+                    </div>
+                </div>
+
                 <!-- Loading -->
                 <div id="loading" class="loading" style="display: none;">
                     <div class="spinner-border text-primary" role="status">
@@ -399,6 +411,12 @@
                 this.currentPage = 1;
                 this.loadProducts();
                 this.updateActiveFilters();
+                
+                // Cerrar el offcanvas de filtros
+                const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('filtersOffcanvas'));
+                if (offcanvas) {
+                    offcanvas.hide();
+                }
             }
             
             clearFilters() {
@@ -424,6 +442,9 @@
                 const dropdownButton = document.querySelector('.dropdown button[data-bs-toggle="dropdown"]');
                 const sortText = this.getSortText(sort, direction);
                 dropdownButton.innerHTML = `<i class="bi bi-sort-down"></i> <span class="d-none d-sm-inline">${sortText}</span>`;
+                
+                // Mostrar indicador de ordenamiento
+                this.showSortIndicator(sortText);
             }
             
             getSortText(sort, direction) {
@@ -436,6 +457,21 @@
                 
                 const directionText = direction === 'ASC' ? 'A-Z' : 'Z-A';
                 return `${sortNames[sort]} ${directionText}`;
+            }
+            
+            showSortIndicator(sortText) {
+                const indicator = document.getElementById('sortIndicator');
+                const sortTextElement = document.getElementById('sortText');
+                
+                if (indicator && sortTextElement) {
+                    sortTextElement.textContent = `Ordenando por: ${sortText}`;
+                    indicator.style.display = 'block';
+                    
+                    // Auto-ocultar después de 3 segundos
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 3000);
+                }
             }
             
             updateActiveFilters() {
