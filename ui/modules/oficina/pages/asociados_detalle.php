@@ -5,6 +5,7 @@ require_once '../models/DetalleAsociado.php';
 require_once '../models/Transaccion.php';
 require_once '../models/Clausulas.php';
 require_once '../../../models/Logger.php';
+require_once '../../../utils/FileUploadManager.php';
 require_once '../../../utils/dictionary.php';
 
 $auth = new AuthController();
@@ -84,13 +85,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Manejar archivo si es necesario
     $archivoRuta = null;
     if (!empty($_FILES['archivo']['name'])) {
-      $uploadDir = '../../../uploads/clausulas/' . date('Y/m/');
-      if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+      $resultadoArchivo = FileUploadManager::saveUploadedFile(
+        $_FILES['archivo'],
+        'clausulas',
+        $currentUser['id'] ?? 1,
+        'clausula_asignacion'
+      );
+      
+      if ($resultadoArchivo['success']) {
+        $archivoRuta = $resultadoArchivo['file_path'];
+      } else {
+        $error = 'Error al subir el archivo: ' . $resultadoArchivo['message'];
+        // Continuar sin archivo o mostrar error
       }
-      $archivoNombre = uniqid() . '_' . $_FILES['archivo']['name'];
-      $archivoRuta = $uploadDir . $archivoNombre;
-      move_uploaded_file($_FILES['archivo']['tmp_name'], $archivoRuta);
     }
     
     $datos = [
