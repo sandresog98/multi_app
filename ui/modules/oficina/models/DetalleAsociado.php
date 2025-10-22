@@ -94,7 +94,11 @@ class DetalleAsociado {
 						WHEN m.diav > 20 THEN ROUND(a.valorc * 0.03, 2)
 						WHEN m.diav > 11 THEN ROUND(a.valorc * 0.02, 2)
 						ELSE 0
-					END AS monto_cobranza
+					END AS monto_cobranza,
+					-- Nuevos campos de seguros e intereses
+					COALESCE(tasas.seguro_vida, 0) AS seguro_vida,
+					COALESCE(tasas.seguro_deudores, 0) AS seguro_deudores,
+					COALESCE(tasas.interes, 0) AS interes
 				FROM sifone_cartera_aseguradora a
 				LEFT JOIN sifone_cartera_mora m
 					ON m.cedula = a.cedula AND m.presta = a.numero
@@ -104,10 +108,28 @@ class DetalleAsociado {
 				LEFT JOIN sifone_datacredito_vw dvco
 					ON CAST(dvco.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
 				   AND dvco.codeudor = 1
+				LEFT JOIN (
+					SELECT c.cedula,
+						   c.numero,
+						   d.saldo_capital,
+						   FLOOR(((d.saldo_capital * (t.seguro_vida / 10)) / 30) *
+								 DATEDIFF(CURRENT_DATE, COALESCE(d.fecha_pago, d.fecha_emision) - INTERVAL 1 MONTH)) AS seguro_vida,
+						   FLOOR(((d.saldo_capital * (t.seguro_deudores / 100)) / 30) *
+								 DATEDIFF(CURRENT_DATE, COALESCE(d.fecha_pago, d.fecha_emision) - INTERVAL 1 MONTH)) AS seguro_deudores,
+						   FLOOR(((d.saldo_capital * (t.tasa / 100)) / 30) *
+								 DATEDIFF(CURRENT_DATE, COALESCE(d.fecha_pago, d.fecha_emision) - INTERVAL 1 MONTH)) AS interes
+					FROM sifone_cartera_aseguradora AS c
+					INNER JOIN sifone_datacredito_vw AS d
+							   ON c.numero = d.numero_credito
+					LEFT JOIN control_tasas_creditos AS t
+							  ON c.tipopr = t.nombre_credito
+								  AND c.fechae BETWEEN t.fecha_inicio AND t.fecha_fin
+					WHERE c.cedula = ?
+				) tasas ON tasas.numero = a.numero
 				WHERE a.cedula = ?
 				ORDER BY a.numero";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$cedula]);
+        $stmt->execute([$cedula, $cedula]);
         return $stmt->fetchAll();
     }
 

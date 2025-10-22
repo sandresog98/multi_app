@@ -151,6 +151,10 @@ include '../../../views/layouts/header.php';
                   <th class="text-end">Saldo Mora</th>
                   <th class="text-end">Cobranza</th>
                   <th class="text-end">Saldo Capital</th>
+                  <th class="text-end">Seguro Vida</th>
+                  <th class="text-end">Seguro Deudores</th>
+                  <th class="text-end">Interés</th>
+                  <th class="text-end">Pago Total</th>
                   <th class="text-end">Pago</th>
                   <th class="text-center text-nowrap">Fecha Pago</th>
                   <th class="text-center">Codeudor</th>
@@ -176,6 +180,19 @@ include '../../../views/layouts/header.php';
                     <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_capital'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['seguro_vida'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['seguro_deudores'] ?? 0), 0); ?></td>
+                    <td class="text-end"><?php echo '$' . number_format((float)($c['interes'] ?? 0), 0); ?></td>
+                    <td class="text-end">
+                      <?php
+                        $__saldoCapital = (float)($c['saldo_capital'] ?? 0);
+                        $__seguroVida = (float)($c['seguro_vida'] ?? 0);
+                        $__seguroDeudores = (float)($c['seguro_deudores'] ?? 0);
+                        $__interes = (float)($c['interes'] ?? 0);
+                        $__pagoTotal = $__saldoCapital + $__seguroVida + $__seguroDeudores + $__interes;
+                        echo '$' . number_format($__pagoTotal, 0);
+                      ?>
+                    </td>
                     <td class="text-end">
                       <?php
                         $__cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
