@@ -107,14 +107,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <label class="form-label">Nueva contraseña</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input name="password" type="password" class="form-control" minlength="6" placeholder="Mínimo 6 caracteres" required>
+                <input name="password" type="password" id="password" class="form-control" minlength="6" placeholder="Mínimo 6 caracteres" required>
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                  <i class="fa-solid fa-eye" id="password-icon"></i>
+                </button>
               </div>
             </div>
             <div class="mb-4">
               <label class="form-label">Confirmar contraseña</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input name="password2" type="password" class="form-control" minlength="6" placeholder="Repite tu contraseña" required>
+                <input name="password2" type="password" id="password2" class="form-control" minlength="6" placeholder="Repite tu contraseña" required>
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password2')">
+                  <i class="fa-solid fa-eye" id="password2-icon"></i>
+                </button>
               </div>
             </div>
             <div class="d-grid gap-2">
@@ -126,6 +132,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.getElementById(fieldId + '-icon');
+        
+        if (field.type === 'password') {
+          field.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          field.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    </script>
   </body>
  </html>
 

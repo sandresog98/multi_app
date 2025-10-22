@@ -1,4 +1,10 @@
-/* Estilos para el módulo de Resumen Financiero */
+/* Estilos unificados para la aplicación CX */
+
+/* Fondo principal con color azul tenue */
+body {
+  background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+  min-height: 100vh;
+}
 
 /* Estilos mejorados inspirados en UI */
 .collapsible-header {
@@ -44,9 +50,9 @@
   transition: transform 0.3s ease;
   margin-bottom: 20px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .section-card:hover {
   transform: translateY(-2px);
@@ -66,9 +72,9 @@
   border-radius: 15px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .kpi-card:hover {
   transform: translateY(-3px);
@@ -179,17 +185,27 @@
   color: #0ea5e9;
 }
 
-/* Ajustes para el fondo del index */
-body {
-  background: linear-gradient(rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.3)), url('../assets/img/imagen_motivacion.png');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
 /* Tarjeta de resumen financiero transparente */
 .card-link {
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+.card-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Mejorar el comportamiento en móviles */
+@media (max-width: 768px) {
+  .collapsible-content {
+    transition: all 0.3s ease;
+  }
+  
+  .section-card {
+    transition: all 0.3s ease;
+  }
 }

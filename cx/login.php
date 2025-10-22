@@ -115,7 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login
               <label class="form-label">Contraseña</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input name="password" type="password" class="form-control" placeholder="Tu contraseña" required>
+                <input name="password" type="password" id="password" class="form-control" placeholder="Tu contraseña" required>
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                  <i class="fa-solid fa-eye" id="password-icon"></i>
+                </button>
               </div>
             </div>
             <div class="d-grid gap-2">
@@ -127,6 +130,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'login
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.getElementById(fieldId + '-icon');
+        
+        if (field.type === 'password') {
+          field.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          field.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    </script>
   </body>
  </html>
 

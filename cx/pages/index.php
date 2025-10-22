@@ -10,21 +10,7 @@ $heroTitle = 'Portal de Asociados';
 $heroSubtitle = 'Bienvenido' . ($nombre ? ', ' . htmlspecialchars($nombre) : '');
 include __DIR__ . '/../views/layouts/header.php';
 ?>
-<style>
-body {
-  background: linear-gradient(rgba(14, 165, 233, 0.3), rgba(37, 99, 235, 0.3)), url('../assets/img/imagen_motivacion.png');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-}
-
-/* Tarjeta de resumen financiero transparente */
-.card-link {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-</style>
+<link rel="stylesheet" href="../assets/css/main.css">
     <main class="container py-3">
       <div class="card card-link mb-2">
         <div class="card-body">
