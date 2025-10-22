@@ -146,8 +146,6 @@
         </div>
         <?php endif; ?>
 
-        <?php $isCredOpen = in_array(($currentPage ?? ''), ['creditos','creditos_solicitudes','creditos_listado']); ?>
-
         <?php $isTiendaOpen = in_array(($currentPage ?? ''), ['tienda','tienda_catalogo','tienda_facturacion','tienda_inventario','tienda_compras','tienda_ventas','tienda_clientes','tienda_reversiones']); ?>
         <?php $canTienda = canAccess('tienda') || canAccess('tienda.resumen') || canAccess('tienda.catalogo') || canAccess('tienda.compras') || canAccess('tienda.inventario') || canAccess('tienda.clientes') || canAccess('tienda.ventas') || canAccess('tienda.facturacion') || canAccess('tienda.reversiones'); ?>
         <?php if ($canTienda): ?>
@@ -197,25 +195,22 @@
             <?php endif; ?>
         </div>
         <?php endif; ?>
-        <?php $canCred = canAccess('creditos') || canAccess('creditos.solicitudes') || canAccess('creditos.listado'); ?>
-        <?php if ($canCred): ?>
-        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCreditos" role="button" aria-expanded="<?php echo $isCredOpen ? 'true' : 'false'; ?>" aria-controls="menuCreditos">
-            <span><i class="fas fa-hand-holding-usd me-2"></i>Gestión Créditos</span>
+
+        <?php $isCredDocsOpen = in_array(($currentPage ?? ''), ['creditos_docs_crear','creditos_docs_listar','creditos_docs_gestionar']); ?>
+        <?php $canCredDocs = canAccess('creditos_docs') || canAccess('creditos_docs.crear') || canAccess('creditos_docs.listar') || canAccess('creditos_docs.gestionar'); ?>
+        <?php if ($canCredDocs): ?>
+        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCredDocs" role="button" aria-expanded="<?php echo $isCredDocsOpen ? 'true' : 'false'; ?>" aria-controls="menuCredDocs">
+            <span><i class="fas fa-file-alt me-2"></i>Créditos Docs</span>
         </a>
-        <div class="collapse <?php echo $isCredOpen ? 'show' : ''; ?> ms-3" id="menuCreditos">
-            <?php if (canAccess('creditos')): ?>
-            <a class="nav-link <?php echo $currentPage === 'creditos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/index.php">
-                <i class="fas fa-circle-notch small me-2"></i>Resumen
+        <div class="collapse <?php echo $isCredDocsOpen ? 'show' : ''; ?> ms-3" id="menuCredDocs">
+            <?php if (canAccess('creditos_docs.crear')): ?>
+            <a class="nav-link <?php echo $currentPage === 'creditos_docs_crear' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos_docs/pages/crear_solicitud.php">
+                <i class="fas fa-plus small me-2"></i>Nueva Solicitud
             </a>
             <?php endif; ?>
-            <?php if (canAccess('creditos') || canAccess('creditos.solicitudes')): ?>
-            <a class="nav-link <?php echo $currentPage === 'creditos_solicitudes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/solicitudes.php">
-                <i class="fas fa-file-signature small me-2"></i>Solicitudes
-            </a>
-            <?php endif; ?>
-            <?php if (canAccess('creditos') || canAccess('creditos.listado')): ?>
-            <a class="nav-link <?php echo $currentPage === 'creditos_listado' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/listado.php">
-                <i class="fas fa-list small me-2"></i>Listado
+            <?php if (canAccess('creditos_docs.listar')): ?>
+            <a class="nav-link <?php echo $currentPage === 'creditos_docs_listar' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos_docs/pages/listar_solicitudes.php">
+                <i class="fas fa-list small me-2"></i>Lista de Solicitudes
             </a>
             <?php endif; ?>
         </div>
@@ -346,22 +341,6 @@
             </a>
             <a class="nav-link <?php echo $currentPage === 'tienda_reversiones' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/tienda/pages/reversiones.php">
                 <i class="fas fa-undo-alt small me-2"></i>Reversiones
-            </a>
-        </div>
-
-        <?php $isCredOpen = in_array(($currentPage ?? ''), ['creditos','creditos_solicitudes','creditos_listado']); ?>
-        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCreditos" role="button" aria-expanded="<?php echo $isCredOpen ? 'true' : 'false'; ?>" aria-controls="menuCreditos">
-            <span><i class="fas fa-hand-holding-usd me-2"></i>Gestión Créditos</span>
-        </a>
-        <div class="collapse <?php echo $isCredOpen ? 'show' : ''; ?> ms-3" id="menuCreditos">
-            <a class="nav-link <?php echo $currentPage === 'creditos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/index.php">
-                <i class="fas fa-circle-notch small me-2"></i>Resumen
-            </a>
-            <a class="nav-link <?php echo $currentPage === 'creditos_solicitudes' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/solicitudes.php">
-                <i class="fas fa-file-signature small me-2"></i>Solicitudes
-            </a>
-            <a class="nav-link <?php echo $currentPage === 'creditos_listado' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/creditos/pages/listado.php">
-                <i class="fas fa-list small me-2"></i>Listado
             </a>
         </div>
 

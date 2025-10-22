@@ -977,11 +977,172 @@ USE multiapptwo;
     CREATE TRIGGER control_clausulas_bi BEFORE INSERT ON control_clausulas
     FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
 
-    -- Triggers para control_asignacion_asociado_clausula
-    DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bu;
-    CREATE TRIGGER control_asignacion_asociado_clausula_bu BEFORE UPDATE ON control_asignacion_asociado_clausula
-    FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+-- Triggers para control_asignacion_asociado_clausula
+DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bu;
+CREATE TRIGGER control_asignacion_asociado_clausula_bu BEFORE UPDATE ON control_asignacion_asociado_clausula
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+
+DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bi;
+CREATE TRIGGER control_asignacion_asociado_clausula_bi BEFORE INSERT ON control_asignacion_asociado_clausula
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- =============================================
+-- MÓDULO CRÉDITOS DOCS - GESTIÓN DE CRÉDITOS
+-- =============================================
+
+-- Tabla principal de solicitudes de crédito
+CREATE TABLE IF NOT EXISTS credito_docs_solicitudes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_solicitud VARCHAR(20) UNIQUE NOT NULL,
+    tipo_solicitante ENUM('estudiante', 'empleado_descuento_nomina', 'empleado_sin_descuento', 'independiente', 'pensionado_descuento_libranza', 'pensionado_sin_descuento_libranza') NOT NULL,
     
-    DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bi;
-    CREATE TRIGGER control_asignacion_asociado_clausula_bi BEFORE INSERT ON control_asignacion_asociado_clausula
-    FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+    -- Datos básicos del solicitante
+    nombre_solicitante VARCHAR(255) NOT NULL,
+    numero_identificacion VARCHAR(20) NOT NULL,
+    numero_telefono VARCHAR(15) NOT NULL,
+    correo_electronico VARCHAR(255) NOT NULL,
+    monto_deseado INT NOT NULL,
+    numero_cuotas_deseadas INT NOT NULL,
+    
+    -- Estado y progreso
+    estado ENUM('solicitado', 'revisado', 'con_estudio', 'desembolsado', 'rechazado') DEFAULT 'solicitado',
+    etapa_actual ENUM('creacion', 'revision', 'estudio', 'final') DEFAULT 'creacion',
+    
+    -- Campos específicos de etapa final
+    numero_credito_sifone INT NULL,
+    valor_real_desembolso DECIMAL(15,2) NULL,
+    fecha_desembolso DATE NULL,
+    plazo_desembolso INT NULL,
+    
+    -- Campos de codeudor
+    desea_codeudor BOOLEAN NOT NULL DEFAULT FALSE,
+    tipo_codeudor ENUM('no_necesita', 'codeudor_dependiente', 'codeudor_pensionado') NULL,
+    
+    -- Comentarios de rechazo
+    comentarios_rechazo TEXT NULL,
+    
+    -- Auditoría
+    creado_por INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_por INT NULL,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+    
+    KEY idx_estado (estado),
+    KEY idx_etapa (etapa_actual),
+    KEY idx_tipo_solicitante (tipo_solicitante),
+    KEY idx_numero_solicitud (numero_solicitud)
+);
+
+-- Tabla de documentos por etapa
+CREATE TABLE IF NOT EXISTS credito_docs_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    etapa ENUM('creacion', 'revision', 'estudio', 'final') NOT NULL,
+    tipo_documento VARCHAR(100) NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(500) NOT NULL,
+    tamaño_archivo INT NOT NULL,
+    tipo_mime VARCHAR(100) NOT NULL,
+    es_obligatorio BOOLEAN DEFAULT FALSE,
+    es_opcional BOOLEAN DEFAULT FALSE,
+    es_trato_especial BOOLEAN DEFAULT FALSE,
+    aplica_para_tipo_solicitante JSON NOT NULL,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    subido_por INT NULL,
+    
+    FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
+    KEY idx_solicitud_etapa (solicitud_id, etapa),
+    KEY idx_tipo_documento (tipo_documento),
+    UNIQUE KEY unique_documento_solicitud (solicitud_id, etapa, tipo_documento)
+);
+
+-- Tabla de configuración de documentos
+CREATE TABLE IF NOT EXISTS credito_docs_configuracion_documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    etapa ENUM('creacion', 'revision', 'estudio', 'final') NOT NULL,
+    tipo_documento VARCHAR(100) NOT NULL,
+    nombre_mostrar VARCHAR(255) NOT NULL,
+    descripcion TEXT NULL,
+    es_obligatorio BOOLEAN DEFAULT FALSE,
+    es_opcional BOOLEAN DEFAULT FALSE,
+    es_trato_especial BOOLEAN DEFAULT FALSE,
+    aplica_para_tipo_solicitante JSON NOT NULL,
+    validaciones_especiales JSON NULL,
+    orden_display INT DEFAULT 0,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    
+    UNIQUE KEY unique_configuracion (etapa, tipo_documento),
+    KEY idx_etapa_activo (etapa, estado_activo)
+);
+
+-- Tabla de validaciones especiales
+CREATE TABLE IF NOT EXISTS credito_docs_validaciones_especiales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    tipo_validacion VARCHAR(100) NOT NULL,
+    documentos_requeridos JSON NOT NULL,
+    documentos_subidos JSON NOT NULL,
+    cumple_validacion BOOLEAN DEFAULT FALSE,
+    fecha_validacion TIMESTAMP NULL,
+    
+    FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
+    KEY idx_solicitud_tipo (solicitud_id, tipo_validacion)
+);
+
+-- Triggers para credito_docs_solicitudes
+DROP TRIGGER IF EXISTS credito_docs_solicitudes_bu;
+CREATE TRIGGER credito_docs_solicitudes_bu BEFORE UPDATE ON credito_docs_solicitudes
+FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+
+DROP TRIGGER IF EXISTS credito_docs_solicitudes_bi;
+CREATE TRIGGER credito_docs_solicitudes_bi BEFORE INSERT ON credito_docs_solicitudes
+FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+-- =============================================
+-- DATOS DE CONFIGURACIÓN DE DOCUMENTOS
+-- =============================================
+
+-- ETAPA CREACIÓN
+INSERT INTO credito_docs_configuracion_documentos (etapa, tipo_documento, nombre_mostrar, descripcion, es_obligatorio, es_opcional, es_trato_especial, aplica_para_tipo_solicitante, orden_display) VALUES
+('creacion', 'cedula', 'Cédula (Copia ampliada al 150%)', 'Copia de cédula ampliada al 150%', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 1),
+('creacion', 'rut', 'RUT', 'Copia RUT', TRUE, FALSE, FALSE, '["independiente"]', 2),
+('creacion', 'camara_comercio', 'Cámara y Comercio', 'Registro mercantil cámara y comercio no mayor a 30 días', FALSE, TRUE, FALSE, '["independiente"]', 3),
+('creacion', 'comprobante_pago_1', 'Comprobante de Pago 1', 'Comprobantes de pago 2 últimas quincenas o meses', TRUE, FALSE, FALSE, '["empleado_descuento_nomina", "empleado_sin_descuento", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 4),
+('creacion', 'comprobante_pago_2', 'Comprobante de Pago 2', 'Comprobantes de pago 2 últimas quincenas o meses', TRUE, FALSE, FALSE, '["empleado_descuento_nomina", "empleado_sin_descuento", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 5),
+('creacion', 'certificacion_laboral', 'Certificación Laboral', 'Menor a 30 días de expedición', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento"]', 6),
+('creacion', 'certificado_ingresos_retenciones', 'Certificado de Ingresos y Retenciones', 'Año inmediatamente anterior, para solicitudes mayores a $4,0 MM', FALSE, TRUE, FALSE, '["empleado_descuento_nomina", "empleado_sin_descuento"]', 7),
+('creacion', 'soporte_otros_ingresos_1', 'Soporte de Otros Ingresos 1', 'Soporte de otros ingresos', FALSE, TRUE, TRUE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 8),
+('creacion', 'soporte_otros_ingresos_2', 'Soporte de Otros Ingresos 2', 'Soporte de otros ingresos', FALSE, TRUE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 9),
+('creacion', 'soporte_otros_ingresos_3', 'Soporte de Otros Ingresos 3', 'Soporte de otros ingresos', FALSE, TRUE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 10),
+('creacion', 'ingresos_certificados_contador', 'Ingresos Certificados por Contador Público', 'No mayor a 30 días de vigencia, junto con la copia de Tarjeta Profesional y Certificado de Antecedentes Disciplinarios', FALSE, FALSE, TRUE, '["independiente"]', 11),
+('creacion', 'declaracion_renta', 'Declaración de Renta', 'Año gravable si está obligado a presentar, de lo contrario adjuntar Certificación juramentada', FALSE, FALSE, TRUE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 12),
+('creacion', 'estados_financieros', 'Estados Financieros', 'De dos últimos años firmados por contador público, con copia de matrícula y antecedentes disciplinarios no mayor a 90 días', FALSE, TRUE, FALSE, '["independiente"]', 13),
+('creacion', 'certificado_tradicion_inmueble', 'Certificado de Tradición de Inmueble', 'Menor a 60 días de expedición', FALSE, TRUE, FALSE, '["empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 14),
+('creacion', 'orden_matricula_universitaria', 'Orden de Matrícula Universitaria', 'Copia orden de matrícula universitaria', TRUE, FALSE, FALSE, '["estudiante"]', 15),
+('creacion', 'servicio_publico_domicilio', 'Servicio Público de Domicilio', 'Copia servicio público de domicilio actual', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 16),
+('creacion', 'tarjeta_propiedad_vehiculo', 'Tarjeta de Propiedad de Vehículo', 'Copia de tarjeta de propiedad de vehículo', FALSE, TRUE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 17),
+('creacion', 'extracto_bancario_1', 'Extracto Bancario 1', 'Extractos bancarios últimos tres meses', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 18),
+('creacion', 'extracto_bancario_2', 'Extracto Bancario 2', 'Extractos bancarios últimos tres meses', FALSE, TRUE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 19),
+('creacion', 'extracto_bancario_3', 'Extracto Bancario 3', 'Extractos bancarios últimos tres meses', FALSE, TRUE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 20);
+
+-- ETAPA REVISIÓN
+INSERT INTO credito_docs_configuracion_documentos (etapa, tipo_documento, nombre_mostrar, descripcion, es_obligatorio, es_opcional, es_trato_especial, aplica_para_tipo_solicitante, validaciones_especiales, orden_display) VALUES
+('revision', 'estudio_datacredito', 'Estudio en Datacredito', 'Estudio en Datacredito', FALSE, FALSE, TRUE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', '{"requiere_al_menos_uno": ["estudio_datacredito", "certificado_aportes_trebol"]}', 1),
+('revision', 'certificado_aportes_trebol', 'Certificado de Aportes Trébol', 'Certificado de Aportes Trébol', FALSE, FALSE, TRUE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', '{"requiere_al_menos_uno": ["estudio_datacredito", "certificado_aportes_trebol"]}', 2),
+('revision', 'formato_fondeo_independientes', 'Formato de Fondeo para Independientes', 'Formato de fondeo para independientes', TRUE, FALSE, FALSE, '["independiente"]', '{"condicion": "solo_si_no_tiene_contador_ni_renta_ni_estados"}', 3),
+('revision', 'simulacion_credito_sifone', 'Simulación de Crédito Sifone', 'Simulación de Crédito Sifone', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', NULL, 4);
+
+-- ETAPA ESTUDIO
+INSERT INTO credito_docs_configuracion_documentos (etapa, tipo_documento, nombre_mostrar, descripcion, es_obligatorio, es_opcional, es_trato_especial, aplica_para_tipo_solicitante, orden_display) VALUES
+('estudio', 'evaluacion_credito_cartera', 'Evaluación del Crédito por el Área de Cartera', 'Evaluación del crédito por el área de cartera', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 1),
+('estudio', 'cedula_codeudor', 'Cédula de Codeudor', 'Cédula de codeudor', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 2),
+('estudio', 'codeudor_comprobante_1', 'Codeudor Comprobante 1', 'Comprobantes de pago 2 últimas quincenas o meses', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 3),
+('estudio', 'codeudor_comprobante_2', 'Codeudor Comprobante 2', 'Comprobantes de pago 2 últimas quincenas o meses', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 4),
+('estudio', 'codeudor_certificacion_laboral', 'Codeudor Certificación Laboral', 'Menor a 30 días de expedición', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 5);
+
+-- ETAPA FINAL
+INSERT INTO credito_docs_configuracion_documentos (etapa, tipo_documento, nombre_mostrar, descripcion, es_obligatorio, es_opcional, es_trato_especial, aplica_para_tipo_solicitante, orden_display) VALUES
+('final', 'estudio_credito_sifone', 'Estudio de Crédito Sifone', 'Estudio de Crédito Sifone', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 1),
+('final', 'documento_pagare', 'Documento Pagaré', 'Documento Pagaré', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 2),
+('final', 'documento_libranza', 'Documento Libranza para Crédito', 'Documento Libranza para Crédito', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 3),
+('final', 'plan_pagos', 'Plan de Pagos', 'Plan de Pagos', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 4);

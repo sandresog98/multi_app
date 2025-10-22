@@ -27,7 +27,10 @@
                 "cobranza",
                 "usuarios",
                 "logs",
-                "creditos",
+                "creditos_docs",
+                "creditos_docs.crear",
+                "creditos_docs.listar",
+                "creditos_docs.gestionar",
                 "ticketera"
             ]
         },
@@ -56,7 +59,10 @@
                 "tienda.reversiones",
                 "boleteria",
                 "cobranza",
-                "creditos",
+                "creditos_docs",
+                "creditos_docs.crear",
+                "creditos_docs.listar",
+                "creditos_docs.gestionar",
                 "ticketera"
             ]
         },
@@ -75,8 +81,11 @@
                 "tienda.ventas",
                 "tienda.clientes",
                 "tienda.reversiones",
-                "ticketera",
-                "creditos"
+                "creditos_docs",
+                "creditos_docs.crear",
+                "creditos_docs.listar",
+                "creditos_docs.gestionar",
+                "ticketera"
             ]
         }
     }
