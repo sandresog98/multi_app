@@ -3,6 +3,7 @@ require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../models/DetalleAsociado.php';
 require_once '../models/Transaccion.php';
+require_once '../models/Clausulas.php';
 require_once '../../../models/Logger.php';
 require_once '../../../utils/dictionary.php';
 
@@ -11,6 +12,7 @@ $auth->requireModule('oficina.asociados');
 $currentUser = $auth->getCurrentUser();
 $detalleModel = new DetalleAsociado();
 $txModel = new Transaccion();
+$clausulasModel = new Clausulas();
 $logger = new Logger();
 
 $cedula = $_GET['cedula'] ?? '';
@@ -21,6 +23,8 @@ $creditos = $detalleModel->getCreditos($cedula);
 $creditosFinalizados = $detalleModel->getCreditosFinalizados($cedula);
 $asignaciones = $detalleModel->getAsignaciones($cedula);
 $productosActivos = $detalleModel->getActiveProducts();
+$asignacionesClausulas = $clausulasModel->obtenerAsignacionesAsociado($cedula);
+$clausulasActivas = $clausulasModel->obtenerClausulasActivas();
 
 // Cálculos monetarios
 $valorProductosMensual = 0.0;
@@ -69,6 +73,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = (int)($_POST['id'] ?? 0);
     $res = $detalleModel->deleteAssignment($id);
     if ($res['success']) { $message = $res['message']; $asignaciones = $detalleModel->getAsignaciones($cedula); $logger->logEliminar('asociados','Eliminación de asignación',['id'=>$id]); }
+    else { $error = $res['message']; }
+  } elseif ($action === 'asignar_clausula') {
+    $clausulaId = (int)($_POST['clausula_id'] ?? 0);
+    $montoMensual = (int)($_POST['monto_mensual'] ?? 0);
+    $fechaInicio = $_POST['fecha_inicio'] ?? '';
+    $mesesVigencia = (int)($_POST['meses_vigencia'] ?? 0);
+    $parametros = $_POST['parametros'] ?? '';
+    
+    // Manejar archivo si es necesario
+    $archivoRuta = null;
+    if (!empty($_FILES['archivo']['name'])) {
+      $uploadDir = '../../../uploads/clausulas/' . date('Y/m/');
+      if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+      }
+      $archivoNombre = uniqid() . '_' . $_FILES['archivo']['name'];
+      $archivoRuta = $uploadDir . $archivoNombre;
+      move_uploaded_file($_FILES['archivo']['tmp_name'], $archivoRuta);
+    }
+    
+    $datos = [
+      'asociado_cedula' => $cedula,
+      'clausula_id' => $clausulaId,
+      'monto_mensual' => $montoMensual,
+      'fecha_inicio' => $fechaInicio,
+      'meses_vigencia' => $mesesVigencia,
+      'parametros' => $parametros,
+      'archivo_ruta' => $archivoRuta,
+      'creado_por' => $currentUser['id']
+    ];
+    
+    $res = $clausulasModel->asignarClausulaAsociado($datos);
+    if ($res['success']) { 
+      $message = $res['message']; 
+      $asignacionesClausulas = $clausulasModel->obtenerAsignacionesAsociado($cedula); 
+      $logger->logCrear('asociados','Asignación de cláusula',['cedula'=>$cedula,'clausula_id'=>$clausulaId]); 
+    }
+    else { $error = $res['message']; }
+  } elseif ($action === 'eliminar_asignacion_clausula') {
+    $id = (int)($_POST['id'] ?? 0);
+    $res = $clausulasModel->eliminarAsignacionClausula($id);
+    if ($res['success']) { 
+      $message = $res['message']; 
+      $asignacionesClausulas = $clausulasModel->obtenerAsignacionesAsociado($cedula); 
+      $logger->logEliminar('asociados','Eliminación de asignación de cláusula',['id'=>$id]); 
+    }
     else { $error = $res['message']; }
   }
 }
@@ -234,6 +284,72 @@ include '../../../views/layouts/header.php';
       </div>
       <?php endif; ?>
 
+      <!-- Modal Asignar Cláusula -->
+      <div class="modal fade" id="asignarClausulaModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="fas fa-file-contract me-2"></i>Asignar Cláusula</h5>
+              <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+              <div class="modal-body">
+                <input type="hidden" name="action" value="asignar_clausula">
+                
+                <div class="row">
+                  <div class="col-md-12">
+                    <label class="form-label">Tipo de Cláusula <span class="text-danger">*</span></label>
+                    <select name="clausula_id" class="form-select" required id="clausulaSelect" onchange="toggleArchivoField()">
+                      <option value="">Seleccione una cláusula</option>
+                      <?php if (!empty($clausulasActivas)): ?>
+                        <?php foreach ($clausulasActivas as $clausula): ?>
+                          <option value="<?php echo $clausula['id']; ?>" data-requiere-archivo="<?php echo $clausula['requiere_archivo'] ? 'true' : 'false'; ?>">
+                            <?php echo htmlspecialchars($clausula['nombre']); ?>
+                          </option>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        <option value="" disabled>No hay cláusulas disponibles</option>
+                      <?php endif; ?>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Monto Mensual <span class="text-danger">*</span></label>
+                    <input type="number" name="monto_mensual" class="form-control" required min="0">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Fecha Inicio <span class="text-danger">*</span></label>
+                    <input type="date" name="fecha_inicio" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Meses de Vigencia <span class="text-danger">*</span></label>
+                    <input type="number" name="meses_vigencia" class="form-control" required min="1">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Parámetros <span class="text-danger">*</span></label>
+                    <input type="text" name="parametros" class="form-control" placeholder="Parámetros adicionales" required>
+                  </div>
+                  <div class="col-md-12" id="archivoField" style="display: none;">
+                    <label class="form-label">Archivo (Firma) <span class="text-danger">*</span></label>
+                    <input type="file" name="archivo" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
+                    <small class="text-muted">Formatos permitidos: PDF, JPG, PNG</small>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Asignar Cláusula</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario oculto para eliminar asignación de cláusula -->
+      <form id="eliminarAsignacionClausulaForm" method="POST" style="display: none;">
+        <input type="hidden" name="action" value="eliminar_asignacion_clausula">
+        <input type="hidden" name="id" id="eliminarAsignacionClausulaId">
+      </form>
+
       <!-- Modal Movimientos Sifone -->
       <div class="modal fade" id="modalMovSifone" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title"><i class="fas fa-list me-2"></i>Transacciones Sifone</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -365,6 +481,84 @@ include '../../../views/layouts/header.php';
           </div></div>
         </div>
         <?php endif; ?>
+      </div>
+
+      <!-- Sección de Cláusulas -->
+      <div class="row g-3 mt-1">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>Cláusulas asignadas</strong>
+              <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#asignarClausulaModal">
+                <i class="fas fa-plus me-1"></i>Asignar cláusula
+              </button>
+            </div>
+            <div class="card-body">
+              <?php if (empty($asignacionesClausulas)): ?>
+                <div class="text-center py-3">
+                  <i class="fas fa-file-contract text-muted" style="font-size: 2rem;"></i>
+                  <p class="text-muted mt-2 mb-0">No hay cláusulas asignadas</p>
+                </div>
+              <?php else: ?>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Cláusula</th>
+                        <th>Monto Mensual</th>
+                        <th>Fecha Inicio</th>
+                        <th>Meses Vigencia</th>
+                        <th>Parámetros</th>
+                        <th>Archivo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($asignacionesClausulas as $ac): ?>
+                      <tr>
+                        <td>
+                          <strong><?php echo htmlspecialchars($ac['clausula_nombre']); ?></strong>
+                          <br><small class="text-muted"><?php echo htmlspecialchars($ac['clausula_descripcion']); ?></small>
+                        </td>
+                        <td class="text-end"><?php echo '$' . number_format((int)$ac['monto_mensual'], 0); ?></td>
+                        <td class="text-center"><?php echo date('d/m/Y', strtotime($ac['fecha_inicio'])); ?></td>
+                        <td class="text-center"><?php echo (int)$ac['meses_vigencia']; ?></td>
+                        <td>
+                          <div class="text-truncate" style="max-width: 150px;" title="<?php echo htmlspecialchars($ac['parametros']); ?>">
+                            <?php echo htmlspecialchars($ac['parametros']); ?>
+                          </div>
+                        </td>
+                        <td class="text-center">
+                          <?php if (!empty($ac['archivo_ruta'])): ?>
+                            <a href="<?php echo htmlspecialchars($ac['archivo_ruta']); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                              <i class="fas fa-file me-1"></i>Ver
+                            </a>
+                          <?php else: ?>
+                            <span class="text-muted">—</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                          <?php if ($ac['estado_activo']): ?>
+                            <span class="badge bg-success">Activo</span>
+                          <?php else: ?>
+                            <span class="badge bg-danger">Inactivo</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                          <button class="btn btn-sm btn-outline-danger" onclick="eliminarAsignacionClausula(<?php echo $ac['id']; ?>)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+              <?php endif; ?>
+            </div>
+          </div>
+        </div>
       </div>
 
       <?php if (!empty($txListado['items'])): ?>
@@ -518,6 +712,45 @@ function validarAsignacionMonto() {
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('asignarProductoModal');
   if (modal) modal.addEventListener('shown.bs.modal', actualizarRango);
+});
+
+// Funciones para cláusulas
+function toggleArchivoField() {
+  const select = document.getElementById('clausulaSelect');
+  const archivoField = document.getElementById('archivoField');
+  const archivoInput = archivoField.querySelector('input[type="file"]');
+  
+  if (select.selectedIndex > 0) {
+    const option = select.options[select.selectedIndex];
+    const requiereArchivo = option.getAttribute('data-requiere-archivo') === 'true';
+    
+    if (requiereArchivo) {
+      archivoField.style.display = 'block';
+      archivoInput.required = true;
+    } else {
+      archivoField.style.display = 'none';
+      archivoInput.required = false;
+    }
+  } else {
+    archivoField.style.display = 'none';
+    archivoInput.required = false;
+  }
+}
+
+function eliminarAsignacionClausula(id) {
+  if (confirm('¿Estás seguro de que deseas eliminar esta asignación de cláusula?')) {
+    document.getElementById('eliminarAsignacionClausulaId').value = id;
+    document.getElementById('eliminarAsignacionClausulaForm').submit();
+  }
+}
+
+// Establecer fecha de hoy como fecha por defecto
+document.addEventListener('DOMContentLoaded', () => {
+  const fechaInicioInput = document.querySelector('input[name="fecha_inicio"]');
+  if (fechaInicioInput) {
+    const hoy = new Date().toISOString().split('T')[0];
+    fechaInicioInput.value = hoy;
+  }
 });
 </script>
 

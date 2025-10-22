@@ -929,3 +929,59 @@ USE multiapptwo;
     DROP TRIGGER IF EXISTS control_tasas_productos_bi;
     CREATE TRIGGER control_tasas_productos_bi BEFORE INSERT ON control_tasas_productos
     FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+    -- Tabla para control de cláusulas
+    CREATE TABLE IF NOT EXISTS control_clausulas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        descripcion TEXT NOT NULL,
+        parametros TEXT NOT NULL,
+        requiere_archivo BOOLEAN DEFAULT FALSE,
+        estado_activo BOOLEAN DEFAULT TRUE,
+        creado_por INT NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actualizado_por INT NULL,
+        fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+        KEY idx_nombre (nombre),
+        KEY idx_activo (estado_activo)
+    );
+
+    -- Tabla para asignación de cláusulas a asociados
+    CREATE TABLE IF NOT EXISTS control_asignacion_asociado_clausula (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        asociado_cedula VARCHAR(20) NOT NULL,
+        clausula_id INT NOT NULL,
+        monto_mensual INT NOT NULL,
+        fecha_inicio DATE NOT NULL,
+        meses_vigencia INT NOT NULL,
+        parametros TEXT NULL,
+        archivo_ruta VARCHAR(255) NULL,
+        estado_activo BOOLEAN DEFAULT TRUE,
+        creado_por INT NULL,
+        fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        actualizado_por INT NULL,
+        fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
+        FOREIGN KEY (clausula_id) REFERENCES control_clausulas(id),
+        KEY idx_asociado (asociado_cedula),
+        KEY idx_clausula (clausula_id),
+        KEY idx_activo (estado_activo),
+        KEY idx_fecha_inicio (fecha_inicio)
+    );
+
+    -- Triggers para control_clausulas
+    DROP TRIGGER IF EXISTS control_clausulas_bu;
+    CREATE TRIGGER control_clausulas_bu BEFORE UPDATE ON control_clausulas
+    FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    
+    DROP TRIGGER IF EXISTS control_clausulas_bi;
+    CREATE TRIGGER control_clausulas_bi BEFORE INSERT ON control_clausulas
+    FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);
+
+    -- Triggers para control_asignacion_asociado_clausula
+    DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bu;
+    CREATE TRIGGER control_asignacion_asociado_clausula_bu BEFORE UPDATE ON control_asignacion_asociado_clausula
+    FOR EACH ROW SET NEW.fecha_actualizacion = CURRENT_TIMESTAMP;
+    
+    DROP TRIGGER IF EXISTS control_asignacion_asociado_clausula_bi;
+    CREATE TRIGGER control_asignacion_asociado_clausula_bi BEFORE INSERT ON control_asignacion_asociado_clausula
+    FOR EACH ROW SET NEW.fecha_actualizacion = COALESCE(NEW.fecha_actualizacion, CURRENT_TIMESTAMP);

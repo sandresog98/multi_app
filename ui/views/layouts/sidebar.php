@@ -26,7 +26,7 @@
         }
         ?>
         <?php if (!empty($currentUser)): ?>
-        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','informaciones','oficina_comisiones','tasas_interes','tasas_productos']); ?>
+        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','clausulas','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','informaciones','oficina_comisiones','tasas_interes','tasas_productos']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
         </a>
@@ -39,6 +39,11 @@
             <?php if (canAccess('oficina.productos')): ?>
             <a class="nav-link <?php echo $currentPage === 'productos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/productos.php">
                 <i class="fas fa-box small me-2"></i>Productos
+            </a>
+            <?php endif; ?>
+            <?php if (canAccess('oficina.clausulas')): ?>
+            <a class="nav-link <?php echo $currentPage === 'clausulas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/clausulas.php">
+                <i class="fas fa-file-contract small me-2"></i>Cláusulas
             </a>
             <?php endif; ?>
             <?php if (canAccess('oficina.cargas')): ?>
@@ -251,7 +256,7 @@
         </a>
         <?php endif; ?>
         <?php elseif (!empty($currentUser) && $role === 'oficina'): ?>
-        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','oficina_comisiones','tasas_interes','tasas_productos']); ?>
+        <?php $isOficinaOpen = in_array(($currentPage ?? ''), ['oficina','productos','clausulas','asociados','pagos_pse','pagos_cash_qr','transacciones','trx_list','cargas','descargas','oficina_comisiones','tasas_interes','tasas_productos']); ?>
         <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuOficina" role="button" aria-expanded="<?php echo $isOficinaOpen ? 'true' : 'false'; ?>" aria-controls="menuOficina">
             <span><i class="fas fa-building me-2"></i>Oficina</span>
         </a>
@@ -261,6 +266,9 @@
             </a>
             <a class="nav-link <?php echo $currentPage === 'productos' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/productos.php">
                 <i class="fas fa-box small me-2"></i>Productos
+            </a>
+            <a class="nav-link <?php echo $currentPage === 'clausulas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/clausulas.php">
+                <i class="fas fa-file-contract small me-2"></i>Cláusulas
             </a>
             <a class="nav-link <?php echo $currentPage === 'cargas' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/oficina/pages/cargas.php">
                 <i class="fas fa-file-upload small me-2"></i>Cargas
