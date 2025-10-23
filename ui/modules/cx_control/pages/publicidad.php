@@ -17,9 +17,14 @@ include '../../../views/layouts/header.php';
     <main class="col-12 main-content">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2"><i class="fas fa-bullhorn me-2"></i>CX Control - Publicidad</h1>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaPublicidadModal">
-          <i class="fas fa-plus me-1"></i>Nueva Publicidad
-        </button>
+        <div>
+          <button class="btn btn-warning me-2" onclick="limpiarHuerfanos()">
+            <i class="fas fa-broom me-1"></i>Limpiar Huérfanos
+          </button>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaPublicidadModal">
+            <i class="fas fa-plus me-1"></i>Nueva Publicidad
+          </button>
+        </div>
       </div>
 
       <div class="row g-3">
@@ -179,8 +184,9 @@ function mostrarPublicidades(publicidades) {
       <td>${pub.nombre}</td>
       <td>${pub.descripcion || '-'}</td>
       <td>
-        ${pub.imagen_url && pub.imagen_url !== 'test.jpg' ? 
-          `<img src="${pub.imagen_url}" alt="Imagen" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">` : 
+        ${pub.imagen_url && pub.imagen_url !== 'test.jpg' && pub.imagen_url !== null ? 
+          `<img src="${pub.imagen_url}" alt="Imagen" class="img-thumbnail" style="max-width: 50px; max-height: 50px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+           <span class="text-muted" style="display:none;">Archivo no encontrado</span>` : 
           '<span class="text-muted">Sin imagen</span>'
         }
       </td>
@@ -224,6 +230,28 @@ async function eliminarPublicidad(id) {
   } catch (error) {
     console.error('Error:', error);
     alert('Error al eliminar la publicidad');
+  }
+}
+
+// Función para limpiar registros huérfanos
+async function limpiarHuerfanos() {
+  if (!confirm('¿Estás seguro de que deseas limpiar los registros huérfanos? Esta acción eliminará todas las publicidades cuyas imágenes no existen en el servidor.')) {
+    return;
+  }
+  
+  try {
+    const res = await fetch('../api/publicidad.php?action=limpiar_huérfanos');
+    const json = await res.json();
+    
+    if (json.success) {
+      alert(json.message);
+      cargarPublicidades();
+    } else {
+      alert('Error: ' + json.message);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al limpiar registros huérfanos');
   }
 }
 

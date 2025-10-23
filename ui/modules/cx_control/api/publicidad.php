@@ -93,9 +93,31 @@ try {
                 
                 // Generar URL completa de la imagen
                 $pub['imagen_url'] = getImageUrl($pub['imagen']);
+                
+                // Marcar si la imagen existe o no
+                $pub['imagen_existe'] = $pub['imagen_url'] !== null;
             }
             
             echo json_encode(['success' => true, 'data' => $publicidades]);
+            
+        } elseif ($action === 'limpiar_huérfanos') {
+            // Limpiar registros que tienen referencias a archivos que no existen
+            $publicidades = $publicidadModel->obtenerPublicidades();
+            $limpiados = 0;
+            
+            foreach ($publicidades as $pub) {
+                $imagenUrl = getImageUrl($pub['imagen']);
+                if ($imagenUrl === null) {
+                    // El archivo no existe, eliminar el registro
+                    $resultado = $publicidadModel->eliminarPublicidad($pub['id']);
+                    if ($resultado['success']) {
+                        $limpiados++;
+                    }
+                }
+            }
+            
+            echo json_encode(['success' => true, 'message' => "Se limpiaron $limpiados registros huérfanos"]);
+            
         } else {
             throw new Exception('Acción no válida: ' . $action);
         }
@@ -144,28 +166,45 @@ function getImageUrl($imagen) {
         $baseUrl = cx_getFullBaseUrlRobust();
     }
     
-    // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
+    // Determinar la ruta del archivo en el sistema de archivos
+    $filePath = '';
+    
+    // Si la imagen empieza con /multi_app/, convertir a ruta del sistema de archivos
     if (strpos($imagen, '/multi_app/') === 0) {
-        // Reemplazar /multi_app/ con la URL base completa
-        return str_replace('/multi_app', $baseUrl, $imagen);
+        // Reemplazar /multi_app/ con la ruta base del proyecto
+        $relativePath = substr($imagen, strlen('/multi_app'));
+        $filePath = __DIR__ . '/../../../..' . $relativePath;
+        $imageUrl = str_replace('/multi_app', $baseUrl, $imagen);
     }
-    
-    // Si la imagen empieza con /projects/multi_app/, convertir a ruta relativa y construir URL completa
-    if (strpos($imagen, '/projects/multi_app/') === 0) {
-        // Remover /projects/multi_app/ del inicio para obtener la ruta relativa
+    // Si la imagen empieza con /projects/multi_app/, convertir a ruta relativa
+    elseif (strpos($imagen, '/projects/multi_app/') === 0) {
         $relativePath = substr($imagen, strlen('/projects/multi_app'));
-        return $baseUrl . $relativePath;
+        $filePath = __DIR__ . '/../../../..' . $relativePath;
+        $imageUrl = $baseUrl . $relativePath;
+    }
+    // Si es una ruta relativa, construir la ruta completa
+    else {
+        $cleanImage = ltrim($imagen, '/');
+        
+        // Verificar si la imagen ya incluye el directorio cx_publicidad
+        if (strpos($cleanImage, 'cx_publicidad/') === 0) {
+            $filePath = __DIR__ . '/../../../uploads/' . $cleanImage;
+            $imageUrl = $baseUrl . '/ui/uploads/' . $cleanImage;
+        } else {
+            $filePath = __DIR__ . '/../../../uploads/cx_publicidad/' . $cleanImage;
+            $imageUrl = $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
+        }
     }
     
-    // Si es una ruta relativa, construir la URL completa
-    $cleanImage = ltrim($imagen, '/');
-    
-    // Verificar si la imagen ya incluye el directorio cx_publicidad
-    if (strpos($cleanImage, 'cx_publicidad/') === 0) {
-        return $baseUrl . '/ui/uploads/' . $cleanImage;
-    } else {
-        // Si no incluye el directorio, agregarlo
-        return $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
+    // Verificar si el archivo existe en el sistema de archivos
+    if (!file_exists($filePath)) {
+        // Log del error para debugging
+        error_log("Archivo de imagen no encontrado: " . $filePath . " (URL: " . $imageUrl . ")");
+        
+        // Retornar una imagen por defecto o null para manejar en el frontend
+        return null; // El frontend manejará esto mostrando "Sin imagen"
     }
+    
+    return $imageUrl;
 }
 ?>
