@@ -32,14 +32,8 @@ try {
     $publicidad = $stmt->fetch();
     
     if ($publicidad) {
-        // Construir URL completa de la imagen
-        if (strpos($publicidad['imagen'], '/multi_app/ui/uploads/') === 0) {
-            // La imagen ya tiene la ruta completa
-            $publicidad['imagen_url'] = 'http://localhost' . $publicidad['imagen'];
-        } else {
-            // La imagen tiene una ruta relativa, agregar base URL
-            $publicidad['imagen_url'] = getBaseUrl() . '/' . $publicidad['imagen'];
-        }
+        // Construir URL completa de la imagen usando rutas dinámicas
+        $publicidad['imagen_url'] = getImageUrl($publicidad['imagen']);
         
         echo json_encode([
             'success' => true, 
@@ -59,9 +53,30 @@ try {
     ]);
 }
 
-function getBaseUrl() {
+function getImageUrl($imagen) {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'];
-    return $protocol . '://' . $host . '/multi_app';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Encontrar la ruta base del proyecto
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $marker = '/ui/';
+    $pos = strpos($scriptName, $marker);
+    
+    if ($pos !== false) {
+        $basePath = substr($scriptName, 0, $pos);
+    } else {
+        // Fallback: usar la ruta base del proyecto
+        $basePath = dirname($scriptName);
+    }
+    
+    $baseUrl = $protocol . '://' . $host . $basePath;
+    
+    // Si la imagen ya tiene la ruta completa, usarla
+    if (strpos($imagen, '/multi_app/ui/uploads/') === 0) {
+        return $baseUrl . $imagen;
+    } else {
+        // La imagen tiene una ruta relativa, agregar base URL
+        return $baseUrl . '/ui/' . ltrim($imagen, '/');
+    }
 }
 ?>

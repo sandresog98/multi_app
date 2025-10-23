@@ -2,14 +2,50 @@
 class CxPublicidad {
     constructor() {
         console.log('CxPublicidad inicializado - versión actualizada');
-        this.apiUrl = this.getApiUrl();
+        this.rutas = null;
         this.tipo = this.getTipoPagina();
         this.init();
     }
     
-    getApiUrl() {
-        // Usar ruta absoluta para evitar problemas de rutas relativas
-        return '/multi_app/ui/api/cx_publicidad.php';
+    async getApiUrl() {
+        if (!this.rutas) {
+            await this.cargarRutas();
+        }
+        return this.rutas.apiPublicidad;
+    }
+    
+    async cargarRutas() {
+        try {
+            // Obtener rutas dinámicas desde el servidor
+            const scriptName = window.location.pathname;
+            const cxMarker = '/cx/';
+            const cxPos = scriptName.indexOf(cxMarker);
+            
+            let rutasUrl;
+            if (cxPos !== -1) {
+                const baseUrl = scriptName.substring(0, cxPos + cxMarker.length);
+                rutasUrl = baseUrl + 'api/rutas.php';
+            } else {
+                // Fallback
+                rutasUrl = '/cx/api/rutas.php';
+            }
+            
+            const response = await fetch(rutasUrl);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.rutas = data.data;
+                console.log('Rutas cargadas:', this.rutas);
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Error al cargar rutas:', error);
+            // Fallback a rutas estáticas
+            this.rutas = {
+                apiPublicidad: '/multi_app/ui/api/cx_publicidad.php'
+            };
+        }
     }
     
     getTipoPagina() {
@@ -22,6 +58,9 @@ class CxPublicidad {
     
     async init() {
         try {
+            // Cargar rutas primero
+            await this.cargarRutas();
+            
             const publicidad = await this.obtenerPublicidadActiva();
             if (publicidad) {
                 console.log('Intentando mostrar publicidad:', publicidad);
@@ -35,9 +74,10 @@ class CxPublicidad {
     }
     
     async obtenerPublicidadActiva() {
-        console.log('API URL:', this.apiUrl);
+        const apiUrl = await this.getApiUrl();
+        console.log('API URL:', apiUrl);
         console.log('Tipo:', this.tipo);
-        const fullUrl = `${this.apiUrl}?tipo=${this.tipo}`;
+        const fullUrl = `${apiUrl}?tipo=${this.tipo}`;
         console.log('URL completa:', fullUrl);
         
         const response = await fetch(fullUrl);

@@ -2,6 +2,9 @@
       <div class="container">
         <ul class="nav justify-content-around">
           <?php 
+          // Incluir configuración de rutas
+          require_once __DIR__ . '/../../config/paths.php';
+          
           $currentScript = $_SERVER['SCRIPT_NAME'] ?? '';
           
           // Detectar página actual - solo una puede ser true
@@ -15,8 +18,8 @@
             $isIndex = false; // Si estamos en cualquier módulo, inicio no puede estar activo
           }
           
-          // Usar rutas absolutas basadas en la estructura del proyecto
-          $baseUrl = '/multi_app/cx/';
+          // Usar rutas dinámicas basadas en la configuración
+          $baseUrl = cx_getBaseUrl();
           $indexUrl = $baseUrl . 'index.php';
           $perfilUrl = $baseUrl . 'modules/perfil/pages/index.php';
           $monetarioUrl = $baseUrl . 'modules/monetario/pages/index.php';

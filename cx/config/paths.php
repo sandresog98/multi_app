@@ -57,6 +57,36 @@ function cx_redirect(string $path): string {
     
     return $fullUrl;
 }
+
+// Obtener URL base completa del servidor (protocolo + host + puerto)
+function cx_getFullBaseUrl(): string {
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    
+    // Encontrar la ruta base del proyecto
+    $marker = '/cx/';
+    $pos = strpos($scriptName, $marker);
+    
+    if ($pos !== false) {
+        $basePath = substr($scriptName, 0, $pos);
+    } else {
+        // Fallback: usar la ruta base del proyecto
+        $basePath = dirname($scriptName);
+    }
+    
+    return $protocol . '://' . $host . $basePath;
+}
+
+// Obtener URL base para UI (para APIs)
+function cx_getUiBaseUrl(): string {
+    return cx_getFullBaseUrl() . '/ui';
+}
+
+// Obtener URL base para CX
+function cx_getCxBaseUrl(): string {
+    return cx_getFullBaseUrl() . '/cx';
+}
 ?>
 
 
