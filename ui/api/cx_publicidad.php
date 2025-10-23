@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../../cx/config/paths.php';
 
 // API pública para obtener publicidad activa (sin autenticación)
 header('Content-Type: application/json');
@@ -54,29 +55,35 @@ try {
 }
 
 function getImageUrl($imagen) {
-    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    
-    // Encontrar la ruta base del proyecto
-    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-    $marker = '/ui/';
-    $pos = strpos($scriptName, $marker);
-    
-    if ($pos !== false) {
-        $basePath = substr($scriptName, 0, $pos);
-    } else {
-        // Fallback: usar la ruta base del proyecto
-        $basePath = dirname($scriptName);
+    // Si la imagen ya es una URL completa, devolverla tal como está
+    if (strpos($imagen, 'http://') === 0 || strpos($imagen, 'https://') === 0) {
+        return $imagen;
     }
     
-    $baseUrl = $protocol . '://' . $host . $basePath;
+    // Obtener la URL base completa usando el sistema de rutas dinámicas
+    $baseUrl = cx_getFullBaseUrl();
     
-    // Si la imagen ya tiene la ruta completa, usarla
-    if (strpos($imagen, '/multi_app/ui/uploads/') === 0) {
-        return $baseUrl . $imagen;
+    // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
+    if (strpos($imagen, '/multi_app/') === 0) {
+        // Reemplazar /multi_app/ con la URL base completa
+        return str_replace('/multi_app', $baseUrl, $imagen);
+    }
+    
+    // Si la imagen empieza con /projects/multi_app/, usar directamente la ruta completa
+    if (strpos($imagen, '/projects/multi_app/') === 0) {
+        // Reemplazar /projects/multi_app/ con la URL base completa
+        return str_replace('/projects/multi_app', $baseUrl, $imagen);
+    }
+    
+    // Si es una ruta relativa, construir la URL completa
+    $cleanImage = ltrim($imagen, '/');
+    
+    // Verificar si la imagen ya incluye el directorio cx_publicidad
+    if (strpos($cleanImage, 'cx_publicidad/') === 0) {
+        return $baseUrl . '/ui/uploads/' . $cleanImage;
     } else {
-        // La imagen tiene una ruta relativa, agregar base URL
-        return $baseUrl . '/ui/' . ltrim($imagen, '/');
+        // Si no incluye el directorio, agregarlo
+        return $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
     }
 }
 ?>

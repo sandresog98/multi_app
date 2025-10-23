@@ -71,9 +71,40 @@ function cx_getFullBaseUrl(): string {
     if ($pos !== false) {
         $basePath = substr($scriptName, 0, $pos);
     } else {
-        // Fallback: usar la ruta base del proyecto
-        $basePath = dirname($scriptName);
+        // Buscar otros marcadores del proyecto
+        $markers = ['/ui/', '/cat/', '/py/'];
+        $basePath = null;
+        
+        foreach ($markers as $marker) {
+            $pos = strpos($scriptName, $marker);
+            if ($pos !== false) {
+                $basePath = substr($scriptName, 0, $pos);
+                break;
+            }
+        }
+        
+        // Si no encontramos ningún marcador, usar dirname pero limitar la profundidad
+        if ($basePath === null) {
+            $basePath = dirname($scriptName);
+            
+            // Si la ruta es muy profunda (más de 2 niveles), buscar el directorio multi_app
+            $pathParts = explode('/', trim($basePath, '/'));
+            if (count($pathParts) > 2) {
+                $multiAppPos = array_search('multi_app', $pathParts);
+                if ($multiAppPos !== false) {
+                    $basePath = '/' . implode('/', array_slice($pathParts, 0, $multiAppPos + 1));
+                }
+            }
+            
+            // Si estamos en CLI o la ruta está vacía, usar una ruta por defecto
+            if (empty($basePath) || $basePath === '.') {
+                $basePath = '/projects/multi_app';
+            }
+        }
     }
+    
+    // Limpiar la ruta base para evitar puntos dobles
+    $basePath = rtrim($basePath, '.');
     
     return $protocol . '://' . $host . $basePath;
 }
