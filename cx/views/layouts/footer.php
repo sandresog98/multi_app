@@ -16,7 +16,7 @@
           }
           
           // Usar rutas absolutas basadas en la estructura del proyecto
-          $baseUrl = '/projects/multi_app/cx/';
+          $baseUrl = '/cx/';
           $indexUrl = $baseUrl . 'index.php';
           $perfilUrl = $baseUrl . 'modules/perfil/pages/index.php';
           $monetarioUrl = $baseUrl . 'modules/monetario/pages/index.php';

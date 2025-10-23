@@ -33,7 +33,7 @@ try {
     
     if ($publicidad) {
         // Construir URL completa de la imagen
-        if (strpos($publicidad['imagen'], '/projects/multi_app/') === 0) {
+        if (strpos($publicidad['imagen'], '/ui/uploads/') === 0) {
             // La imagen ya tiene la ruta completa
             $publicidad['imagen_url'] = 'http://localhost' . $publicidad['imagen'];
         } else {
@@ -62,6 +62,6 @@ try {
 function getBaseUrl() {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'];
-    return $protocol . '://' . $host . '/projects/multi_app';
+    return $protocol . '://' . $host;
 }
 ?>
