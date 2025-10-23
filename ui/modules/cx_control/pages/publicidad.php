@@ -219,19 +219,21 @@ async function eliminarPublicidad(id) {
 document.getElementById('publicidadForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   
-  // Validar fechas
-  const fechaInicio = new Date(document.querySelector('input[name="fecha_inicio"]').value);
-  const fechaFin = new Date(document.querySelector('input[name="fecha_fin"]').value);
+  // Validar fechas usando strings para evitar problemas de zona horaria
+  const fechaInicioStr = document.querySelector('input[name="fecha_inicio"]').value;
+  const fechaFinStr = document.querySelector('input[name="fecha_fin"]').value;
   
-  if (fechaFin <= fechaInicio) {
+  if (fechaFinStr <= fechaInicioStr) {
     alert('La fecha de fin debe ser posterior a la fecha de inicio.');
     return false;
   }
   
+  // Obtener fecha de hoy en formato YYYY-MM-DD
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoyStr = hoy.toISOString().split('T')[0];
   
-  if (fechaInicio < hoy) {
+  // Permitir que la fecha de inicio sea hoy o posterior
+  if (fechaInicioStr < hoyStr) {
     alert('La fecha de inicio no puede ser anterior a hoy.');
     return false;
   }
