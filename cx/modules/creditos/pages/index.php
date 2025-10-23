@@ -6,227 +6,96 @@ require_once __DIR__ . '/../../../models/ResumenFinanciero.php';
 $auth = new CxAuthController();
 $auth->requireAuth();
 $cedula = $_SESSION['cx_cedula'] ?? '';
-$nombre = $_SESSION['cx_nombre'] ?? '';
 
 $model = new ResumenFinanciero();
-$info = $model->getInfoBasica($cedula);
 $creditos = $model->getCreditos($cedula);
-$asignaciones = $model->getAsignaciones($cedula);
-$bp = $model->getBalancePrueba($cedula);
-$comisiones = $model->getComisiones($cedula);
-
-$valorProductosMensual = 0.0;
-foreach ($asignaciones as $ap) { $valorProductosMensual += (float)($ap['monto_pago'] ?? 0); }
-$valorPagoMinCreditos = 0.0;
-foreach ($creditos as $c) {
-  $cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
-  $saldoMora = (float)($c['saldo_mora'] ?? 0);
-  $valorPagoMinCreditos += $saldoMora > 0 ? $saldoMora : $cuotaBase;
-}
-$valorTotalMonetario = $valorProductosMensual + $valorPagoMinCreditos;
 ?>
 <?php
-$pageTitle = 'Resumen Financiero';
-$heroTitle = 'Resumen Financiero';
-$heroSubtitle = 'Consulta tus aportes, créditos y productos.';
+$pageTitle = 'Información de Créditos';
+$heroTitle = 'Información de Créditos';
+$heroSubtitle = 'Consulta tus créditos y detalles de pago.';
 include __DIR__ . '/../../../views/layouts/header.php';
 ?>
 <link rel="stylesheet" href="../../../assets/css/main.css">
     <main class="container py-3">
-      <div class="row g-2 mb-2">
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card p-2">
-            <div class="d-flex align-items-center">
-              <div class="kpi-icon me-2"><i class="fa-solid fa-bag-shopping"></i></div>
-              <div>
-                <div class="kpi-value"><?php echo '$' . number_format($valorProductosMensual, 0); ?></div>
-                <div class="kpi-label">Aportes y productos</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card p-2">
-            <div class="d-flex align-items-center">
-              <div class="kpi-icon me-2"><i class="fa-solid fa-credit-card"></i></div>
-              <div>
-                <div class="kpi-value"><?php echo '$' . number_format($valorPagoMinCreditos, 0); ?></div>
-                <div class="kpi-label">Pago crédito</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card p-2">
-            <div class="d-flex align-items-center">
-              <div class="kpi-icon me-2"><i class="fa-solid fa-percentage"></i></div>
-              <div>
-                <div class="kpi-value"><?php echo '$' . number_format((float)($comisiones['comisiones'] ?? 0), 0); ?></div>
-                <div class="kpi-label">Comisiones</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card kpi-card p-2">
-            <div class="d-flex align-items-center">
-              <div class="kpi-icon me-2"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
-              <div>
-                <div class="kpi-value"><?php echo '$' . number_format($valorTotalMonetario, 0); ?></div>
-                <div class="kpi-label">Total pago</div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Botón Solicitar nuevo crédito -->
+      <div class="text-center mb-4">
+        <button class="btn btn-success" onclick="mostrarEnDesarrollo('Solicitar nuevo crédito')">
+          <i class="fa-solid fa-plus me-2"></i>Solicitar nuevo crédito
+        </button>
       </div>
-      <div class="section-card">
-        <div class="section-title collapsible-header" onclick="toggleCollapsible('asociado')">
-          <i class="fa-solid fa-user me-2 text-primary"></i> Información del asociado
-          <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
-        </div>
-        <div class="collapsible-content" id="asociado">
-          <div class="p-3">
-            <div class="kv"><div class="k">Nombre</div><div class="v"><?php echo htmlspecialchars($info['nombre'] ?? $nombre); ?></div></div>
-            <div class="kv"><div class="k">Cédula</div><div class="v"><?php echo htmlspecialchars($info['cedula'] ?? $cedula); ?></div></div>
-            <div class="kv"><div class="k">Teléfono</div><div class="v"><?php echo htmlspecialchars($info['celula'] ?? ''); ?></div></div>
-            <div class="kv"><div class="k">Email</div><div class="v"><?php echo htmlspecialchars($info['mail'] ?? ''); ?></div></div>
-            <div class="kv"><div class="k">Ciudad</div><div class="v"><?php echo htmlspecialchars($info['ciudad'] ?? ''); ?></div></div>
-            <div class="kv"><div class="k">Dirección</div><div class="v"><?php echo htmlspecialchars($info['direcc'] ?? ''); ?></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-title collapsible-header" onclick="toggleCollapsible('monetaria')">
-          <i class="fa-solid fa-wallet me-2 text-primary"></i> Información monetaria
-          <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
-        </div>
-        <div class="collapsible-content" id="monetaria">
-          <div class="p-3">
-            <div class="kv">
-              <div class="k">Aportes Totales</div>
-              <div class="v">
-                <?php echo '$' . number_format((float)($bp['aportes_totales'] ?? 0), 0); ?>
-                <small class="text-muted">(Incentivos: <?php echo '$' . number_format((float)($bp['aportes_incentivos'] ?? 0), 0); ?>)</small>
-              </div>
-            </div>
-            <div class="kv"><div class="k">Revalorizaciones de aportes</div><div class="v"><?php echo '$' . number_format((float)($bp['aportes_revalorizaciones'] ?? 0), 0); ?></div></div>
-            <div class="kv"><div class="k">Plan Futuro</div><div class="v"><?php echo '$' . number_format((float)($bp['plan_futuro'] ?? 0), 0); ?></div></div>
-            <div class="kv">
-              <div class="k">Bolsillos</div>
-              <div class="v">
-                <?php echo '$' . number_format((float)($bp['bolsillos'] ?? 0), 0); ?>
-                <small class="text-muted">(Incentivos: <?php echo '$' . number_format((float)($bp['bolsillos_incentivos'] ?? 0), 0); ?>)</small>
-              </div>
-            </div>
-            <div class="kv"><div class="k">Comisiones</div><div class="v"><?php echo '$' . number_format((float)($bp['comisiones'] ?? 0), 0); ?></div></div>
-            <div class="kv">
-              <div class="k">Total Saldos a favor</div>
-              <div class="v">
-                <?php echo '$' . number_format((float)($bp['total_saldos_favor'] ?? 0), 0); ?>
-                <small class="text-muted">(Incentivos: <?php echo '$' . number_format((float)($bp['total_incentivos'] ?? 0), 0); ?>)</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <?php if (!empty($creditos)): ?>
+      
+      <!-- Información de créditos (desplegada por defecto) -->
       <div class="section-card">
         <div class="section-title collapsible-header" onclick="toggleCollapsible('creditos')">
           <i class="fa-solid fa-receipt me-2 text-primary"></i> Información crédito
           <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
         </div>
-        <div class="collapsible-content" id="creditos">
+        <div class="collapsible-content show" id="creditos">
           <div class="p-3">
-            <?php foreach ($creditos as $c): ?>
-              <div class="info-card mb-3">
-                <!-- Título del crédito con botón -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h6 class="mb-0 fw-bold text-primary">Crédito <?php echo htmlspecialchars($c['numero_credito']); ?></h6>
-                  <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalCredito" onclick="mostrarDetallesCredito(<?php echo htmlspecialchars(json_encode($c)); ?>)">
-                    <i class="fa-solid fa-eye"></i> Ver detalles
-                  </button>
-                </div>
-                
-                <!-- Información básica siempre visible -->
-                <div class="mb-3">
-                  <div class="row g-2">
-                    <div class="col-6 col-md-4">
-                      <div class="kv"><div class="k">Línea de Crédito</div><div class="v"><?php echo htmlspecialchars($c['tipo_prestamo']); ?></div></div>
-                    </div>
-                    <div class="col-6 col-md-4">
-                      <div class="kv"><div class="k">Cuotas</div><div class="v">
-                        <?php
-                          $plazo = (int)$c['plazo'];
-                          $pendientes = (int)($c['cuotas_pendientes'] ?? 0);
-                          $actuales = $plazo - $pendientes;
-                          echo "$actuales/$plazo";
-                        ?>
-                      </div></div>
-                    </div>
-                    <div class="col-6 col-md-4">
-                      <div class="kv"><div class="k">Fecha Pago</div><div class="v"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></div></div>
-                    </div>
-                    <div class="col-6 col-md-4">
-                      <div class="kv"><div class="k">Días Mora</div><div class="v"><?php echo (int)$c['dias_mora']; ?></div></div>
-                    </div>
-                    <div class="col-6 col-md-4">
-                      <div class="kv"><div class="k"><strong>Pago Mínimo</strong></div><div class="v fw-bold text-primary">
-                        <?php
-                          $cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
-                          $saldoMora = (float)($c['saldo_mora'] ?? 0);
-                          $montoCobranza = (float)($c['monto_cobranza'] ?? 0);
-                          $pagoMin = ($saldoMora > 0 ? $saldoMora : $cuotaBase) + $montoCobranza;
-                          echo '$' . number_format($pagoMin, 0);
-                        ?>
-                      </div></div>
+            <?php if (empty($creditos)): ?>
+              <div class="text-muted small text-center py-3">
+                <i class="fa-solid fa-credit-card fa-2x mb-2 d-block"></i>
+                No tienes créditos activos.
+              </div>
+            <?php else: ?>
+              <?php foreach ($creditos as $c): ?>
+                <div class="info-card mb-3">
+                  <!-- Título del crédito con botón -->
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold text-primary">Crédito <?php echo htmlspecialchars($c['numero_credito']); ?></h6>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalCredito" onclick="mostrarDetallesCredito(<?php echo htmlspecialchars(json_encode($c)); ?>)">
+                      <i class="fa-solid fa-eye"></i> Ver detalles
+                    </button>
+                  </div>
+                  
+                  <!-- Información básica siempre visible -->
+                  <div class="mb-3">
+                    <div class="row g-2">
+                      <div class="col-6 col-md-4">
+                        <div class="kv"><div class="k">Línea de Crédito</div><div class="v"><?php echo htmlspecialchars($c['tipo_prestamo']); ?></div></div>
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <div class="kv"><div class="k">Cuotas</div><div class="v">
+                          <?php
+                            $plazo = (int)$c['plazo'];
+                            $pendientes = (int)($c['cuotas_pendientes'] ?? 0);
+                            $actuales = $plazo - $pendientes;
+                            echo "$actuales/$plazo";
+                          ?>
+                        </div></div>
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <div class="kv"><div class="k">Fecha Pago</div><div class="v"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></div></div>
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <div class="kv"><div class="k">Días Mora</div><div class="v"><?php echo (int)$c['dias_mora']; ?></div></div>
+                      </div>
+                      <div class="col-6 col-md-4">
+                        <div class="kv"><div class="k"><strong>Pago Mínimo</strong></div><div class="v fw-bold text-primary">
+                          <?php
+                            $cuotaBase = (float)($c['valor_cuota'] ?? ($c['cuota'] ?? 0));
+                            $saldoMora = (float)($c['saldo_mora'] ?? 0);
+                            $montoCobranza = (float)($c['monto_cobranza'] ?? 0);
+                            $pagoMin = ($saldoMora > 0 ? $saldoMora : $cuotaBase) + $montoCobranza;
+                            echo '$' . number_format($pagoMin, 0);
+                          ?>
+                        </div></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      </div>
-      <?php endif; ?>
-
-      <div class="section-card">
-        <div class="section-title collapsible-header" onclick="toggleCollapsible('productos')">
-          <i class="fa-solid fa-boxes-stacked me-2 text-primary"></i> Información de productos
-          <i class="fa-solid fa-chevron-down collapsible-icon float-end"></i>
-        </div>
-        <div class="collapsible-content" id="productos">
-          <div class="p-3">
-            <?php if (empty($asignaciones)): ?>
-              <div class="text-muted small text-center py-3">
-                <i class="fa-solid fa-box-open fa-2x mb-2 d-block"></i>
-                No tienes productos asignados.
-              </div>
-            <?php else: ?>
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead class="table-light">
-                    <tr>
-                      <th class="fw-bold">Producto</th>
-                      <th class="fw-bold text-end">Monto Pago</th>
-                      <th class="fw-bold text-center">Día Pago</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($asignaciones as $ap): ?>
-                      <tr>
-                        <td><?php echo htmlspecialchars($ap['producto_nombre']); ?></td>
-                        <td class="text-end fw-semibold"><?php echo '$' . number_format((float)$ap['monto_pago'], 0); ?></td>
-                        <td class="text-center"><?php echo (int)$ap['dia_pago']; ?></td>
-                      </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-              </div>
+              <?php endforeach; ?>
             <?php endif; ?>
           </div>
         </div>
+      </div>
+      
+      <!-- Botón Descargar estado de Cuenta -->
+      <div class="text-center mt-4">
+        <button class="btn btn-info" onclick="mostrarEnDesarrollo('Descargar estado de Cuenta')">
+          <i class="fa-solid fa-download me-2"></i>Descargar estado de Cuenta
+        </button>
       </div>
       
       <!-- Espacio adicional al final para mejor visualización -->
@@ -343,28 +212,37 @@ include __DIR__ . '/../../../views/layouts/header.php';
         </div>
       </div>
     </div>
-    
-    <!-- Espacio inferior para evitar que se vea pegado el último cuadro -->
-    <div style="height: 20px;"></div>
 
 <?php include __DIR__ . '/../../../views/layouts/footer.php'; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <style>
 /* Estilos para el modal de detalles de crédito */
 #modalCredito .kv .k {
-  color: #2c3e50 !important;
-  font-weight: 600 !important;
+  color: #6c757d !important;
+  font-weight: 500 !important;
 }
 
 #modalCredito .kv .v {
-  color: #495057 !important;
-  font-weight: 400 !important;
+  color: #212529 !important;
+  font-weight: 600 !important;
+}
+
+/* Estilos para el listado principal de créditos */
+.info-card .kv .k {
+  color: #6c757d !important;
+  font-weight: 500 !important;
+}
+
+.info-card .kv .v {
+  color: #212529 !important;
+  font-weight: 600 !important;
 }
 </style>
 
 <script>
-// Función para manejar las secciones principales (asociado, monetaria, creditos, productos)
+// Función para manejar las secciones principales
 function toggleCollapsible(id) {
   const content = document.getElementById(id);
   const icon = content.previousElementSibling.querySelector('.collapsible-icon');
@@ -377,6 +255,17 @@ function toggleCollapsible(id) {
     icon.classList.add('rotated');
   }
 }
+
+// Inicializar iconos para secciones desplegadas por defecto
+document.addEventListener('DOMContentLoaded', function() {
+  const expandedSections = document.querySelectorAll('.collapsible-content.show');
+  expandedSections.forEach(function(section) {
+    const icon = section.previousElementSibling.querySelector('.collapsible-icon');
+    if (icon) {
+      icon.classList.add('rotated');
+    }
+  });
+});
 
 // Función para mostrar los detalles del crédito en el modal
 function mostrarDetallesCredito(credito) {
@@ -445,6 +334,9 @@ function mostrarDetallesCredito(credito) {
   // Actualizar título del modal
   document.getElementById('numeroCreditoModal').textContent = credito.numero_credito;
 }
+
+// Función para mostrar mensaje de funcionalidad en desarrollo
+function mostrarEnDesarrollo(funcionalidad) {
+  alert(`🚧 ${funcionalidad}\n\nEn desarrollo, pronto habrá lanzamiento de la funcionalidad.`);
+}
 </script>
-
-

@@ -12,15 +12,47 @@ include __DIR__ . '/../views/layouts/header.php';
 ?>
 <link rel="stylesheet" href="../assets/css/main.css">
     <main class="container py-3">
-      <div class="card card-link mb-2">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="icon-circle me-3"><i class="fa-solid fa-chart-pie"></i></div>
-            <div>
-              <div class="fw-semibold">Resumen Financiero</div>
-              <div class="text-muted small">Consulta tus aportes, créditos y productos.</div>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="card card-link mb-2">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="icon-circle me-3"><i class="fa-solid fa-user"></i></div>
+                <div>
+                  <div class="fw-semibold">Perfil</div>
+                  <div class="text-muted small">Tu información personal y productos asignados.</div>
+                </div>
+                <div class="ms-auto"><a class="btn btn-sm btn-primary" href="../modules/perfil/pages/index.php">Ver</a></div>
+              </div>
             </div>
-            <div class="ms-auto"><a class="btn btn-sm btn-primary" href="../modules/resumen/pages/index.php">Ver</a></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="card card-link mb-2">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="icon-circle me-3"><i class="fa-solid fa-wallet"></i></div>
+                <div>
+                  <div class="fw-semibold">Información Monetaria</div>
+                  <div class="text-muted small">Consulta tu información financiera y aportes.</div>
+                </div>
+                <div class="ms-auto"><a class="btn btn-sm btn-primary" href="../modules/monetario/pages/index.php">Ver</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="card card-link mb-2">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="icon-circle me-3"><i class="fa-solid fa-credit-card"></i></div>
+                <div>
+                  <div class="fw-semibold">Información de Créditos</div>
+                  <div class="text-muted small">Consulta tus créditos y detalles de pago.</div>
+                </div>
+                <div class="ms-auto"><a class="btn btn-sm btn-primary" href="../modules/creditos/pages/index.php">Ver</a></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -46,7 +46,11 @@ $logoUrl = cx_repo_base_url() . '/ui/assets/img/logo.png';
           <?php if (isset($_SESSION['cx_cedula']) && !empty($_SESSION['cx_cedula'])): ?>
             <?php 
             $currentScript = $_SERVER['SCRIPT_NAME'] ?? '';
-            $logoutUrl = (strpos($currentScript, '/modules/resumen/pages/') !== false) ? '../../../login.php?logout=1' : '../login.php?logout=1';
+            if (strpos($currentScript, '/modules/') !== false) {
+              $logoutUrl = '../../../login.php?logout=1';
+            } else {
+              $logoutUrl = '../login.php?logout=1';
+            }
             ?>
             <a href="<?php echo $logoutUrl; ?>" class="logout-btn" title="Cerrar sesión">
               <i class="fa-solid fa-right-from-bracket"></i>

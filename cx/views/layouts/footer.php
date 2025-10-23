@@ -6,29 +6,26 @@
           
           // Detectar página actual - solo una puede ser true
           $isIndex = strpos($currentScript, '/pages/index.php') !== false;
-          $isResumen = strpos($currentScript, '/modules/resumen/pages/index.php') !== false;
+          $isPerfil = strpos($currentScript, '/modules/perfil/pages/index.php') !== false;
+          $isMonetario = strpos($currentScript, '/modules/monetario/pages/index.php') !== false;
+          $isCreditos = strpos($currentScript, '/modules/creditos/pages/index.php') !== false;
           
           // Asegurar que solo una página esté activa
-          if ($isResumen) {
-            $isIndex = false; // Si estamos en resumen, inicio no puede estar activo
+          if ($isPerfil || $isMonetario || $isCreditos) {
+            $isIndex = false; // Si estamos en cualquier módulo, inicio no puede estar activo
           }
           
-          // Determinar las rutas correctas según la ubicación actual
-          if (strpos($currentScript, '/modules/resumen/pages/') !== false) {
-            $indexUrl = '../../../pages/index.php';
-            $resumenUrl = 'index.php';
-          } else {
-            $indexUrl = 'index.php';
-            $resumenUrl = '../modules/resumen/pages/index.php';
-          }
-          
-          // Debug temporal
-          if (isset($_GET['debug_footer'])) {
-            echo "<!-- DEBUG FOOTER: currentScript='$currentScript', isIndex=" . ($isIndex ? 'true' : 'false') . ", isResumen=" . ($isResumen ? 'true' : 'false') . " -->";
-          }
+          // Usar rutas absolutas basadas en la estructura del proyecto
+          $baseUrl = '/projects/multi_app/cx/';
+          $indexUrl = $baseUrl . 'pages/index.php';
+          $perfilUrl = $baseUrl . 'modules/perfil/pages/index.php';
+          $monetarioUrl = $baseUrl . 'modules/monetario/pages/index.php';
+          $creditosUrl = $baseUrl . 'modules/creditos/pages/index.php';
           ?>
           <li class="nav-item"><a class="nav-link <?php echo $isIndex ? 'active' : ''; ?>" href="<?php echo $indexUrl; ?>"><i class="fa-solid fa-house"></i><br>Inicio</a></li>
-          <li class="nav-item"><a class="nav-link <?php echo $isResumen ? 'active' : ''; ?>" href="<?php echo $resumenUrl; ?>"><i class="fa-solid fa-chart-pie"></i><br>Resumen</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $isPerfil ? 'active' : ''; ?>" href="<?php echo $perfilUrl; ?>"><i class="fa-solid fa-user"></i><br>Perfil</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $isMonetario ? 'active' : ''; ?>" href="<?php echo $monetarioUrl; ?>"><i class="fa-solid fa-wallet"></i><br>Monetario</a></li>
+          <li class="nav-item"><a class="nav-link <?php echo $isCreditos ? 'active' : ''; ?>" href="<?php echo $creditosUrl; ?>"><i class="fa-solid fa-credit-card"></i><br>Créditos</a></li>
         </ul>
       </div>
     </nav>
