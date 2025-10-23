@@ -64,7 +64,8 @@
                 "creditos_docs.crear",
                 "creditos_docs.listar",
                 "creditos_docs.gestionar",
-                "ticketera"
+                "ticketera",
+                "cx_control.publicidad"
             ]
         },
         "tienda" : {
