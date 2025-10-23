@@ -116,8 +116,33 @@ function getImageUrl($imagen) {
         return $imagen;
     }
     
-    // Obtener la URL base completa usando el sistema de rutas dinámicas
-    $baseUrl = cx_getFullBaseUrlRobust();
+    // Detectar si estamos en servidor de producción o desarrollo
+    $isProduction = !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false;
+    
+    if ($isProduction) {
+        // En producción, usar la URL base del servidor
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'];
+        
+        // Detectar la ruta base del proyecto en el servidor
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+        $basePath = '/multi_app'; // Valor por defecto para producción
+        
+        // Buscar marcadores del proyecto en la ruta
+        $markers = ['/cx/', '/ui/', '/cat/', '/py/'];
+        foreach ($markers as $marker) {
+            $pos = strpos($scriptName, $marker);
+            if ($pos !== false) {
+                $basePath = substr($scriptName, 0, $pos);
+                break;
+            }
+        }
+        
+        $baseUrl = $protocol . '://' . $host . $basePath;
+    } else {
+        // En desarrollo local, usar la función existente
+        $baseUrl = cx_getFullBaseUrlRobust();
+    }
     
     // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
     if (strpos($imagen, '/multi_app/') === 0) {

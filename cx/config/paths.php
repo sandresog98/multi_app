@@ -21,15 +21,47 @@ function cx_getBaseUrl() {
 
 // URL base del repositorio (para acceder a ui, cx, etc.)
 function cx_repo_base_url(): string {
-    $script = $_SERVER['SCRIPT_NAME'] ?? '';
-    $marker = '/cx/';
-    $pos = strpos($script, $marker);
-    if ($pos !== false) {
-        return substr($script, 0, $pos);
+    // Detectar si estamos en servidor de producción o desarrollo
+    $isProduction = !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false;
+    
+    if ($isProduction) {
+        // En producción, construir URL completa
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'];
+        
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        $marker = '/cx/';
+        $pos = strpos($script, $marker);
+        
+        if ($pos !== false) {
+            $basePath = substr($script, 0, $pos);
+        } else {
+            // Buscar otros marcadores del proyecto
+            $markers = ['/ui/', '/cat/', '/py/'];
+            $basePath = '/multi_app'; // Valor por defecto
+            
+            foreach ($markers as $marker) {
+                $pos = strpos($script, $marker);
+                if ($pos !== false) {
+                    $basePath = substr($script, 0, $pos);
+                    break;
+                }
+            }
+        }
+        
+        return $protocol . '://' . $host . $basePath;
+    } else {
+        // En desarrollo local, usar lógica original
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        $marker = '/cx/';
+        $pos = strpos($script, $marker);
+        if ($pos !== false) {
+            return substr($script, 0, $pos);
+        }
+        // Si no encontramos /cx/, usar la ruta base del proyecto
+        $basePath = dirname($script);
+        return $basePath;
     }
-    // Si no encontramos /cx/, usar la ruta base del proyecto
-    $basePath = dirname($script);
-    return $basePath;
 }
 
 // Ruta absoluta a partir de CX
