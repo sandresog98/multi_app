@@ -5,7 +5,7 @@
           $currentScript = $_SERVER['SCRIPT_NAME'] ?? '';
           
           // Detectar página actual - solo una puede ser true
-          $isIndex = strpos($currentScript, '/pages/index.php') !== false;
+          $isIndex = strpos($currentScript, '/cx/index.php') !== false;
           $isPerfil = strpos($currentScript, '/modules/perfil/pages/index.php') !== false;
           $isMonetario = strpos($currentScript, '/modules/monetario/pages/index.php') !== false;
           $isCreditos = strpos($currentScript, '/modules/creditos/pages/index.php') !== false;
@@ -17,7 +17,7 @@
           
           // Usar rutas absolutas basadas en la estructura del proyecto
           $baseUrl = '/projects/multi_app/cx/';
-          $indexUrl = $baseUrl . 'pages/index.php';
+          $indexUrl = $baseUrl . 'index.php';
           $perfilUrl = $baseUrl . 'modules/perfil/pages/index.php';
           $monetarioUrl = $baseUrl . 'modules/monetario/pages/index.php';
           $creditosUrl = $baseUrl . 'modules/creditos/pages/index.php';
