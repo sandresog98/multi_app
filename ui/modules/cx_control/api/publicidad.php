@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../models/CxPublicidad.php';
 require_once __DIR__ . '/../../../controllers/AuthController.php';
 require_once __DIR__ . '/../../../utils/FileUploadManager.php';
+require_once __DIR__ . '/../../../../cx/config/paths.php';
 
 try {
     $auth = new AuthController();
@@ -116,7 +117,6 @@ function getImageUrl($imagen) {
     }
     
     // Obtener la URL base completa usando el sistema de rutas dinámicas
-    require_once __DIR__ . '/../../../cx/config/paths.php';
     $baseUrl = cx_getFullBaseUrl();
     
     // Si la imagen empieza con /multi_app/, usar directamente la ruta completa

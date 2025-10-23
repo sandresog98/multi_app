@@ -136,17 +136,29 @@ async function cargarPublicidades() {
     console.log('Respuesta de listar:', res);
     console.log('Status de listar:', res.status);
     
+    if (!res.ok) {
+      console.error('Error HTTP:', res.status, res.statusText);
+      const errorText = await res.text();
+      console.error('Error response:', errorText);
+      return;
+    }
+    
     const json = await res.json();
     console.log('JSON de listar:', json);
     
     if (json.success) {
       console.log('Publicidades encontradas:', json.data.length);
+      if (json.data.length === 0) {
+        console.log('No hay publicidades en la base de datos');
+      }
       mostrarPublicidades(json.data);
     } else {
       console.error('Error al cargar publicidades:', json.message);
+      alert('Error al cargar publicidades: ' + json.message);
     }
   } catch (error) {
     console.error('Error en cargarPublicidades:', error);
+    alert('Error al cargar publicidades: ' + error.message);
   }
 }
 
