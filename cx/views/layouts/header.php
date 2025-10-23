@@ -28,10 +28,7 @@ $logoUrl = cx_repo_base_url() . '/ui/assets/img/logo.png';
       .brand-sub { opacity:.9; font-size: 12px; }
       .logout-btn { background: rgba(220,38,38,0.8); border: 1px solid rgba(220,38,38,0.9); color: white; padding: 8px 12px; border-radius: 8px; transition: all 0.3s ease; }
       .logout-btn:hover { background: rgba(220,38,38,1); color: white; }
-      .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e5e7eb; z-index: 10; }
-      .bottom-nav .nav-link { padding: 10px 6px; font-size: 12px; color:#6b7280; }
-      .bottom-nav .nav-link.active { color:#0ea5e9; }
-      main { padding-bottom: 64px; }
+      main { padding-bottom: 70px; }
     </style>
   </head>
   <body class="bg-light">

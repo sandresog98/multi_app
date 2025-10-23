@@ -41,19 +41,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 600);
         });
     });
-    
-    // Animación de entrada del footer
-    const footer = document.querySelector('.modern-footer');
-    if (footer) {
-        footer.style.opacity = '0';
-        footer.style.transform = 'translateY(100%)';
-        
-        setTimeout(() => {
-            footer.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            footer.style.opacity = '1';
-            footer.style.transform = 'translateY(0)';
-        }, 100);
-    }
 });
 
 // CSS para la animación ripple

@@ -1,7 +1,7 @@
 /* Nuevo Footer con Pestañas - Diseño Moderno */
 
-/* Footer principal con efecto glassmorphism */
-.modern-footer {
+/* Footer principal con efecto glassmorphism - FORZADO */
+body .modern-footer {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
@@ -12,20 +12,23 @@
   z-index: 1000 !important;
   padding: 8px 0 !important;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1) !important;
+  display: block !important;
+  width: 100% !important;
 }
 
-/* Contenedor de pestañas */
-.tab-container {
+/* Contenedor de pestañas - FORZADO */
+body .modern-footer .tab-container {
   display: flex !important;
   justify-content: space-around !important;
   align-items: center !important;
   max-width: 100% !important;
   margin: 0 auto !important;
   padding: 0 16px !important;
+  width: 100% !important;
 }
 
-/* Elementos de pestaña */
-.tab-item {
+/* Elementos de pestaña - FORZADO */
+body .modern-footer .tab-item {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
@@ -39,6 +42,7 @@
   justify-content: center !important;
   text-decoration: none !important;
   color: #64748b !important;
+  background: transparent !important;
 }
 
 .tab-item:hover {
@@ -142,6 +146,22 @@
 /* Compatibilidad con el sistema anterior - ocultar elementos antiguos */
 .bottom-nav {
   display: none !important;
+}
+
+/* DEBUG: Asegurar que el footer sea visible */
+.modern-footer {
+  border: 2px solid red !important;
+  min-height: 60px !important;
+}
+
+.modern-footer .tab-container {
+  border: 1px solid blue !important;
+  min-height: 50px !important;
+}
+
+.modern-footer .tab-item {
+  border: 1px solid green !important;
+  background: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Asegurar que el contenido tenga espacio para el nuevo footer */

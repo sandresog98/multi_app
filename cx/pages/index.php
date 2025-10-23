@@ -11,7 +11,46 @@ $heroSubtitle = 'Bienvenido' . ($nombre ? ', ' . htmlspecialchars($nombre) : '')
 include __DIR__ . '/../views/layouts/header.php';
 ?>
 <link rel="stylesheet" href="../assets/css/main.css">
+    <style>
+      /* Estilos para el logo de la cooperativa */
+      .coop-logo {
+        max-width: 360px !important;
+        height: auto !important;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1)) !important;
+        transition: transform 0.3s ease !important;
+      }
+      .coop-logo:hover {
+        transform: scale(1.05) !important;
+      }
+      .logo-container {
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(10px) !important;
+        border-radius: 15px !important;
+        padding: 25px !important;
+        margin-bottom: 25px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      /* Responsive para el logo */
+      @media (max-width: 480px) {
+        .coop-logo {
+          max-width: 280px !important;
+        }
+        .logo-container {
+          padding: 20px !important;
+          margin-bottom: 20px !important;
+        }
+      }
+    </style>
     <main class="container py-3">
+      <!-- Logo de la cooperativa -->
+      <div class="text-center logo-container">
+        <img src="<?php echo cx_repo_base_url(); ?>/cx/assets/img/logo_coop_blue.png" 
+             alt="Logo Cooperativa" 
+             class="coop-logo">
+      </div>
+      
       <div class="row g-3">
         <div class="col-12 col-md-6">
           <div class="card card-link mb-2">
