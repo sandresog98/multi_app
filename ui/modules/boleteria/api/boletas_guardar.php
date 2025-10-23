@@ -21,7 +21,7 @@ try {
                     'allowedExtensions' => ['jpg', 'jpeg', 'png', 'pdf'],
                     'prefix' => 'boleta',
                     'userId' => $auth->getCurrentUser()['id'] ?? '',
-                    'webPath' => rtrim(dirname(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? ''))), '/') . '/assets/uploads/boletas'
+                    'webPath' => 'assets/uploads/boletas'
                 ];
                 
                 $baseDir = __DIR__ . '/../../../assets/uploads/boletas';
