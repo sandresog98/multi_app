@@ -207,6 +207,7 @@ include '../../../views/layouts/header.php';
                   <th class="text-center text-nowrap">Final</th>
                   <th class="text-end">V.Inicial</th>
                   <th class="text-center">Cuotas</th>
+                  <th class="text-center text-nowrap">Fecha Pago</th>
                   <th class="text-end">Mora</th>
                   <th class="text-center">Días Mora</th>
                   <th class="text-end">Cobranza</th>
@@ -231,6 +232,7 @@ include '../../../views/layouts/header.php';
                         echo "$actuales/$plazo";
                       ?>
                     </td>
+                    <td class="text-center text-nowrap"><?php echo !empty($c['fecha_pago']) ? date('d/m/Y', strtotime($c['fecha_pago'])) : '-'; ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['saldo_mora'] ?? 0), 0); ?></td>
                     <td class="text-center"><?php echo (int)$c['dias_mora']; ?></td>
                     <td class="text-end"><?php echo '$' . number_format((float)($c['monto_cobranza'] ?? 0), 0); ?></td>

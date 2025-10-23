@@ -990,11 +990,11 @@ CREATE TABLE IF NOT EXISTS credito_docs_documentos (
     es_obligatorio BOOLEAN DEFAULT FALSE,
     es_opcional BOOLEAN DEFAULT FALSE,
     es_trato_especial BOOLEAN DEFAULT FALSE,
-    aplica_para_tipo_solicitante JSON NOT NULL,
+    aplica_para_tipo_solicitante TEXT NOT NULL,
     fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     subido_por INT NULL,
     
-    FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
+    -- FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
     KEY idx_solicitud_etapa (solicitud_id, etapa),
     KEY idx_tipo_documento (tipo_documento),
     UNIQUE KEY unique_documento_solicitud (solicitud_id, etapa, tipo_documento)
@@ -1010,8 +1010,8 @@ CREATE TABLE IF NOT EXISTS credito_docs_configuracion_documentos (
     es_obligatorio BOOLEAN DEFAULT FALSE,
     es_opcional BOOLEAN DEFAULT FALSE,
     es_trato_especial BOOLEAN DEFAULT FALSE,
-    aplica_para_tipo_solicitante JSON NOT NULL,
-    validaciones_especiales JSON NULL,
+    aplica_para_tipo_solicitante TEXT NOT NULL,
+    validaciones_especiales TEXT NULL,
     orden_display INT DEFAULT 0,
     estado_activo BOOLEAN DEFAULT TRUE,
     
@@ -1024,12 +1024,12 @@ CREATE TABLE IF NOT EXISTS credito_docs_validaciones_especiales (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     tipo_validacion VARCHAR(100) NOT NULL,
-    documentos_requeridos JSON NOT NULL,
-    documentos_subidos JSON NOT NULL,
+    documentos_requeridos TEXT NOT NULL,
+    documentos_subidos TEXT NOT NULL,
     cumple_validacion BOOLEAN DEFAULT FALSE,
     fecha_validacion TIMESTAMP NULL,
     
-    FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
+    -- FOREIGN KEY (solicitud_id) REFERENCES credito_docs_solicitudes(id) ON DELETE CASCADE,
     KEY idx_solicitud_tipo (solicitud_id, tipo_validacion)
 );
 
