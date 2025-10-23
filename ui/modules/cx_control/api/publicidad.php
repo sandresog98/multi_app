@@ -69,7 +69,7 @@ try {
         if ($action === 'listar') {
             $publicidades = $publicidadModel->obtenerPublicidades();
             
-            // Agregar información de estado
+            // Agregar información de estado y URLs de imagen
             foreach ($publicidades as &$pub) {
                 $hoy = new DateTime();
                 $fechaInicio = new DateTime($pub['fecha_inicio']);
@@ -89,6 +89,9 @@ try {
                 // Formatear fechas
                 $pub['fecha_inicio_formatted'] = $fechaInicio->format('d/m/Y');
                 $pub['fecha_fin_formatted'] = $fechaFin->format('d/m/Y');
+                
+                // Generar URL completa de la imagen
+                $pub['imagen_url'] = getImageUrl($pub['imagen']);
             }
             
             echo json_encode(['success' => true, 'data' => $publicidades]);
@@ -104,5 +107,39 @@ try {
     error_log('Stack trace: ' . $e->getTraceAsString());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+function getImageUrl($imagen) {
+    // Si la imagen ya es una URL completa, devolverla tal como está
+    if (strpos($imagen, 'http://') === 0 || strpos($imagen, 'https://') === 0) {
+        return $imagen;
+    }
+    
+    // Obtener la URL base completa usando el sistema de rutas dinámicas
+    require_once __DIR__ . '/../../../cx/config/paths.php';
+    $baseUrl = cx_getFullBaseUrl();
+    
+    // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
+    if (strpos($imagen, '/multi_app/') === 0) {
+        // Reemplazar /multi_app/ con la URL base completa
+        return str_replace('/multi_app', $baseUrl, $imagen);
+    }
+    
+    // Si la imagen empieza con /projects/multi_app/, usar directamente la ruta completa
+    if (strpos($imagen, '/projects/multi_app/') === 0) {
+        // Reemplazar /projects/multi_app/ con la URL base completa
+        return str_replace('/projects/multi_app', $baseUrl, $imagen);
+    }
+    
+    // Si es una ruta relativa, construir la URL completa
+    $cleanImage = ltrim($imagen, '/');
+    
+    // Verificar si la imagen ya incluye el directorio cx_publicidad
+    if (strpos($cleanImage, 'cx_publicidad/') === 0) {
+        return $baseUrl . '/ui/uploads/' . $cleanImage;
+    } else {
+        // Si no incluye el directorio, agregarlo
+        return $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
+    }
 }
 ?>

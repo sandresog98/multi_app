@@ -167,8 +167,8 @@ function mostrarPublicidades(publicidades) {
       <td>${pub.nombre}</td>
       <td>${pub.descripcion || '-'}</td>
       <td>
-        ${pub.imagen && pub.imagen !== 'test.jpg' ? 
-          `<img src="${pub.imagen}" alt="Imagen" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">` : 
+        ${pub.imagen_url && pub.imagen_url !== 'test.jpg' ? 
+          `<img src="${pub.imagen_url}" alt="Imagen" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">` : 
           '<span class="text-muted">Sin imagen</span>'
         }
       </td>
