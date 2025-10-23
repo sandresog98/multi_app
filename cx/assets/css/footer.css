@@ -32,16 +32,23 @@
 /* Iconos del footer con fondo blanco semi-transparente */
 .bottom-nav .nav-link {
   background: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 12px !important;
-  margin: 4px 2px !important;
-  padding: 8px 4px !important;
+  border-radius: 8px !important;
+  margin: 2px 1px !important;
+  padding: 6px 2px !important;
   transition: all 0.3s ease !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  min-width: 50px !important;
+  min-width: 0 !important;
+  max-width: none !important;
   text-align: center !important;
   position: relative !important;
   z-index: 2 !important;
-  font-size: 0.8rem !important;
+  font-size: 0.7rem !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 60px !important;
 }
 
 .bottom-nav .nav-link:hover {
@@ -59,37 +66,95 @@
 
 /* Mejorar el contenedor del footer */
 .bottom-nav .container {
-  padding: 8px 16px !important;
+  padding: 6px 8px !important;
   position: relative !important;
   z-index: 2 !important;
+  max-width: 100% !important;
 }
 
 .bottom-nav .nav {
-  gap: 4px !important;
-  justify-content: space-around !important;
+  gap: 2px !important;
+  justify-content: space-between !important;
   flex-wrap: nowrap !important;
   display: flex !important;
+  align-items: stretch !important;
+  width: 100% !important;
 }
 
 /* Forzar que los elementos se mantengan en una fila */
 .bottom-nav .nav-item {
   flex: 1 !important;
   min-width: 0 !important;
+  max-width: none !important;
+  display: flex !important;
 }
 
 /* Media queries para pantallas pequeñas */
 @media (max-width: 480px) {
   .bottom-nav .nav-link {
-    padding: 6px 2px !important;
-    font-size: 0.7rem !important;
-    min-width: 40px !important;
+    padding: 4px 1px !important;
+    font-size: 0.6rem !important;
+    height: 55px !important;
+    margin: 1px 0.5px !important;
   }
   
   .bottom-nav .nav {
-    gap: 2px !important;
+    gap: 1px !important;
   }
   
   .bottom-nav .container {
-    padding: 6px 8px !important;
+    padding: 4px 6px !important;
   }
+  
+  /* Ajustar iconos para pantallas muy pequeñas */
+  .bottom-nav .nav-link i {
+    font-size: 0.8rem !important;
+    margin-bottom: 2px !important;
+  }
+}
+
+/* Media queries para pantallas extra pequeñas */
+@media (max-width: 360px) {
+  .bottom-nav .nav-link {
+    padding: 3px 0.5px !important;
+    font-size: 0.55rem !important;
+    height: 50px !important;
+    margin: 1px 0px !important;
+  }
+  
+  .bottom-nav .nav {
+    gap: 0px !important;
+  }
+  
+  .bottom-nav .container {
+    padding: 3px 4px !important;
+  }
+  
+  .bottom-nav .nav-link i {
+    font-size: 0.7rem !important;
+    margin-bottom: 1px !important;
+  }
+}
+
+/* Estilos adicionales para iconos y texto */
+.bottom-nav .nav-link i {
+  display: block !important;
+  margin-bottom: 3px !important;
+  font-size: 1rem !important;
+}
+
+.bottom-nav .nav-link br {
+  display: none !important;
+}
+
+/* Asegurar que el texto no se corte */
+.bottom-nav .nav-link {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Optimización para el logo de fondo */
+.bottom-nav::before {
+  background-size: 300px auto !important;
 }
