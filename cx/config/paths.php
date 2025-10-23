@@ -61,7 +61,22 @@ function cx_redirect(string $path): string {
 // Obtener URL base completa del servidor (protocolo + host + puerto)
 function cx_getFullBaseUrl(): string {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // Detectar el host de manera más robusta
+    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+    
+    // Si estamos en CLI, usar localhost por defecto
+    if (php_sapi_name() === 'cli') {
+        $host = 'localhost';
+    }
+    
+    // Log para debug (solo en desarrollo)
+    if (defined('DEBUG') && DEBUG) {
+        error_log("cx_getFullBaseUrl - HTTP_HOST: " . ($_SERVER['HTTP_HOST'] ?? 'no definido'));
+        error_log("cx_getFullBaseUrl - SERVER_NAME: " . ($_SERVER['SERVER_NAME'] ?? 'no definido'));
+        error_log("cx_getFullBaseUrl - Host detectado: " . $host);
+    }
+    
     $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
     
     // Encontrar la ruta base del proyecto
@@ -98,7 +113,7 @@ function cx_getFullBaseUrl(): string {
             
             // Si estamos en CLI o la ruta está vacía, usar una ruta por defecto
             if (empty($basePath) || $basePath === '.') {
-                $basePath = '/projects/multi_app';
+                $basePath = '/multi_app';
             }
         }
     }
@@ -106,7 +121,14 @@ function cx_getFullBaseUrl(): string {
     // Limpiar la ruta base para evitar puntos dobles
     $basePath = rtrim($basePath, '.');
     
-    return $protocol . '://' . $host . $basePath;
+    $fullUrl = $protocol . '://' . $host . $basePath;
+    
+    // Log para debug (solo en desarrollo)
+    if (defined('DEBUG') && DEBUG) {
+        error_log("cx_getFullBaseUrl - URL final: " . $fullUrl);
+    }
+    
+    return $fullUrl;
 }
 
 // Obtener URL base para UI (para APIs)
@@ -117,6 +139,53 @@ function cx_getUiBaseUrl(): string {
 // Obtener URL base para CX
 function cx_getCxBaseUrl(): string {
     return cx_getFullBaseUrl() . '/cx';
+}
+
+// Función alternativa más robusta para detectar la URL base
+function cx_getFullBaseUrlRobust(): string {
+    // Detectar protocolo
+    $protocol = 'http';
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+        $protocol = 'https';
+    } elseif (isset($_SERVER['REQUEST_SCHEME'])) {
+        $protocol = $_SERVER['REQUEST_SCHEME'];
+    }
+    
+    // Detectar host de manera más robusta
+    $host = 'localhost';
+    if (isset($_SERVER['HTTP_HOST'])) {
+        $host = $_SERVER['HTTP_HOST'];
+    } elseif (isset($_SERVER['SERVER_NAME'])) {
+        $host = $_SERVER['SERVER_NAME'];
+        if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80 && $_SERVER['SERVER_PORT'] != 443) {
+            $host .= ':' . $_SERVER['SERVER_PORT'];
+        }
+    }
+    
+    // Detectar ruta base del proyecto
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $basePath = '/multi_app'; // Valor por defecto
+    
+    // Buscar marcadores del proyecto
+    $markers = ['/cx/', '/ui/', '/cat/', '/py/'];
+    foreach ($markers as $marker) {
+        $pos = strpos($scriptName, $marker);
+        if ($pos !== false) {
+            $basePath = substr($scriptName, 0, $pos);
+            break;
+        }
+    }
+    
+    // Si no encontramos marcadores, buscar multi_app en la ruta
+    if ($basePath === '/multi_app') {
+        $pathParts = explode('/', trim($scriptName, '/'));
+        $multiAppPos = array_search('multi_app', $pathParts);
+        if ($multiAppPos !== false) {
+            $basePath = '/' . implode('/', array_slice($pathParts, 0, $multiAppPos + 1));
+        }
+    }
+    
+    return $protocol . '://' . $host . $basePath;
 }
 ?>
 

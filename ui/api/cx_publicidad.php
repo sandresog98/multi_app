@@ -61,7 +61,7 @@ function getImageUrl($imagen) {
     }
     
     // Obtener la URL base completa usando el sistema de rutas dinámicas
-    $baseUrl = cx_getFullBaseUrl();
+    $baseUrl = cx_getFullBaseUrlRobust();
     
     // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
     if (strpos($imagen, '/multi_app/') === 0) {
@@ -69,10 +69,11 @@ function getImageUrl($imagen) {
         return str_replace('/multi_app', $baseUrl, $imagen);
     }
     
-    // Si la imagen empieza con /projects/multi_app/, usar directamente la ruta completa
+    // Si la imagen empieza con /projects/multi_app/, convertir a ruta relativa y construir URL completa
     if (strpos($imagen, '/projects/multi_app/') === 0) {
-        // Reemplazar /projects/multi_app/ con la URL base completa
-        return str_replace('/projects/multi_app', $baseUrl, $imagen);
+        // Remover /projects/multi_app/ del inicio para obtener la ruta relativa
+        $relativePath = substr($imagen, strlen('/projects/multi_app'));
+        return $baseUrl . $relativePath;
     }
     
     // Si es una ruta relativa, construir la URL completa
