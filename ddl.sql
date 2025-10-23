@@ -1090,3 +1090,25 @@ INSERT INTO credito_docs_configuracion_documentos (etapa, tipo_documento, nombre
 ('final', 'documento_pagare', 'Documento Pagaré', 'Documento Pagaré', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 2),
 ('final', 'documento_libranza', 'Documento Libranza para Crédito', 'Documento Libranza para Crédito', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 3),
 ('final', 'plan_pagos', 'Plan de Pagos', 'Plan de Pagos', TRUE, FALSE, FALSE, '["estudiante", "empleado_descuento_nomina", "empleado_sin_descuento", "independiente", "pensionado_descuento_libranza", "pensionado_sin_descuento_libranza"]', 4);
+
+CREATE TABLE IF NOT EXISTS control_cx_publicidad (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo ENUM('pagina_principal', 'perfil', 'creditos', 'monetario') DEFAULT 'pagina_principal',
+    nombre VARCHAR(255) NOT NULL,
+    descripcion TEXT,
+    imagen VARCHAR(500),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    creado_por INT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion DATETIME NULL DEFAULT NULL,
+    INDEX idx_fechas_tipo (fecha_inicio, fecha_fin, tipo),
+    INDEX idx_tipo_fecha_creacion (tipo, fecha_creacion DESC)
+);
+
+-- Trigger para actualizar fecha_actualizacion automáticamente
+DROP TRIGGER IF EXISTS control_cx_publicidad_bu;
+CREATE TRIGGER control_cx_publicidad_bu 
+BEFORE UPDATE ON control_cx_publicidad
+FOR EACH ROW 
+SET NEW.fecha_actualizacion = NOW();

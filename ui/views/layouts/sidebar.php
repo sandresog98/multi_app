@@ -239,6 +239,18 @@
         </div>
         <?php endif; ?>
 
+        <?php $isCxControlOpen = in_array(($currentPage ?? ''), ['cx_control']); ?>
+        <?php if (canAccess('cx_control.publicidad')): ?>
+        <a class="nav-link d-flex align-items-center justify-content-between" data-bs-toggle="collapse" href="#menuCxControl" role="button" aria-expanded="<?php echo $isCxControlOpen ? 'true' : 'false'; ?>" aria-controls="menuCxControl">
+            <span><i class="fas fa-mobile-alt me-2"></i>CX Control</span>
+        </a>
+        <div class="collapse <?php echo $isCxControlOpen ? 'show' : ''; ?> ms-3" id="menuCxControl">
+            <a class="nav-link <?php echo $currentPage === 'cx_control' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/cx_control/pages/publicidad.php">
+                <i class="fas fa-bullhorn small me-2"></i>Publicidad
+            </a>
+        </div>
+        <?php endif; ?>
+
         
         <?php if (canAccess('usuarios.gestion')): ?>
         <a class="nav-link <?php echo $currentPage === 'usuarios' ? 'active' : ''; ?>" href="<?php echo getBaseUrl(); ?>modules/usuarios/pages/usuarios.php">
