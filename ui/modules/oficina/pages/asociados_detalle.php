@@ -85,17 +85,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Manejar archivo si es necesario
     $archivoRuta = null;
     if (!empty($_FILES['archivo']['name'])) {
-      $resultadoArchivo = FileUploadManager::saveUploadedFile(
-        $_FILES['archivo'],
-        'clausulas',
-        $currentUser['id'] ?? 1,
-        'clausula_asignacion'
-      );
-      
-      if ($resultadoArchivo['success']) {
-        $archivoRuta = $resultadoArchivo['file_path'];
-      } else {
-        $error = 'Error al subir el archivo: ' . $resultadoArchivo['message'];
+      try {
+        $resultadoArchivo = FileUploadManager::saveUploadedFile(
+          $_FILES['archivo'],
+          '../../../uploads/clausulas',
+          [
+            'prefix' => 'clausula_asignacion',
+            'userId' => $currentUser['id'] ?? 1,
+            'maxSize' => 10 * 1024 * 1024, // 10MB
+            'allowedExtensions' => ['pdf', 'jpg', 'jpeg', 'png'],
+            'webPath' => '/projects/multi_app/ui/uploads/clausulas'
+          ]
+        );
+        
+        // Generar URL web válida para el archivo
+        if (!empty($resultadoArchivo['webUrl'])) {
+          $archivoRuta = $resultadoArchivo['webUrl'];
+        } else {
+          // Generar URL manualmente desde la ruta del archivo
+          $fileName = basename($resultadoArchivo['path']);
+          $year = date('Y');
+          $month = date('m');
+          // Usar URL completa desde la raíz del servidor
+          $archivoRuta = "/projects/multi_app/ui/uploads/clausulas/{$year}/{$month}/{$fileName}";
+        }
+      } catch (Exception $e) {
+        $error = 'Error al subir el archivo: ' . $e->getMessage();
         // Continuar sin archivo o mostrar error
       }
     }
@@ -631,7 +646,16 @@ include '../../../views/layouts/header.php';
                         </td>
                         <td class="text-center">
                           <?php if (!empty($ac['archivo_ruta'])): ?>
-                            <a href="<?php echo htmlspecialchars($ac['archivo_ruta']); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <?php 
+                              // Corregir URL si es necesario
+                              $archivoUrl = $ac['archivo_ruta'];
+                              if (strpos($archivoUrl, '/uploads/clausulas/') === 0) {
+                                $archivoUrl = '/projects/multi_app/ui' . $archivoUrl;
+                              } elseif (strpos($archivoUrl, 'uploads/clausulas/') === 0) {
+                                $archivoUrl = '/projects/multi_app/ui/' . $archivoUrl;
+                              }
+                            ?>
+                            <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
                               <i class="fas fa-file me-1"></i>Ver
                             </a>
                           <?php else: ?>

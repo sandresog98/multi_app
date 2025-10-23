@@ -286,12 +286,16 @@ class CreditosDocs {
 
             // Subir archivo usando FileUploadManager
             try {
+                // Directorio base para créditos_docs
+                $baseDir = __DIR__ . '/../../../assets/uploads/creditos_docs';
+                
                 $resultadoArchivo = FileUploadManager::saveUploadedFile(
                     $archivo,
-                    'creditos_docs',
+                    $baseDir,
                     [
                         'userId' => $usuarioId,
-                        'prefix' => $tipoDocumento
+                        'prefix' => $tipoDocumento,
+                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs'
                     ]
                 );
             } catch (Exception $e) {
@@ -623,12 +627,16 @@ class CreditosDocs {
 
             // Subir nuevo archivo
             try {
+                // Directorio base para créditos_docs
+                $baseDir = __DIR__ . '/../../../assets/uploads/creditos_docs';
+                
                 $resultadoArchivo = FileUploadManager::saveUploadedFile(
                     $archivo,
-                    'creditos_docs',
+                    $baseDir,
                     [
                         'userId' => $usuarioId,
-                        'prefix' => $documentoExistente['tipo_documento']
+                        'prefix' => $documentoExistente['tipo_documento'],
+                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs'
                     ]
                 );
             } catch (Exception $e) {
