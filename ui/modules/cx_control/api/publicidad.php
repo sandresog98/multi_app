@@ -21,7 +21,7 @@ try {
             }
             
             // Manejar archivo de imagen
-            $imagenRuta = '/ui/assets/img/logo.png'; // Por defecto
+            $imagenRuta = '/multi_app/ui/assets/img/logo.png'; // Por defecto
             
             if (!empty($_FILES['imagen']) && is_uploaded_file($_FILES['imagen']['tmp_name'])) {
                 try {
@@ -30,7 +30,7 @@ try {
                         'allowedExtensions' => ['jpg', 'jpeg', 'png'],
                         'prefix' => 'publicidad_' . time(),
                         'userId' => $currentUser['id'],
-                        'webPath' => '/ui/uploads/cx_publicidad'
+                        'webPath' => '/multi_app/ui/uploads/cx_publicidad'
                     ];
                     
                     $baseDir = __DIR__ . '/../../../uploads/cx_publicidad';

@@ -9,7 +9,7 @@ class CxPublicidad {
     
     getApiUrl() {
         // Usar ruta absoluta para evitar problemas de rutas relativas
-        return '/ui/api/cx_publicidad.php';
+        return '/multi_app/ui/api/cx_publicidad.php';
     }
     
     getTipoPagina() {
