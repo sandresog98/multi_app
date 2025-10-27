@@ -388,7 +388,7 @@ include '../../../views/layouts/header.php';
                                             ?>
                                             <?php if ($isImage): ?>
                                             <div class="mb-2">
-                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 40px; max-height: 40px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
                                             </div>
                                             <?php endif; ?>
                                             <div class="btn-group">
@@ -700,7 +700,7 @@ include '../../../views/layouts/header.php';
                                             ?>
                                             <?php if ($isImage): ?>
                                             <div class="mb-2">
-                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 40px; max-height: 40px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
                                             </div>
                                             <?php endif; ?>
                                             <div class="btn-group">
