@@ -119,11 +119,23 @@ class FileUploadManager {
             }
         }
         
-        // Verificar permisos de escritura
+        // Asegurar que todos los directorios en la ruta tengan permisos correctos
+        $pathParts = explode('/', $finalDir);
+        $currentPath = '';
+        foreach ($pathParts as $part) {
+            if (empty($part)) continue;
+            $currentPath .= '/' . $part;
+            if (is_dir($currentPath)) {
+                // Intentar establecer permisos apropiados
+                @chmod($currentPath, 0775);
+            }
+        }
+        
+        // Verificar permisos de escritura en el directorio final
         if (!is_writable($finalDir)) {
             @chmod($finalDir, 0777);
             if (!is_writable($finalDir)) {
-                throw new Exception('Directorio no escribible: ' . $finalDir);
+                throw new Exception('Directorio no escribible: ' . $finalDir . '. Por favor, asegúrate de que el directorio tenga permisos 775 o 777.');
             }
         }
         

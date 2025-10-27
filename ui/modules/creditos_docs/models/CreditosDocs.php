@@ -303,7 +303,12 @@ class CreditosDocs {
                 return ['success' => false, 'message' => 'Error al subir el archivo: ' . $e->getMessage()];
             }
 
-            // Guardar información del documento en BD
+            // Construir URL web para el archivo
+            $year = date('Y');
+            $month = date('m');
+            $urlArchivo = getBaseUrl() . 'serve_file.php?f=assets/uploads/creditos_docs/' . $year . '/' . $month . '/' . basename($resultadoArchivo['path']);
+
+            // Guardar información del documento en BD (guardamos tanto URL como path físico)
             $sql = "INSERT INTO credito_docs_documentos (
                 solicitud_id, etapa, tipo_documento, nombre_archivo,
                 ruta_archivo, tamaño_archivo, tipo_mime,
@@ -317,7 +322,7 @@ class CreditosDocs {
                 $etapa,
                 $tipoDocumento,
                 $resultadoArchivo['originalName'],
-                $resultadoArchivo['path'],
+                $urlArchivo, // Guardamos URL web
                 $resultadoArchivo['size'],
                 mime_content_type($resultadoArchivo['path']),
                 $configDoc['es_obligatorio'],
@@ -326,6 +331,9 @@ class CreditosDocs {
                 $configDoc['aplica_para_tipo_solicitante'],
                 $usuarioId
             ]);
+            
+            // Guardar también el path físico en un campo adicional si existe, o lógicamente usaremos ruta_archivo
+            // Para eliminación, extraeremos el path del campo ruta_archivo
 
             $this->logger->logCrear('creditos_docs', 'Documento subido', [
                 'solicitud_id' => $solicitudId,
@@ -369,8 +377,24 @@ class CreditosDocs {
             }
 
             // Eliminar archivo físico
-            if (file_exists($documento['ruta_archivo'])) {
-                unlink($documento['ruta_archivo']);
+            // Extraer path físico de la URL si es necesario
+            $pathFisico = $documento['ruta_archivo'];
+            if (strpos($pathFisico, 'serve_file.php?f=') !== false) {
+                // Extraer la parte después de 'f='
+                $parts = explode('f=', $pathFisico);
+                if (isset($parts[1])) {
+                    $relPath = $parts[1];
+                    // Construir path físico completo desde ui/
+                    $pathFisico = dirname(__DIR__, 3) . '/' . $relPath;
+                }
+            } elseif (strpos($pathFisico, getBaseUrl()) === 0) {
+                // Es una URL completa, extraer path relativo
+                $relPath = str_replace(getBaseUrl(), '', $pathFisico);
+                $pathFisico = dirname(__DIR__, 3) . '/' . $relPath;
+            }
+            
+            if (file_exists($pathFisico)) {
+                unlink($pathFisico);
             }
 
             // Eliminar registro de BD
@@ -620,10 +644,21 @@ class CreditosDocs {
             if ($documentoExistente['etapa'] !== $solicitud['etapa_actual']) {
                 return ['success' => false, 'message' => 'Solo se pueden editar documentos de la etapa actual'];
             }
-
+            
             // Eliminar archivo anterior
-            if (file_exists($documentoExistente['ruta_archivo'])) {
-                unlink($documentoExistente['ruta_archivo']);
+            $pathFisicoAnterior = $documentoExistente['ruta_archivo'];
+            if (strpos($pathFisicoAnterior, 'serve_file.php?f=') !== false) {
+                $parts = explode('f=', $pathFisicoAnterior);
+                if (isset($parts[1])) {
+                    $pathFisicoAnterior = dirname(__DIR__, 3) . '/' . $parts[1];
+                }
+            } elseif (strpos($pathFisicoAnterior, getBaseUrl()) === 0) {
+                $relPath = str_replace(getBaseUrl(), '', $pathFisicoAnterior);
+                $pathFisicoAnterior = dirname(__DIR__, 3) . '/' . $relPath;
+            }
+            
+            if (file_exists($pathFisicoAnterior)) {
+                unlink($pathFisicoAnterior);
             }
 
             // Subir nuevo archivo
@@ -645,6 +680,11 @@ class CreditosDocs {
                 return ['success' => false, 'message' => 'Error al subir el archivo: ' . $e->getMessage()];
             }
 
+            // Construir URL web para el archivo
+            $year = date('Y');
+            $month = date('m');
+            $urlArchivo = getBaseUrl() . 'serve_file.php?f=assets/uploads/creditos_docs/' . $year . '/' . $month . '/' . basename($resultadoArchivo['path']);
+
             // Actualizar registro en BD
             $sql = "UPDATE credito_docs_documentos SET 
                     nombre_archivo = ?, 
@@ -658,7 +698,7 @@ class CreditosDocs {
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 $resultadoArchivo['originalName'],
-                $resultadoArchivo['path'],
+                $urlArchivo,
                 $resultadoArchivo['size'],
                 mime_content_type($resultadoArchivo['path']),
                 $usuarioId,
