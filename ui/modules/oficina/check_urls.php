@@ -14,9 +14,6 @@ try {
     require_once __DIR__ . '/../../config/database.php';
     echo "✓ database.php cargado\n";
     
-    require_once __DIR__ . '/../models/PagoCashQr.php';
-    echo "✓ PagoCashQr.php cargado\n";
-    
     echo "\n=== BASE INFO ===\n";
     echo "getBaseUrl(): " . getBaseUrl() . "\n";
     echo "BASE_PATH: " . (defined('BASE_PATH') ? BASE_PATH : 'NO DEFINIDO') . "\n";
