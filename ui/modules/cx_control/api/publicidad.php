@@ -61,6 +61,57 @@ try {
             $resultado = $publicidadModel->crearPublicidad($datos);
             echo json_encode($resultado);
             
+        } elseif ($action === 'editar') {
+            // Validar datos requeridos
+            if (empty($_POST['id']) || empty($_POST['tipo']) || empty($_POST['nombre']) || empty($_POST['fecha_inicio']) || empty($_POST['fecha_fin'])) {
+                throw new Exception('Faltan datos requeridos');
+            }
+            
+            $id = (int)$_POST['id'];
+            
+            // Manejar archivo de imagen (opcional en edición)
+            $imagenRuta = null;
+            
+            if (!empty($_FILES['imagen']) && is_uploaded_file($_FILES['imagen']['tmp_name'])) {
+                try {
+                    $options = [
+                        'maxSize' => 2 * 1024 * 1024, // 2MB
+                        'allowedExtensions' => ['jpg', 'jpeg', 'png'],
+                        'prefix' => 'publicidad_' . time(),
+                        'userId' => $currentUser['id'],
+                        'webPath' => '/multi_app/ui/uploads/cx_publicidad',
+                        'createSubdirs' => true
+                    ];
+                    
+                    $baseDir = __DIR__ . '/../../../uploads/cx_publicidad';
+                    $result = FileUploadManager::saveUploadedFile($_FILES['imagen'], $baseDir, $options);
+                    
+                    // Usar serve_file.php para servir el archivo
+                    $year = date('Y');
+                    $month = date('m');
+                    $imagenRuta = '/multi_app/ui/serve_file.php?f=uploads/cx_publicidad/' . $year . '/' . $month . '/' . $result['uniqueName'];
+                    
+                } catch (Exception $e) {
+                    throw new Exception('Error guardando imagen: ' . $e->getMessage());
+                }
+            }
+            
+            $datos = [
+                'tipo' => $_POST['tipo'],
+                'nombre' => $_POST['nombre'],
+                'descripcion' => $_POST['descripcion'] ?? '',
+                'fecha_inicio' => $_POST['fecha_inicio'],
+                'fecha_fin' => $_POST['fecha_fin']
+            ];
+            
+            // Si hay nueva imagen, agregarla
+            if ($imagenRuta) {
+                $datos['imagen'] = $imagenRuta;
+            }
+            
+            $resultado = $publicidadModel->actualizarPublicidad($id, $datos);
+            echo json_encode($resultado);
+            
         } elseif ($action === 'eliminar') {
             $id = (int)($_POST['id'] ?? 0);
             $resultado = $publicidadModel->eliminarPublicidad($id);
@@ -72,7 +123,20 @@ try {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $action = $_GET['action'] ?? '';
         
-        if ($action === 'listar') {
+        if ($action === 'obtener') {
+            $id = (int)($_GET['id'] ?? 0);
+            if ($id <= 0) {
+                throw new Exception('ID inválido');
+            }
+            
+            $publicidad = $publicidadModel->obtenerPublicidadPorId($id);
+            if (!$publicidad) {
+                throw new Exception('Publicidad no encontrada');
+            }
+            
+            echo json_encode(['success' => true, 'data' => $publicidad]);
+            
+        } elseif ($action === 'listar') {
             $publicidades = $publicidadModel->obtenerPublicidades();
             
             // Agregar información de estado y URLs de imagen

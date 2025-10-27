@@ -18,9 +18,6 @@ include '../../../views/layouts/header.php';
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2"><i class="fas fa-bullhorn me-2"></i>CX Control - Publicidad</h1>
         <div>
-          <button class="btn btn-warning me-2" onclick="limpiarHuerfanos()">
-            <i class="fas fa-broom me-1"></i>Limpiar Huérfanos
-          </button>
           <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaPublicidadModal">
             <i class="fas fa-plus me-1"></i>Nueva Publicidad
           </button>
@@ -61,15 +58,16 @@ include '../../../views/layouts/header.php';
   </div>
 </div>
 
-<!-- Modal Nueva Publicidad -->
+<!-- Modal Nueva/Editar Publicidad -->
 <div class="modal fade" id="nuevaPublicidadModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i>Nueva Publicidad</h5>
+        <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i><span id="modalTitle">Nueva Publicidad</span></h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form id="publicidadForm">
+        <input type="hidden" id="publicidadId" name="id" value="">
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-md-6">
@@ -194,9 +192,14 @@ function mostrarPublicidades(publicidades) {
       <td>${pub.fecha_fin_formatted}</td>
       <td><span class="${pub.estado_class}">${pub.estado}</span></td>
       <td>
-        <button class="btn btn-sm btn-outline-danger" onclick="eliminarPublicidad(${pub.id})">
-          <i class="fas fa-trash"></i>
-        </button>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-outline-info" onclick="editarPublicidad(${pub.id})" title="Editar">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="eliminarPublicidad(${pub.id})" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
       </td>
     `;
     tbody.appendChild(row);
@@ -233,25 +236,46 @@ async function eliminarPublicidad(id) {
   }
 }
 
-// Función para limpiar registros huérfanos
-async function limpiarHuerfanos() {
-  if (!confirm('¿Estás seguro de que deseas limpiar los registros huérfanos? Esta acción eliminará todas las publicidades cuyas imágenes no existen en el servidor.')) {
-    return;
-  }
-  
+// Función para editar publicidad
+async function editarPublicidad(id) {
   try {
-    const res = await fetch('../api/publicidad.php?action=limpiar_huérfanos');
+    const res = await fetch(`../api/publicidad.php?action=obtener&id=${id}`);
     const json = await res.json();
     
-    if (json.success) {
-      alert(json.message);
-      cargarPublicidades();
+    if (json.success && json.data) {
+      const pub = json.data;
+      
+      // Llenar formulario con datos existentes
+      document.getElementById('publicidadId').value = pub.id;
+      document.querySelector('input[name="tipo"]').value = pub.tipo;
+      document.querySelector('input[name="nombre"]').value = pub.nombre;
+      document.querySelector('textarea[name="descripcion"]').value = pub.descripcion || '';
+      document.querySelector('input[name="fecha_inicio"]').value = pub.fecha_inicio;
+      document.querySelector('input[name="fecha_fin"]').value = pub.fecha_fin;
+      
+      // Cambiar título del modal
+      document.getElementById('modalTitle').textContent = 'Editar Publicidad';
+      
+      // Mostrar imagen actual si existe
+      if (pub.imagen_url) {
+        const previewContainer = document.querySelector('.preview-container');
+        const previewImage = document.getElementById('previewImage');
+        previewImage.src = pub.imagen_url;
+        previewContainer.style.display = 'block';
+      }
+      
+      // Hacer el campo de imagen no requerido al editar
+      document.querySelector('input[name="imagen"]').removeAttribute('required');
+      
+      // Abrir modal
+      const modal = new bootstrap.Modal(document.getElementById('nuevaPublicidadModal'));
+      modal.show();
     } else {
-      alert('Error: ' + json.message);
+      alert('Error al obtener datos de la publicidad');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('Error al limpiar registros huérfanos');
+    alert('Error al cargar la publicidad');
   }
 }
 
@@ -279,7 +303,14 @@ document.getElementById('publicidadForm').addEventListener('submit', async funct
   }
   
   const formData = new FormData(this);
-  formData.append('action', 'crear');
+  const publicidadId = document.getElementById('publicidadId').value;
+  
+  // Determinar si es edición o creación
+  if (publicidadId) {
+    formData.append('action', 'editar');
+  } else {
+    formData.append('action', 'crear');
+  }
   
   try {
     const res = await fetch('../api/publicidad.php', {
@@ -300,16 +331,20 @@ document.getElementById('publicidadForm').addEventListener('submit', async funct
     console.log('Datos JSON:', json);
     
     if (json.success) {
-      alert('Publicidad creada exitosamente');
-      bootstrap.Modal.getInstance(document.getElementById('nuevaPublicidadModal')).hide();
+      const modalInstance = bootstrap.Modal.getInstance(document.getElementById('nuevaPublicidadModal'));
+      modalInstance.hide();
       this.reset();
+      document.getElementById('publicidadId').value = '';
+      document.getElementById('modalTitle').textContent = 'Nueva Publicidad';
+      document.querySelector('input[name="imagen"]').setAttribute('required', 'required');
       cargarPublicidades();
+      alert(publicidadId ? 'Publicidad actualizada exitosamente' : 'Publicidad creada exitosamente');
     } else {
       alert('Error: ' + json.message);
     }
   } catch (error) {
     console.error('Error completo:', error);
-    alert('Error al crear la publicidad: ' + error.message);
+    alert('Error al guardar la publicidad: ' + error.message);
   }
 });
 
