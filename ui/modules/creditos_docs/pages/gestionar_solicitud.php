@@ -382,8 +382,17 @@ include '../../../views/layouts/header.php';
                                         }
                                         ?>
                                         <?php if ($documentoSubido): ?>
+                                            <?php
+                                            $archivoUrl = $documentoSubido['ruta_archivo'];
+                                            $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                            ?>
+                                            <?php if ($isImage): ?>
+                                            <div class="mb-2">
+                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                            </div>
+                                            <?php endif; ?>
                                             <div class="btn-group">
-                                                <a href="<?php echo htmlspecialchars($documentoSubido['ruta_archivo']); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <?php if ($solicitud['etapa_actual'] === $etapa): ?>
@@ -454,8 +463,17 @@ include '../../../views/layouts/header.php';
                                             }
                                             ?>
                                             <?php if ($documentoSubido): ?>
+                                                <?php
+                                                $archivoUrl = $documentoSubido['ruta_archivo'];
+                                                $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                                ?>
+                                                <?php if ($isImage): ?>
+                                                <div class="mb-2">
+                                                    <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                </div>
+                                                <?php endif; ?>
                                                 <div class="btn-group">
-                                                    <a href="<?php echo htmlspecialchars($documentoSubido['ruta_archivo']); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                    <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <?php if ($solicitud['etapa_actual'] === $etapa): ?>
@@ -524,8 +542,17 @@ include '../../../views/layouts/header.php';
                                             }
                                             ?>
                                             <?php if ($documentoSubido): ?>
+                                                <?php
+                                                $archivoUrl = $documentoSubido['ruta_archivo'];
+                                                $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                                ?>
+                                                <?php if ($isImage): ?>
+                                                <div class="mb-2">
+                                                    <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                </div>
+                                                <?php endif; ?>
                                                 <div class="btn-group">
-                                                    <a href="<?php echo htmlspecialchars($documentoSubido['ruta_archivo']); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                    <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <?php if ($solicitud['etapa_actual'] === $etapa): ?>
@@ -594,8 +621,17 @@ include '../../../views/layouts/header.php';
                                             }
                                             ?>
                                             <?php if ($documentoSubido): ?>
+                                                <?php
+                                                $archivoUrl = $documentoSubido['ruta_archivo'];
+                                                $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                                ?>
+                                                <?php if ($isImage): ?>
+                                                <div class="mb-2">
+                                                    <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                </div>
+                                                <?php endif; ?>
                                                 <div class="btn-group">
-                                                    <a href="<?php echo htmlspecialchars($documentoSubido['ruta_archivo']); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                    <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <?php if ($solicitud['etapa_actual'] === $etapa): ?>
@@ -658,8 +694,17 @@ include '../../../views/layouts/header.php';
                                         }
                                         ?>
                                         <?php if ($documentoSubido): ?>
+                                            <?php
+                                            $archivoUrl = $documentoSubido['ruta_archivo'];
+                                            $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                            ?>
+                                            <?php if ($isImage): ?>
+                                            <div class="mb-2">
+                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                            </div>
+                                            <?php endif; ?>
                                             <div class="btn-group">
-                                                <a href="<?php echo htmlspecialchars($documentoSubido['ruta_archivo']); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="reemplazarDocumento(<?php echo $documentoSubido['id']; ?>, '<?php echo htmlspecialchars($doc['nombre_mostrar']); ?>')">
