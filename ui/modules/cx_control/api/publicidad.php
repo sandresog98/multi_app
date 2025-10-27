@@ -31,12 +31,17 @@ try {
                         'allowedExtensions' => ['jpg', 'jpeg', 'png'],
                         'prefix' => 'publicidad_' . time(),
                         'userId' => $currentUser['id'],
-                        'webPath' => '/multi_app/ui/uploads/cx_publicidad'
+                        'webPath' => '/multi_app/ui/uploads/cx_publicidad',
+                        'createSubdirs' => true
                     ];
                     
                     $baseDir = __DIR__ . '/../../../uploads/cx_publicidad';
                     $result = FileUploadManager::saveUploadedFile($_FILES['imagen'], $baseDir, $options);
-                    $imagenRuta = $result['webUrl'];
+                    
+                    // Usar serve_file.php para servir el archivo
+                    $year = date('Y');
+                    $month = date('m');
+                    $imagenRuta = '/multi_app/ui/serve_file.php?f=uploads/cx_publicidad/' . $year . '/' . $month . '/' . $result['uniqueName'];
                     
                 } catch (Exception $e) {
                     throw new Exception('Error guardando imagen: ' . $e->getMessage());
@@ -138,73 +143,32 @@ function getImageUrl($imagen) {
         return $imagen;
     }
     
+    // Si ya usa serve_file.php, retornarla tal cual
+    if (strpos($imagen, 'serve_file.php') !== false) {
+        return $imagen;
+    }
+    
     // Detectar si estamos en servidor de producción o desarrollo
     $isProduction = !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== 'localhost' && strpos($_SERVER['HTTP_HOST'], '127.0.0.1') === false;
     
     if ($isProduction) {
-        // En producción, usar la URL base del servidor
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'];
-        
-        // Detectar la ruta base del proyecto en el servidor
-        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-        $basePath = '/multi_app'; // Valor por defecto para producción
-        
-        // Buscar marcadores del proyecto en la ruta
-        $markers = ['/cx/', '/ui/', '/cat/', '/py/'];
-        foreach ($markers as $marker) {
-            $pos = strpos($scriptName, $marker);
-            if ($pos !== false) {
-                $basePath = substr($scriptName, 0, $pos);
-                break;
-            }
-        }
-        
-        $baseUrl = $protocol . '://' . $host . $basePath;
+        $baseUrl = $protocol . '://' . $host . '/multi_app/ui';
     } else {
-        // En desarrollo local, usar la función existente
         $baseUrl = cx_getFullBaseUrlRobust();
     }
     
-    // Determinar la ruta del archivo en el sistema de archivos
-    $filePath = '';
-    
-    // Si la imagen empieza con /multi_app/, convertir a ruta del sistema de archivos
-    if (strpos($imagen, '/multi_app/') === 0) {
-        // Reemplazar /multi_app/ con la ruta base del proyecto
-        $relativePath = substr($imagen, strlen('/multi_app'));
-        $filePath = __DIR__ . '/../../../..' . $relativePath;
-        $imageUrl = str_replace('/multi_app', $baseUrl, $imagen);
-    }
-    // Si la imagen empieza con /projects/multi_app/, convertir a ruta relativa
-    elseif (strpos($imagen, '/projects/multi_app/') === 0) {
-        $relativePath = substr($imagen, strlen('/projects/multi_app'));
-        $filePath = __DIR__ . '/../../../..' . $relativePath;
-        $imageUrl = $baseUrl . $relativePath;
-    }
-    // Si es una ruta relativa, construir la ruta completa
-    else {
-        $cleanImage = ltrim($imagen, '/');
-        
-        // Verificar si la imagen ya incluye el directorio cx_publicidad
-        if (strpos($cleanImage, 'cx_publicidad/') === 0) {
-            $filePath = __DIR__ . '/../../../uploads/' . $cleanImage;
-            $imageUrl = $baseUrl . '/ui/uploads/' . $cleanImage;
-        } else {
-            $filePath = __DIR__ . '/../../../uploads/cx_publicidad/' . $cleanImage;
-            $imageUrl = $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
-        }
+    // Convertir rutas antiguas a serve_file.php
+    if (strpos($imagen, '/multi_app/ui/uploads/cx_publicidad/') !== false) {
+        // Extraer: 2025/10/archivo.jpg
+        $relativePath = str_replace('/multi_app/ui/uploads/cx_publicidad/', '', $imagen);
+        return $baseUrl . '/serve_file.php?f=uploads/cx_publicidad/' . $relativePath;
+    } elseif (strpos($imagen, '/uploads/cx_publicidad/') === 0) {
+        $relativePath = str_replace('/uploads/cx_publicidad/', '', $imagen);
+        return $baseUrl . '/serve_file.php?f=uploads/cx_publicidad/' . $relativePath;
     }
     
-    // Verificar si el archivo existe en el sistema de archivos
-    if (!file_exists($filePath)) {
-        // Log del error para debugging
-        error_log("Archivo de imagen no encontrado: " . $filePath . " (URL: " . $imageUrl . ")");
-        
-        // Retornar una imagen por defecto o null para manejar en el frontend
-        return null; // El frontend manejará esto mostrando "Sin imagen"
-    }
-    
-    return $imageUrl;
+    return $imagen;
 }
 ?>
