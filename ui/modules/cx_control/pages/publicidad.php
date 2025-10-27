@@ -183,8 +183,9 @@ function mostrarPublicidades(publicidades) {
       <td>${pub.descripcion || '-'}</td>
       <td>
         ${pub.imagen_url && pub.imagen_url !== 'test.jpg' && pub.imagen_url !== null ? 
-          `<img src="${pub.imagen_url}" alt="Imagen" class="img-thumbnail" style="max-width: 50px; max-height: 50px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-           <span class="text-muted" style="display:none;">Archivo no encontrado</span>` : 
+          `<a href="${pub.imagen_url}" target="_blank" style="text-decoration: none;">
+             <img src="${pub.imagen_url}" alt="Imagen" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('${pub.imagen_url}', '_blank')" title="Clic para ver completa" onerror="this.parentElement.innerHTML='<span class=\'text-muted\'>Archivo no encontrado</span>'">
+           </a>` : 
           '<span class="text-muted">Sin imagen</span>'
         }
       </td>
@@ -281,9 +282,17 @@ async function editarPublicidad(id) {
       if (pub.imagen) {
         const previewContainer = document.querySelector('.preview-container');
         const previewImage = document.getElementById('previewImage');
-        // Convertir URL si es antigua
-        previewImage.src = pub.imagen;
+        
+        // Obtener URL convertida usando el mismo sistema que listar
+        // Usar la función getImageUrl si está disponible, sino usar la imagen directamente
+        previewImage.src = pub.imagen_url || pub.imagen;
         previewContainer.style.display = 'block';
+      } else {
+        // Ocultar vista previa si no hay imagen
+        const previewContainer = document.querySelector('.preview-container');
+        if (previewContainer) {
+          previewContainer.style.display = 'none';
+        }
       }
       
       // Hacer el campo de imagen no requerido al editar
@@ -389,6 +398,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const hoy = new Date().toISOString().split('T')[0];
   document.querySelector('input[name="fecha_inicio"]').min = hoy;
   document.querySelector('input[name="fecha_fin"]').min = hoy;
+  
+  // Limpiar formulario al cerrar modal
+  const modal = document.getElementById('nuevaPublicidadModal');
+  modal.addEventListener('hidden.bs.modal', function() {
+    document.getElementById('publicidadForm').reset();
+    document.getElementById('publicidadId').value = '';
+    document.getElementById('modalTitle').textContent = 'Nueva Publicidad';
+    document.querySelector('input[name="imagen"]').setAttribute('required', 'required');
+    document.querySelector('.preview-container').style.display = 'none';
+  });
   
   // Cargar publicidades
   cargarPublicidades();

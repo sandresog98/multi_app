@@ -134,6 +134,11 @@ try {
                 throw new Exception('Publicidad no encontrada');
             }
             
+            // Convertir URL de la imagen para que funcione correctamente
+            if (!empty($publicidad['imagen'])) {
+                $publicidad['imagen_url'] = getImageUrl($publicidad['imagen']);
+            }
+            
             echo json_encode(['success' => true, 'data' => $publicidad]);
             return;
             
