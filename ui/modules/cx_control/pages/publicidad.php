@@ -257,12 +257,22 @@ async function editarPublicidad(id) {
       console.log('Publicidad cargada:', pub);
       
       // Llenar formulario con datos existentes
-      document.getElementById('publicidadId').value = pub.id;
-      document.querySelector('input[name="tipo"]').value = pub.tipo;
-      document.querySelector('input[name="nombre"]').value = pub.nombre;
-      document.querySelector('textarea[name="descripcion"]').value = pub.descripcion || '';
-      document.querySelector('input[name="fecha_inicio"]').value = pub.fecha_inicio;
-      document.querySelector('input[name="fecha_fin"]').value = pub.fecha_fin;
+      const form = document.getElementById('publicidadForm');
+      const hiddenId = document.getElementById('publicidadId');
+      
+      if (hiddenId) hiddenId.value = pub.id;
+      
+      const tipoField = form.querySelector('select[name="tipo"]');
+      const nombreField = form.querySelector('input[name="nombre"]');
+      const descField = form.querySelector('textarea[name="descripcion"]');
+      const fechaInicioField = form.querySelector('input[name="fecha_inicio"]');
+      const fechaFinField = form.querySelector('input[name="fecha_fin"]');
+      
+      if (tipoField) tipoField.value = pub.tipo;
+      if (nombreField) nombreField.value = pub.nombre;
+      if (descField) descField.value = pub.descripcion || '';
+      if (fechaInicioField) fechaInicioField.value = pub.fecha_inicio;
+      if (fechaFinField) fechaFinField.value = pub.fecha_fin;
       
       // Cambiar título del modal
       document.getElementById('modalTitle').textContent = 'Editar Publicidad';
