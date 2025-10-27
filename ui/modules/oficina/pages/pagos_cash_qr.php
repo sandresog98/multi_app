@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       		// Usar el servidor de archivos para acceder a los recibos
       		$year = date('Y');
       		$month = date('m');
-      		$link = getBaseUrl() . 'uploads/recibos/serve_file.php?f=' . $year . '/' . $month . '/' . $result['uniqueName'];
+      		$link = getBaseUrl() . 'serve_recibo.php?f=uploads/recibos/' . $year . '/' . $month . '/' . $result['uniqueName'];
       		
       		error_log("Pagos Cash QR - Archivo guardado: " . $result['path']);
       		error_log("Pagos Cash QR - URL generada: $link");
