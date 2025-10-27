@@ -3,6 +3,7 @@ require_once '../../../controllers/AuthController.php';
 require_once '../../../config/paths.php';
 require_once '../models/PagoCashQr.php';
 require_once '../../../models/Logger.php';
+require_once '../../../utils/FileUploadManager.php';
 
 $auth = new AuthController();
 $auth->requireModule('oficina.pagos_cash_qr');
@@ -22,31 +23,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $link = trim($_POST['link'] ?? '');
       // Manejo de carga de imagen (opcional). Si hay imagen válida, sobrescribe $link con la URL pública del archivo subido
       if (isset($_FILES['comprobante']) && is_array($_FILES['comprobante']) && (($_FILES['comprobante']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK)) {
-      	$tmpPath = $_FILES['comprobante']['tmp_name'];
-      	$origName = $_FILES['comprobante']['name'] ?? '';
-      	$size = (int)($_FILES['comprobante']['size'] ?? 0);
-      	if ($size > 0) {
-      		if ($size > 5 * 1024 * 1024) { throw new Exception('La imagen excede el tamaño máximo (5 MB)'); }
-      		$finfo = new finfo(FILEINFO_MIME_TYPE);
-      		$mime = $finfo->file($tmpPath);
-      		$allowed = [
-      			'image/jpeg' => 'jpg',
-      			'image/png' => 'png',
-      			'image/webp' => 'webp',
-      			'image/gif' => 'gif'
+      	try {
+      		// Usar FileUploadManager para manejo consistente de archivos
+      		$options = [
+      			'maxSize' => 5 * 1024 * 1024, // 5MB
+      			'allowedExtensions' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+      			'prefix' => 'recibo',
+      			'userId' => $currentUser['id'] ?? '',
+      			'webPath' => getBaseUrl() . 'uploads/recibos'
       		];
-      		if (!isset($allowed[$mime])) { throw new Exception('Formato de imagen no permitido (solo jpg, png, webp, gif)'); }
-      		$ext = $allowed[$mime];
-      		$subdir = 'uploads/recibos/' . date('Y') . '/' . date('m');
-      		$absDir = getAbsolutePath($subdir);
-      		if (!is_dir($absDir)) { if (!mkdir($absDir, 0775, true)) { throw new Exception('No se pudo crear el directorio de uploads'); } }
-      		if (!is_writable($absDir)) { throw new Exception('Directorio de uploads no escribible'); }
-      		$base = pathinfo($origName, PATHINFO_FILENAME);
-      		$safeBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $base) ?: 'recibo';
-      		$filename = $safeBase . '-' . uniqid() . '.' . $ext;
-      		$destPath = rtrim($absDir, '/') . '/' . $filename;
-      		if (!move_uploaded_file($tmpPath, $destPath)) { throw new Exception('No se pudo guardar la imagen subida'); }
-      		$link = getBaseUrl() . $subdir . '/' . $filename;
+      		
+      		$baseDir = __DIR__ . '/../../../uploads/recibos';
+      		$result = FileUploadManager::saveUploadedFile($_FILES['comprobante'], $baseDir, $options);
+      		$link = $result['webUrl'];
+      	} catch (Exception $e) {
+      		throw new Exception('Error al guardar comprobante: ' . $e->getMessage());
       	}
       }
       $comentario = trim($_POST['comentario'] ?? '');
@@ -127,7 +118,12 @@ include '../../../views/layouts/header.php';
             <tbody>
             <?php foreach ($data['items'] as $row): ?>
               <tr>
-                <?php $linkPrev = $row['asignado_link'] ?? ''; $hasLinkPrev = !empty($linkPrev); ?>
+                <?php 
+                $linkPrev = $row['asignado_link'] ?? ''; 
+                $hasLinkPrev = !empty($linkPrev); 
+                // Detectar si el enlace es una imagen
+                $isImage = $hasLinkPrev && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $linkPrev);
+                ?>
                 <td>
                   <div class="fw-semibold"><?php echo htmlspecialchars($row['confiar_id']); ?></div>
                   <div class="small text-muted"><?php echo htmlspecialchars($row['descripcion']); ?></div>
@@ -140,6 +136,11 @@ include '../../../views/layouts/header.php';
                     <div class="small"><?php echo htmlspecialchars($row['asignado_cedula']); ?></div>
                     <div class="small"><?php echo htmlspecialchars($row['asignado_nombre'] ?? ''); ?></div>
                     <?php if (!empty($row['asignado_comentario'])): ?><div class="small text-muted"><?php echo htmlspecialchars($row['asignado_comentario']); ?></div><?php endif; ?>
+                    <?php if ($isImage): ?>
+                      <div class="mt-2">
+                        <img src="<?php echo htmlspecialchars($linkPrev); ?>" alt="Comprobante" class="img-thumbnail" style="max-width: 80px; max-height: 80px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($linkPrev); ?>', '_blank')" title="Hacer clic para ver completo">
+                      </div>
+                    <?php endif; ?>
                   <?php else: ?>
                     <?php if (($row['asignado_estado'] ?? '')==='no_valido'): ?>
                       <span class="badge bg-dark">No válida</span>
