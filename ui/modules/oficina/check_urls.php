@@ -2,16 +2,26 @@
 /**
  * Script temporal para verificar URLs generadas
  */
-require_once __DIR__ . '/../../config/paths.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../models/PagoCashQr.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-header('Content-Type: application/json');
+echo "<h2>Verificación de URLs</h2><pre>";
 
 try {
-    $model = new PagoCashQr();
+    require_once __DIR__ . '/../../config/paths.php';
+    echo "✓ paths.php cargado\n";
     
-    // Obtener algunos registros con links
+    require_once __DIR__ . '/../../config/database.php';
+    echo "✓ database.php cargado\n";
+    
+    require_once __DIR__ . '/../models/PagoCashQr.php';
+    echo "✓ PagoCashQr.php cargado\n";
+    
+    echo "\n=== BASE INFO ===\n";
+    echo "getBaseUrl(): " . getBaseUrl() . "\n";
+    echo "BASE_PATH: " . (defined('BASE_PATH') ? BASE_PATH : 'NO DEFINIDO') . "\n";
+    
+    echo "\n=== DATABASE ===\n";
     $conn = getConnection();
     $stmt = $conn->query("
         SELECT confiar_id, link_validacion, estado, fecha_validacion
@@ -21,43 +31,35 @@ try {
         LIMIT 5
     ");
     $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo "Registros encontrados: " . count($registros) . "\n\n";
     
-    $resultados = [];
     foreach ($registros as $reg) {
         $url = $reg['link_validacion'];
-        $resultados[] = [
-            'confiar_id' => $reg['confiar_id'],
-            'url_guardada' => $url,
-            'url_base' => getBaseUrl(),
-            'archivo_existe' => false
-        ];
+        echo "\nConfiar ID: " . $reg['confiar_id'] . "\n";
+        echo "URL guardada: $url\n";
         
         // Intentar verificar si el archivo existe
         if (strpos($url, '/multi_app/') === 0) {
             $relativePath = str_replace('/multi_app/ui/', '', $url);
             $fullPath = __DIR__ . '/../../' . $relativePath;
+            echo "Ruta relativa: $relativePath\n";
+            echo "Ruta completa: $fullPath\n";
+            echo "Archivo existe: " . (file_exists($fullPath) ? "SÍ" : "NO") . "\n";
             if (file_exists($fullPath)) {
-                $resultados[count($resultados) - 1]['archivo_existe'] = true;
-                $resultados[count($resultados) - 1]['ruta_fisica'] = $fullPath;
-                $resultados[count($resultados) - 1]['tamaño'] = filesize($fullPath) . ' bytes';
+                echo "Tamaño: " . filesize($fullPath) . " bytes\n";
             }
         }
+        echo "---\n";
     }
     
-    echo json_encode([
-        'success' => true,
-        'getBaseUrl' => getBaseUrl(),
-        'registros' => $resultados,
-        'dir_uploads_recibos' => __DIR__ . '/../../uploads/recibos',
-        'dir_existe' => is_dir(__DIR__ . '/../../uploads/recibos'),
-        'directorios_disponibles' => []
-    ], JSON_PRETTY_PRINT);
-    
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
+    echo "ERROR: " . $e->getMessage() . "\n";
+    echo "Trace: " . $e->getTraceAsString() . "\n";
+} catch (Throwable $e) {
+    echo "ERROR FATAL: " . $e->getMessage() . "\n";
+    echo "Trace: " . $e->getTraceAsString() . "\n";
 }
+
+echo "</pre>";
+
 
