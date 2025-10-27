@@ -1,7 +1,7 @@
 <?php
 /**
- * Servidor de archivos para recibos
- * Protege el acceso directo a los archivos de recibos
+ * Servidor de archivos para uploads
+ * Sirve archivos de forma segura desde uploads/
  */
 // Obtener ruta del archivo
 $file = $_GET['f'] ?? '';

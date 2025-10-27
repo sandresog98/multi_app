@@ -98,17 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           ]
         );
         
-        // Generar URL web válida para el archivo
-        if (!empty($resultadoArchivo['webUrl'])) {
-          $archivoRuta = $resultadoArchivo['webUrl'];
-        } else {
-          // Generar URL manualmente desde la ruta del archivo
-          $fileName = basename($resultadoArchivo['path']);
-          $year = date('Y');
-          $month = date('m');
-          // Usar URL completa desde la raíz del servidor
-          $archivoRuta = "/projects/multi_app/ui/uploads/clausulas/{$year}/{$month}/{$fileName}";
-        }
+        // Generar URL usando serve_file.php
+        $fileName = basename($resultadoArchivo['path']);
+        $year = date('Y');
+        $month = date('m');
+        // Usar serve_file.php que sirve cualquier archivo de ui/
+        require_once __DIR__ . '/../../../config/paths.php';
+        $archivoRuta = getBaseUrl() . 'serve_file.php?f=uploads/clausulas/' . $year . '/' . $month . '/' . $fileName;
       } catch (Exception $e) {
         $error = 'Error al subir el archivo: ' . $e->getMessage();
         // Continuar sin archivo o mostrar error
@@ -647,12 +643,18 @@ include '../../../views/layouts/header.php';
                         <td class="text-center">
                           <?php if (!empty($ac['archivo_ruta'])): ?>
                             <?php 
-                              // Corregir URL si es necesario
+                              // Si la URL es antigua (formato directo), convertir a serve_file.php
                               $archivoUrl = $ac['archivo_ruta'];
-                              if (strpos($archivoUrl, '/uploads/clausulas/') === 0) {
-                                $archivoUrl = '/projects/multi_app/ui' . $archivoUrl;
-                              } elseif (strpos($archivoUrl, 'uploads/clausulas/') === 0) {
-                                $archivoUrl = '/projects/multi_app/ui/' . $archivoUrl;
+                              // Detectar si es URL antigua y convertir a nuevo formato
+                              if (strpos($archivoUrl, '/projects/multi_app/ui/uploads/clausulas/') !== false) {
+                                // Extraer: 2025/10/archivo.pdf
+                                $relativePath = str_replace('/projects/multi_app/ui/uploads/clausulas/', '', $archivoUrl);
+                                require_once __DIR__ . '/../../../config/paths.php';
+                                $archivoUrl = getBaseUrl() . 'serve_file.php?f=uploads/clausulas/' . $relativePath;
+                              } elseif (strpos($archivoUrl, '/uploads/clausulas/') === 0) {
+                                $relativePath = str_replace('/uploads/clausulas/', '', $archivoUrl);
+                                require_once __DIR__ . '/../../../config/paths.php';
+                                $archivoUrl = getBaseUrl() . 'serve_file.php?f=uploads/clausulas/' . $relativePath;
                               }
                             ?>
                             <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
