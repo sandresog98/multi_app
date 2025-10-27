@@ -149,8 +149,17 @@ class FileUploadManager {
         // Generar URL web si se proporciona webPath
         $webUrl = '';
         if (!empty($config['webPath'])) {
+            // Calcular la ruta relativa desde el destino base
             $relativePath = str_replace($destinationDir, '', $finalPath);
-            $webUrl = rtrim($config['webPath'], '/') . '/' . ltrim($relativePath, '/');
+            
+            // Si createSubdirs está activado, construir la URL con los subdirectorios
+            if ($config['createSubdirs']) {
+                $year = date('Y');
+                $month = date('m');
+                $webUrl = rtrim($config['webPath'], '/') . '/' . $year . '/' . $month . '/' . $uniqueFileName;
+            } else {
+                $webUrl = rtrim($config['webPath'], '/') . '/' . ltrim($relativePath, '/');
+            }
         }
         
         return [
