@@ -36,7 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       		
       		$baseDir = __DIR__ . '/../../../uploads/recibos';
       		$result = FileUploadManager::saveUploadedFile($_FILES['comprobante'], $baseDir, $options);
-      		$link = $result['webUrl'];
+      		
+      		// Usar el servidor de archivos para acceder a los recibos
+      		$year = date('Y');
+      		$month = date('m');
+      		$link = getBaseUrl() . 'uploads/recibos/serve_file.php?f=' . $year . '/' . $month . '/' . $result['uniqueName'];
       		
       		error_log("Pagos Cash QR - Archivo guardado: " . $result['path']);
       		error_log("Pagos Cash QR - URL generada: $link");
