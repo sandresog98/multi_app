@@ -1,10 +1,10 @@
 <?php
 /**
  * Script de depuración para verificar rutas
- * Acceder desde: ui/modules/oficina/debug_paths.php
+ * Acceder desde: http://localhost/projects/multi_app/ui/modules/oficina/debug_paths.php
  */
 
-require_once __DIR__ . '/../../../config/paths.php';
+require_once __DIR__ . '/../../config/paths.php';
 
 echo "<h2>Información de Rutas</h2>";
 echo "<pre>";
