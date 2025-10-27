@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'correo_electronico' => $_POST['correo_electronico'] ?? '',
             'monto_deseado' => (int)($_POST['monto_deseado'] ?? 0),
             'numero_cuotas_deseadas' => (int)($_POST['numero_cuotas_deseadas'] ?? 0),
-            'desea_codeudor' => isset($_POST['desea_codeudor'])
+            'desea_codeudor' => (int)($_POST['desea_codeudor'] ?? 0)
         ];
         
         $resultado = $creditosModel->actualizarCamposEditables($solicitudId, $datos);

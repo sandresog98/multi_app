@@ -286,8 +286,8 @@ class CreditosDocs {
 
             // Subir archivo usando FileUploadManager
             try {
-                // Directorio base para créditos_docs
-                $baseDir = __DIR__ . '/../../../assets/uploads/creditos_docs';
+                // Directorio base para créditos_docs - usar ruta absoluta correcta
+                $baseDir = dirname(__DIR__, 3) . '/assets/uploads/creditos_docs';
                 
                 $resultadoArchivo = FileUploadManager::saveUploadedFile(
                     $archivo,
@@ -295,7 +295,8 @@ class CreditosDocs {
                     [
                         'userId' => $usuarioId,
                         'prefix' => $tipoDocumento,
-                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs'
+                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs',
+                        'createSubdirs' => true
                     ]
                 );
             } catch (Exception $e) {
@@ -627,8 +628,8 @@ class CreditosDocs {
 
             // Subir nuevo archivo
             try {
-                // Directorio base para créditos_docs
-                $baseDir = __DIR__ . '/../../../assets/uploads/creditos_docs';
+                // Directorio base para créditos_docs - usar ruta absoluta correcta
+                $baseDir = dirname(__DIR__, 3) . '/assets/uploads/creditos_docs';
                 
                 $resultadoArchivo = FileUploadManager::saveUploadedFile(
                     $archivo,
@@ -636,7 +637,8 @@ class CreditosDocs {
                     [
                         'userId' => $usuarioId,
                         'prefix' => $documentoExistente['tipo_documento'],
-                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs'
+                        'webPath' => getBaseUrl() . 'assets/uploads/creditos_docs',
+                        'createSubdirs' => true
                     ]
                 );
             } catch (Exception $e) {
