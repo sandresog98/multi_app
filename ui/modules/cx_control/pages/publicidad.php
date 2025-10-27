@@ -239,11 +239,22 @@ async function eliminarPublicidad(id) {
 // Función para editar publicidad
 async function editarPublicidad(id) {
   try {
+    console.log('Cargando publicidad ID:', id);
     const res = await fetch(`../api/publicidad.php?action=obtener&id=${id}`);
+    console.log('Response status:', res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Error response:', errorText);
+      throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
+    }
+    
     const json = await res.json();
+    console.log('JSON obtenido:', json);
     
     if (json.success && json.data) {
       const pub = json.data;
+      console.log('Publicidad cargada:', pub);
       
       // Llenar formulario con datos existentes
       document.getElementById('publicidadId').value = pub.id;
@@ -257,10 +268,11 @@ async function editarPublicidad(id) {
       document.getElementById('modalTitle').textContent = 'Editar Publicidad';
       
       // Mostrar imagen actual si existe
-      if (pub.imagen_url) {
+      if (pub.imagen) {
         const previewContainer = document.querySelector('.preview-container');
         const previewImage = document.getElementById('previewImage');
-        previewImage.src = pub.imagen_url;
+        // Convertir URL si es antigua
+        previewImage.src = pub.imagen;
         previewContainer.style.display = 'block';
       }
       
@@ -271,11 +283,12 @@ async function editarPublicidad(id) {
       const modal = new bootstrap.Modal(document.getElementById('nuevaPublicidadModal'));
       modal.show();
     } else {
-      alert('Error al obtener datos de la publicidad');
+      console.error('No success o sin data:', json);
+      alert('Error al obtener datos de la publicidad: ' + (json.message || 'Desconocido'));
     }
   } catch (error) {
-    console.error('Error:', error);
-    alert('Error al cargar la publicidad');
+    console.error('Error completo:', error);
+    alert('Error al cargar la publicidad: ' + error.message);
   }
 }
 

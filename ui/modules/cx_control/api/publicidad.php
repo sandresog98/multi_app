@@ -135,6 +135,7 @@ try {
             }
             
             echo json_encode(['success' => true, 'data' => $publicidad]);
+            return;
             
         } elseif ($action === 'listar') {
             $publicidades = $publicidadModel->obtenerPublicidades();
