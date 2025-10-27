@@ -35,7 +35,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       		
       		$baseDir = __DIR__ . '/../../../uploads/recibos';
       		$result = FileUploadManager::saveUploadedFile($_FILES['comprobante'], $baseDir, $options);
-      		$link = $result['webUrl'];
+      		
+      		// Si webUrl se genera correctamente, usarla, sino construirla manualmente
+      		if (!empty($result['webUrl'])) {
+      			$link = $result['webUrl'];
+      		} else {
+      			// Construir la URL manualmente si FileUploadManager no la generó
+      			$year = date('Y');
+      			$month = date('m');
+      			$link = getBaseUrl() . 'uploads/recibos/' . $year . '/' . $month . '/' . $result['uniqueName'];
+      		}
+      		
+      		error_log("Pagos Cash QR - URL generada: $link");
       	} catch (Exception $e) {
       		throw new Exception('Error al guardar comprobante: ' . $e->getMessage());
       	}
