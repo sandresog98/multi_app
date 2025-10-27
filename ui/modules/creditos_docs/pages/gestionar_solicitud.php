@@ -381,29 +381,29 @@ include '../../../views/layouts/header.php';
                                             }
                                         }
                                         ?>
-                                        <?php if ($documentoSubido): ?>
-                                            <?php
-                                            $archivoUrl = $documentoSubido['ruta_archivo'];
-                                            $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
-                                            ?>
-                                            <?php if ($isImage): ?>
-                                            <div class="mb-2">
-                                                <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 40px; max-height: 40px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
-                                            </div>
-                                            <?php endif; ?>
-                                            <div class="btn-group">
-                                                <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <?php if ($solicitud['etapa_actual'] === $etapa): ?>
-                                                <button class="btn btn-sm btn-outline-warning" onclick="reemplazarDocumento(<?php echo $documentoSubido['id']; ?>, '<?php echo htmlspecialchars($doc['nombre_mostrar']); ?>')">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <?php endif; ?>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="eliminarDocumento(<?php echo $documentoSubido['id']; ?>)">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
+                                            <?php if ($documentoSubido): ?>
+                                                <?php
+                                                $archivoUrl = $documentoSubido['ruta_archivo'];
+                                                $isImage = preg_match('/\.(jpg|jpeg|png|gif|webp|pdf)$/i', $archivoUrl);
+                                                ?>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <?php if ($isImage): ?>
+                                                    <img src="<?php echo htmlspecialchars($archivoUrl); ?>" alt="Vista previa" class="img-thumbnail" style="max-width: 40px; max-height: 40px; cursor: pointer;" onclick="window.open('<?php echo htmlspecialchars($archivoUrl); ?>', '_blank')" title="Clic para ver completo">
+                                                    <?php endif; ?>
+                                                    <div class="btn-group">
+                                                        <a href="<?php echo htmlspecialchars($archivoUrl); ?>" target="_blank" class="btn btn-sm btn-success">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <?php if ($solicitud['etapa_actual'] === $etapa): ?>
+                                                        <button class="btn btn-sm btn-outline-warning" onclick="reemplazarDocumento(<?php echo $documentoSubido['id']; ?>, '<?php echo htmlspecialchars($doc['nombre_mostrar']); ?>')">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <?php endif; ?>
+                                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarDocumento(<?php echo $documentoSubido['id']; ?>)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-outline-primary" onclick="subirDocumento('creacion', '<?php echo $doc['tipo_documento']; ?>', '<?php echo htmlspecialchars($doc['nombre_mostrar']); ?>')">
                                                 <i class="fas fa-upload"></i>
