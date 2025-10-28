@@ -55,36 +55,48 @@ try {
 }
 
 function getImageUrl($imagen) {
-    // Si la imagen ya es una URL completa, devolverla tal como está
+    // Si la imagen ya es una URL completa (http/https), devolverla tal como está
     if (strpos($imagen, 'http://') === 0 || strpos($imagen, 'https://') === 0) {
         return $imagen;
+    }
+    
+    // Si ya es una URL con serve_file.php, devolverla tal como está
+    if (strpos($imagen, 'serve_file.php') !== false) {
+        // Obtener la URL base completa usando el sistema de rutas dinámicas
+        $baseUrl = cx_getFullBaseUrlRobust();
+        // Si ya tiene /multi_app/ui/ al inicio, simplemente concatenar
+        if (strpos($imagen, '/multi_app/ui/') === 0) {
+            return str_replace('/multi_app', $baseUrl, $imagen);
+        }
+        return $baseUrl . '/ui/' . $imagen;
     }
     
     // Obtener la URL base completa usando el sistema de rutas dinámicas
     $baseUrl = cx_getFullBaseUrlRobust();
     
-    // Si la imagen empieza con /multi_app/, usar directamente la ruta completa
-    if (strpos($imagen, '/multi_app/') === 0) {
-        // Reemplazar /multi_app/ con la URL base completa
-        return str_replace('/multi_app', $baseUrl, $imagen);
+    // Si la imagen empieza con /multi_app/ui/, convertir a usar serve_file.php
+    if (strpos($imagen, '/multi_app/ui/uploads/cx_publicidad/') !== false) {
+        // Extraer la ruta relativa después de uploads/
+        $relativePath = str_replace('/multi_app/ui/uploads/', 'uploads/', $imagen);
+        return $baseUrl . '/multi_app/ui/serve_file.php?f=' . $relativePath;
     }
     
-    // Si la imagen empieza con /projects/multi_app/, convertir a ruta relativa y construir URL completa
-    if (strpos($imagen, '/projects/multi_app/') === 0) {
-        // Remover /projects/multi_app/ del inicio para obtener la ruta relativa
-        $relativePath = substr($imagen, strlen('/projects/multi_app'));
-        return $baseUrl . $relativePath;
+    // Si la imagen tiene una ruta antigua sin serve_file.php, convertirla
+    if (strpos($imagen, '/multi_app/ui/uploads/') !== false) {
+        $relativePath = str_replace('/multi_app/ui/uploads/', 'uploads/', $imagen);
+        return $baseUrl . '/multi_app/ui/serve_file.php?f=' . $relativePath;
     }
     
-    // Si es una ruta relativa, construir la URL completa
+    // Si es una ruta relativa con serve_file ya construido
+    if (strpos($imagen, 'serve_file.php?f=') !== false) {
+        return $baseUrl . '/multi_app/ui/' . $imagen;
+    }
+    
+    // Fallback: construir URL manualmente
     $cleanImage = ltrim($imagen, '/');
-    
-    // Verificar si la imagen ya incluye el directorio cx_publicidad
-    if (strpos($cleanImage, 'cx_publicidad/') === 0) {
-        return $baseUrl . '/ui/uploads/' . $cleanImage;
-    } else {
-        // Si no incluye el directorio, agregarlo
-        return $baseUrl . '/ui/uploads/cx_publicidad/' . $cleanImage;
+    if (strpos($cleanImage, 'cx_publicidad/') === false) {
+        $cleanImage = 'cx_publicidad/' . $cleanImage;
     }
+    return $baseUrl . '/multi_app/ui/serve_file.php?f=uploads/' . $cleanImage;
 }
 ?>
