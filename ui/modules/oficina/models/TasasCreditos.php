@@ -138,7 +138,7 @@ class TasasCreditos {
     }
     
     /**
-     * Eliminar tasa de crédito (soft delete)
+     * Eliminar tasa de crédito (hard delete)
      */
     public function eliminarTasa(int $id, int $usuarioId): array {
         try {
@@ -153,14 +153,11 @@ class TasasCreditos {
                 ];
             }
             
-            $sql = "UPDATE control_tasas_creditos SET 
-                    estado_activo = FALSE, actualizado_por = ?, 
-                    fecha_actualizacion = CURRENT_TIMESTAMP
-                    WHERE id = ?";
+            // Eliminar definitivamente de la base de datos
+            $sql = "DELETE FROM control_tasas_creditos WHERE id = ?";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindValue(1, $usuarioId, PDO::PARAM_INT);
-            $stmt->bindValue(2, $id, PDO::PARAM_INT);
+            $stmt->bindValue(1, $id, PDO::PARAM_INT);
             
             $stmt->execute();
             
