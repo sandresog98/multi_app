@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/paths.php';
 require_once __DIR__ . '/../../cx/config/paths.php';
 
 // API pública para obtener publicidad activa (sin autenticación)
@@ -60,43 +61,43 @@ function getImageUrl($imagen) {
         return $imagen;
     }
     
-    // Si ya es una URL con serve_file.php, devolverla tal como está
-    if (strpos($imagen, 'serve_file.php') !== false) {
-        // Obtener la URL base completa usando el sistema de rutas dinámicas
-        $baseUrl = cx_getFullBaseUrlRobust();
-        // Si ya tiene /multi_app/ui/ al inicio, simplemente concatenar
-        if (strpos($imagen, '/multi_app/ui/') === 0) {
-            return str_replace('/multi_app', $baseUrl, $imagen);
-        }
-        return $baseUrl . '/ui/' . $imagen;
-    }
+    // Obtener la URL base usando la función de ui/config/paths.php que es más confiable
+    $baseUrl = getBaseUrl(); // Esta es la función de ui/config/paths.php
     
-    // Obtener la URL base completa usando el sistema de rutas dinámicas
-    $baseUrl = cx_getFullBaseUrlRobust();
+    // Extraer la ruta relativa del archivo
+    $relativePath = '';
     
-    // Si la imagen empieza con /multi_app/ui/, convertir a usar serve_file.php
-    if (strpos($imagen, '/multi_app/ui/uploads/cx_publicidad/') !== false) {
-        // Extraer la ruta relativa después de uploads/
-        $relativePath = str_replace('/multi_app/ui/uploads/', 'uploads/', $imagen);
-        return $baseUrl . '/multi_app/ui/serve_file.php?f=' . $relativePath;
-    }
-    
-    // Si la imagen tiene una ruta antigua sin serve_file.php, convertirla
-    if (strpos($imagen, '/multi_app/ui/uploads/') !== false) {
-        $relativePath = str_replace('/multi_app/ui/uploads/', 'uploads/', $imagen);
-        return $baseUrl . '/multi_app/ui/serve_file.php?f=' . $relativePath;
-    }
-    
-    // Si es una ruta relativa con serve_file ya construido
+    // Si la imagen ya contiene serve_file.php, extraer el parámetro f=
     if (strpos($imagen, 'serve_file.php?f=') !== false) {
-        return $baseUrl . '/multi_app/ui/' . $imagen;
+        $parts = explode('serve_file.php?f=', $imagen);
+        if (isset($parts[1])) {
+            $relativePath = $parts[1];
+        }
+    } 
+    // Si la imagen tiene /multi_app/ui/uploads/cx_publicidad/
+    elseif (strpos($imagen, '/multi_app/ui/uploads/') !== false) {
+        $relativePath = str_replace('/multi_app/ui/uploads/', 'uploads/', $imagen);
+    }
+    // Si la imagen tiene /projects/multi_app/ui/uploads/
+    elseif (strpos($imagen, '/projects/multi_app/ui/uploads/') !== false) {
+        $relativePath = str_replace('/projects/multi_app/ui/uploads/', 'uploads/', $imagen);
+    }
+    // Si es solo el nombre del archivo o ruta simple
+    else {
+        $cleanImage = ltrim($imagen, '/');
+        if (strpos($cleanImage, 'cx_publicidad/') === false) {
+            $cleanImage = 'uploads/cx_publicidad/' . $cleanImage;
+        } else {
+            $cleanImage = 'uploads/' . $cleanImage;
+        }
+        $relativePath = $cleanImage;
     }
     
-    // Fallback: construir URL manualmente
-    $cleanImage = ltrim($imagen, '/');
-    if (strpos($cleanImage, 'cx_publicidad/') === false) {
-        $cleanImage = 'cx_publicidad/' . $cleanImage;
-    }
-    return $baseUrl . '/multi_app/ui/serve_file.php?f=uploads/' . $cleanImage;
+    // Construir URL completa con serve_file.php
+    $finalUrl = $baseUrl . 'serve_file.php?f=' . $relativePath;
+    
+    error_log("cx_publicidad getImageUrl - Input: $imagen, baseUrl: $baseUrl, relativePath: $relativePath, finalUrl: $finalUrl");
+    
+    return $finalUrl;
 }
 ?>
