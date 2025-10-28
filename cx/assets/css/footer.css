@@ -148,20 +148,17 @@ body .modern-footer .tab-item {
   display: none !important;
 }
 
-/* DEBUG: Asegurar que el footer sea visible */
+/* Estilos finales del footer */
 .modern-footer {
-  border: 2px solid red !important;
   min-height: 60px !important;
 }
 
 .modern-footer .tab-container {
-  border: 1px solid blue !important;
   min-height: 50px !important;
 }
 
 .modern-footer .tab-item {
-  border: 1px solid green !important;
-  background: rgba(255, 255, 255, 0.8) !important;
+  background: transparent !important;
 }
 
 /* Asegurar que el contenido tenga espacio para el nuevo footer */
