@@ -11,8 +11,8 @@ $model = new ResumenFinanciero();
 $bp = $model->getBalancePrueba($cedula);
 ?>
 <?php
-$pageTitle = 'Información Monetaria';
-$heroTitle = 'Información Monetaria';
+$pageTitle = 'Aportes';
+$heroTitle = 'Aportes';
 $heroSubtitle = 'Consulta tu información financiera y aportes.';
 include __DIR__ . '/../../../views/layouts/header.php';
 ?>

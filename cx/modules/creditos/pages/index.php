@@ -11,8 +11,8 @@ $model = new ResumenFinanciero();
 $creditos = $model->getCreditos($cedula);
 ?>
 <?php
-$pageTitle = 'Información de Créditos';
-$heroTitle = 'Información de Créditos';
+$pageTitle = 'Créditos';
+$heroTitle = 'Créditos';
 $heroSubtitle = 'Consulta tus créditos y detalles de pago.';
 include __DIR__ . '/../../../views/layouts/header.php';
 ?>

@@ -131,12 +131,13 @@
         $isPerfil = strpos($currentScript, '/modules/perfil/pages/index.php') !== false;
         $isMonetario = strpos($currentScript, '/modules/monetario/pages/index.php') !== false;
         $isCreditos = strpos($currentScript, '/modules/creditos/pages/index.php') !== false;
+        $isMovimientos = strpos($currentScript, '/modules/movimientos/pages/index.php') !== false;
         
         // Debug temporal - comentar después
         // echo "<!-- Debug: Script: $currentScript, Index: " . ($isIndex ? 'true' : 'false') . ", Perfil: " . ($isPerfil ? 'true' : 'false') . " -->";
         
         // Asegurar que solo una página esté activa
-        if ($isPerfil || $isMonetario || $isCreditos) {
+        if ($isPerfil || $isMonetario || $isCreditos || $isMovimientos) {
           $isIndex = false; // Si estamos en cualquier módulo, inicio no puede estar activo
         }
         
@@ -146,6 +147,7 @@
         $perfilUrl = $baseUrl . 'modules/perfil/pages/index.php';
         $monetarioUrl = $baseUrl . 'modules/monetario/pages/index.php';
         $creditosUrl = $baseUrl . 'modules/creditos/pages/index.php';
+        $movimientosUrl = $baseUrl . 'modules/movimientos/pages/index.php';
         ?>
         
         <a class="tab-item <?php echo $isIndex ? 'active' : ''; ?>" href="<?php echo $indexUrl; ?>" data-tab="inicio">
@@ -158,14 +160,19 @@
           <span class="tab-label">Perfil</span>
         </a>
         
-        <a class="tab-item <?php echo $isMonetario ? 'active' : ''; ?>" href="<?php echo $monetarioUrl; ?>" data-tab="monetario">
+        <a class="tab-item <?php echo $isMonetario ? 'active' : ''; ?>" href="<?php echo $monetarioUrl; ?>" data-tab="aportes">
           <i class="fa-solid fa-wallet tab-icon"></i>
-          <span class="tab-label">Monetario</span>
+          <span class="tab-label">Aportes</span>
         </a>
         
         <a class="tab-item <?php echo $isCreditos ? 'active' : ''; ?>" href="<?php echo $creditosUrl; ?>" data-tab="creditos">
           <i class="fa-solid fa-credit-card tab-icon"></i>
           <span class="tab-label">Créditos</span>
+        </a>
+        
+        <a class="tab-item <?php echo $isMovimientos ? 'active' : ''; ?>" href="<?php echo $movimientosUrl; ?>" data-tab="movimientos">
+          <i class="fa-solid fa-exchange-alt tab-icon"></i>
+          <span class="tab-label">Movimientos</span>
         </a>
       </div>
     </div>
