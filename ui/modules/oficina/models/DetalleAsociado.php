@@ -105,9 +105,10 @@ class DetalleAsociado {
 				LEFT JOIN sifone_datacredito_vw dv
 					ON CAST(dv.cedula AS UNSIGNED) = CAST(a.cedula AS UNSIGNED)
 					   AND CAST(dv.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
+					   AND dv.codeudor = 0  -- Solo el titular, no el codeudor
 				LEFT JOIN sifone_datacredito_vw dvco
 					ON CAST(dvco.numero_credito AS UNSIGNED) = CAST(a.numero AS UNSIGNED)
-				   AND dvco.codeudor = 1
+				   AND dvco.codeudor = 1  -- Solo el codeudor
 				LEFT JOIN (
 					SELECT c.cedula,
 						   c.numero,
@@ -121,6 +122,7 @@ class DetalleAsociado {
 					FROM sifone_cartera_aseguradora AS c
 					INNER JOIN sifone_datacredito_vw AS d
 							   ON c.numero = d.numero_credito
+							   AND d.codeudor = 0  -- Solo datos del titular para cálculos
 					LEFT JOIN control_tasas_creditos AS t
 							  ON c.tipopr = t.nombre_credito
 								  AND c.fechae BETWEEN t.fecha_inicio AND t.fecha_fin

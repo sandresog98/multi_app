@@ -10,7 +10,7 @@ CREATE VIEW sifone_datacredito_vw AS
         m AS estado_credito,
         q AS fecha_pago,
         x AS desembolso_inicial,
-        z AS saldo_capital,
+        y AS saldo_capital,
         aa AS cuota,
         ac AS cuotas_iniciales,
         ad AS cuotas_pendientes,
