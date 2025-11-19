@@ -156,6 +156,21 @@ $currentPage = 'creditos_docs_gestionar';
 include '../../../views/layouts/header.php';
 ?>
 
+<style>
+.badge-obligatorio {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.8rem;
+    border-radius: 0.2rem;
+    background-color: #dc3545;
+    color: #fff;
+    font-weight: 700;
+}
+</style>
+
 <div class="container-fluid">
     <div class="row">
         <?php include '../../../views/layouts/sidebar.php'; ?>
@@ -364,7 +379,7 @@ include '../../../views/layouts/header.php';
                                     <div>
                                         <strong><?php echo htmlspecialchars($doc['nombre_mostrar']); ?></strong>
                                         <?php if ($doc['es_obligatorio']): ?>
-                                            <span class="text-danger">*</span>
+                                            <span class="badge-obligatorio" title="Obligatorio">O</span>
                                         <?php endif; ?>
                                         <?php if ($doc['es_trato_especial']): ?>
                                             <span class="badge bg-warning text-dark ms-1">B</span>
@@ -445,7 +460,7 @@ include '../../../views/layouts/header.php';
                                         <div>
                                             <strong><?php echo htmlspecialchars($doc['nombre_mostrar']); ?></strong>
                                             <?php if ($doc['es_obligatorio']): ?>
-                                                <span class="text-danger">*</span>
+                                                <span class="badge-obligatorio" title="Obligatorio">O</span>
                                             <?php endif; ?>
                                             <?php if ($doc['es_trato_especial']): ?>
                                                 <span class="badge bg-warning text-dark ms-1">B</span>
@@ -527,7 +542,7 @@ include '../../../views/layouts/header.php';
                                         <div>
                                             <strong><?php echo htmlspecialchars($doc['nombre_mostrar']); ?></strong>
                                             <?php if ($doc['es_obligatorio']): ?>
-                                                <span class="text-danger">*</span>
+                                                <span class="badge-obligatorio" title="Obligatorio">O</span>
                                             <?php endif; ?>
                                             <br><small class="text-muted"><?php echo htmlspecialchars($doc['descripcion']); ?></small>
                                         </div>
@@ -606,7 +621,7 @@ include '../../../views/layouts/header.php';
                                         <div>
                                             <strong><?php echo htmlspecialchars($doc['nombre_mostrar']); ?></strong>
                                             <?php if ($doc['es_obligatorio']): ?>
-                                                <span class="text-danger">*</span>
+                                                <span class="badge-obligatorio" title="Obligatorio">O</span>
                                             <?php endif; ?>
                                             <br><small class="text-muted"><?php echo htmlspecialchars($doc['descripcion']); ?></small>
                                         </div>
@@ -680,7 +695,7 @@ include '../../../views/layouts/header.php';
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <strong><?php echo htmlspecialchars($doc['nombre_mostrar']); ?></strong>
-                                        <span class="text-danger">*</span>
+                                        <span class="badge-obligatorio" title="Obligatorio">O</span>
                                         <br><small class="text-muted"><?php echo htmlspecialchars($doc['descripcion']); ?></small>
                                     </div>
                                     <div>
@@ -834,22 +849,22 @@ include '../../../views/layouts/header.php';
                     
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">Nombre del Solicitante <span class="text-danger">*</span></label>
+                            <label class="form-label">Nombre del Solicitante <span class="badge-obligatorio" title="Obligatorio">O</span></label>
                             <input type="text" name="nombre_solicitante" class="form-control" value="<?php echo htmlspecialchars($solicitud['nombre_solicitante']); ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Número de Teléfono <span class="text-danger">*</span></label>
+                            <label class="form-label">Número de Teléfono <span class="badge-obligatorio" title="Obligatorio">O</span></label>
                             <input type="tel" name="numero_telefono" class="form-control" value="<?php echo htmlspecialchars($solicitud['numero_telefono']); ?>" required>
                         </div>
                     </div>
                     
                     <div class="row mt-3">
                         <div class="col-md-6">
-                            <label class="form-label">Correo Electrónico <span class="text-danger">*</span></label>
+                            <label class="form-label">Correo Electrónico <span class="badge-obligatorio" title="Obligatorio">O</span></label>
                             <input type="email" name="correo_electronico" class="form-control" value="<?php echo htmlspecialchars($solicitud['correo_electronico']); ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Monto Deseado <span class="text-danger">*</span></label>
+                            <label class="form-label">Monto Deseado <span class="badge-obligatorio" title="Obligatorio">O</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" name="monto_deseado" class="form-control" value="<?php echo $solicitud['monto_deseado']; ?>" required min="1">
@@ -859,7 +874,7 @@ include '../../../views/layouts/header.php';
                     
                     <div class="row mt-3">
                         <div class="col-md-6">
-                            <label class="form-label">Número de Cuotas Deseadas <span class="text-danger">*</span></label>
+                            <label class="form-label">Número de Cuotas Deseadas <span class="badge-obligatorio" title="Obligatorio">O</span></label>
                             <input type="number" name="numero_cuotas_deseadas" class="form-control" value="<?php echo $solicitud['numero_cuotas_deseadas']; ?>" required min="1" max="60">
                         </div>
                         <div class="col-md-6">
