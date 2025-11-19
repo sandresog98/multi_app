@@ -957,12 +957,8 @@ function reemplazarDocumento(documentoId, nombreDocumento) {
 }
 
 function subirDocumentoCodeudor(tipoDocumento, nombreDocumento) {
-    document.getElementById('subirDocumentoTipo').value = tipoDocumento;
-    document.getElementById('subirDocumentoEtapa').value = 'estudio'; // Forzar etapa de estudio
-    document.getElementById('nombreDocumentoSubir').textContent = nombreDocumento;
-    
-    const modal = new bootstrap.Modal(document.getElementById('modalSubirDocumento'));
-    modal.show();
+    // Reutilizar el mismo modal de subida forzando la etapa "estudio"
+    subirDocumento('estudio', tipoDocumento, nombreDocumento);
 }
 
 function mostrarErroresValidacion() {
