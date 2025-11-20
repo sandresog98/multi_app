@@ -623,6 +623,155 @@ SQL;
     readfile($tmpXlsx);
     @unlink($tmpXlsx);
     exit;
+  } elseif ($type === 'inventario_tienda') {
+    // Exportar inventario de productos disponibles en la tienda
+    $sql = <<<SQL
+SELECT 
+  p.id AS producto_id,
+  p.nombre AS producto_nombre,
+  c.nombre AS categoria,
+  m.nombre AS marca,
+  COALESCE(p.precio_compra_aprox, 0) AS precio_compra,
+  COALESCE(p.precio_venta_aprox, 0) AS precio_venta,
+  COALESCE(cd.ingresado, 0) - COALESCE(vd.vendido, 0) AS cantidad_disponible
+FROM tienda_producto p
+INNER JOIN tienda_categoria c ON c.id = p.categoria_id
+INNER JOIN tienda_marca m ON m.id = p.marca_id
+LEFT JOIN (
+  SELECT producto_id, SUM(cantidad) AS ingresado
+  FROM tienda_compra_detalle
+  GROUP BY producto_id
+) cd ON cd.producto_id = p.id
+LEFT JOIN (
+  SELECT producto_id,
+         SUM(CASE WHEN compra_imei_id IS NULL THEN cantidad ELSE 1 END) AS vendido
+  FROM tienda_venta_detalle
+  GROUP BY producto_id
+) vd ON vd.producto_id = p.id
+WHERE p.estado_activo = TRUE
+ORDER BY c.nombre, m.nombre, p.nombre
+SQL;
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+
+    if (ob_get_length()) { @ob_end_clean(); }
+
+    $xlsxRows = [];
+    $xlsxRows[] = [
+      'ID Producto',
+      'Nombre Producto',
+      'Categoría',
+      'Marca',
+      'Precio Compra',
+      'Precio Venta',
+      'Cantidad Disponible'
+    ];
+
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+      $xlsxRows[] = [
+        (int)($row['producto_id'] ?? 0),
+        (string)($row['producto_nombre'] ?? ''),
+        (string)($row['categoria'] ?? ''),
+        (string)($row['marca'] ?? ''),
+        (float)($row['precio_compra'] ?? 0),
+        (float)($row['precio_venta'] ?? 0),
+        (int)($row['cantidad_disponible'] ?? 0)
+      ];
+    }
+
+    $tmpXlsx = tempnam(sys_get_temp_dir(), 'xlsx_');
+    if (!class_exists('ZipArchive')) {
+      if (ob_get_length()) { @ob_end_clean(); }
+      http_response_code(500);
+      header('Content-Type: text/plain; charset=UTF-8');
+      echo "Error: La extensión ZIP de PHP no está habilitada.\n";
+      echo "Habilítela en php.ini (extension=zip) y reinicie Apache.";
+      exit;
+    }
+    $zip = new ZipArchive();
+    $zip->open($tmpXlsx, ZipArchive::OVERWRITE);
+
+    $colLetter = function($i){
+      $i = (int)$i; $letters = '';
+      while ($i >= 0) { $letters = chr($i % 26 + 65) . $letters; $i = intdiv($i, 26) - 1; }
+      return $letters;
+    };
+    $xmlHeader = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
+    $contentTypes = $xmlHeader.'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      .'<Default Extension="xml" ContentType="application/xml"/>'
+      .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+      .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+      .'</Types>';
+    $zip->addFromString('[Content_Types].xml', $contentTypes);
+
+    $rels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>'
+      .'</Relationships>';
+    $zip->addFromString('_rels/.rels', $rels);
+
+    $workbook = $xmlHeader.'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+      .'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+      .'<sheets><sheet name="Inventario" sheetId="1" r:id="rId1"/></sheets></workbook>';
+    $zip->addFromString('xl/workbook.xml', $workbook);
+
+    $wbRels = $xmlHeader.'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+      .'</Relationships>';
+    $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
+
+    $widths = [12, 40, 20, 20, 16, 16, 20];
+    $colsXml = '<cols>';
+    for ($i=0; $i<count($widths); $i++) {
+      $colsXml .= '<col min="'.($i+1).'" max="'.($i+1).'" width="'.$widths[$i].'" customWidth="1"/>';
+    }
+    $colsXml .= '</cols>';
+    $sheet = $xmlHeader.'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'.$colsXml.'<sheetData>';
+    for ($r = 0; $r < count($xlsxRows); $r++) {
+      $rowXml = '<row r="'.($r+1).'">';
+      $row = $xlsxRows[$r];
+      $isHeader = ($r === 0);
+      // Columnas numéricas con coma: precio_compra (4), precio_venta (5)
+      $commaCols = [4, 5];
+      // Columnas de texto: nombre (1), categoria (2), marca (3)
+      $stringCols = [1, 2, 3];
+      for ($c = 0; $c < count($row); $c++) {
+        $cellRef = $colLetter($c).($r+1);
+        $val = $row[$c];
+        if ($isHeader) {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (in_array($c, $commaCols, true)) {
+          $textVal = number_format((float)$val, 2, ',', '');
+          $safe = htmlspecialchars($textVal, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (in_array($c, $stringCols, true)) {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        } elseif (is_numeric($val)) {
+          $rowXml .= '<c r="'.$cellRef.'"><v>'.(0+$val).'</v></c>';
+        } else {
+          $safe = htmlspecialchars((string)$val, ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8');
+          $rowXml .= '<c r="'.$cellRef.'" t="inlineStr"><is><t>'.$safe.'</t></is></c>';
+        }
+      }
+      $rowXml .= '</row>';
+      $sheet .= $rowXml;
+    }
+    $sheet .= '</sheetData></worksheet>';
+    $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
+
+    $zip->close();
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="Inventario_tienda.xlsx"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    readfile($tmpXlsx);
+    @unlink($tmpXlsx);
+    exit;
   }
 }
 
@@ -683,6 +832,20 @@ include '../../../views/layouts/header.php';
             <input type="hidden" name="download" value="1">
             <input type="hidden" name="type" value="transacciones">
             <button class="btn btn-outline-success w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLSX (transacciones.xlsx)</button>
+          </div>
+        </form>
+      </div></div>
+
+      <div class="card mt-3"><div class="card-body">
+        <div class="mb-2 text-muted">Inventario de Tienda</div>
+        <form class="row g-2" method="GET" target="_blank" rel="noopener">
+          <div class="col-md-7">
+            <div class="form-text">Descarga el inventario completo de productos disponibles en la tienda con precios, categorías, marcas y cantidades.</div>
+          </div>
+          <div class="col-md-3 align-self-end">
+            <input type="hidden" name="download" value="1">
+            <input type="hidden" name="type" value="inventario_tienda">
+            <button class="btn btn-outline-info w-100"><i class="fas fa-file-excel me-1"></i>Descargar XLSX (Inventario_tienda.xlsx)</button>
           </div>
         </form>
       </div></div>
